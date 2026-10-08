@@ -280,7 +280,7 @@ async def test_editing_custom_role_bumps_holders(client, factory, owner_engine):
 
 
 async def test_staff_cross_tenant_is_404(client, factory, owner_engine):
-    a = await factory.hotel(roles=("general_manager",))
+    a = await factory.hotel(roles=("general_manager", "receptionist"))
     b = await factory.hotel(roles=("receptionist",))
     gm = await _gm(factory, a)
     other = b.users["receptionist"].user_id
@@ -297,7 +297,7 @@ async def test_staff_cross_tenant_is_404(client, factory, owner_engine):
     ).json()
     ga = await factory.step_up(a, "general_manager", await factory.auth(a, "general_manager"))
     assign = await client.put(
-        f"/staff/{a.users['general_manager'].user_id}/roles", json={"role_ids": [custom["id"]]}, headers=ga
+        f"/staff/{a.users['receptionist'].user_id}/roles", json={"role_ids": [custom["id"]]}, headers=ga
     )
     assert assign.status_code == 404
     assert all(r["name"] != "Secret" for r in (await client.get("/roles", headers=gm)).json()["data"])
