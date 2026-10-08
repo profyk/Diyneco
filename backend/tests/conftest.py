@@ -118,7 +118,8 @@ def app(settings: Settings, app_state):  # type: ignore[no-untyped-def]
 @pytest_asyncio.fixture(loop_scope="session")
 async def client(app, app_state) -> AsyncIterator[httpx.AsyncClient]:  # type: ignore[no-untyped-def]
     await app_state.limiter.reset()
-    transport = httpx.ASGITransport(app=app)
+    # Like a real server: an unhandled error becomes the 500 envelope, not a test-side exception.
+    transport = httpx.ASGITransport(app=app, raise_app_exceptions=False)
     async with httpx.AsyncClient(transport=transport, base_url="http://testserver/api/v1") as c:
         yield c
 

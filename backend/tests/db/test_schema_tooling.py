@@ -13,7 +13,7 @@ from app.models import Base
 from tests.conftest import TEST_MIGRATIONS_DATABASE_URL
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
-import check_migrations  # noqa: E402
+import check_migrations
 
 DSN = TEST_MIGRATIONS_DATABASE_URL.replace("postgresql+psycopg://", "postgresql://")
 
@@ -41,12 +41,28 @@ def test_migration_check_catches_missing_rls_and_append_only():
 
 def _family(sql_type: str) -> str:
     t = sql_type.lower()
-    for prefix, family in (("timestamp", "timestamptz"), ("character varying", "text"), ("character", "char"),
-                           ("bpchar", "char"), ("char", "char"), ("varchar", "text"), ("text", "text"), ("citext", "citext"),
-                           ("uuid[]", "uuid[]"), ("text[]", "text[]"), ("uuid", "uuid"), ("bigint", "bigint"),
-                           ("smallint", "smallint"), ("integer", "integer"), ("boolean", "boolean"),
-                           ("bytea", "bytea"), ("jsonb", "jsonb"), ("inet", "inet"), ("date", "date"),
-                           ("time", "time")):
+    for prefix, family in (
+        ("timestamp", "timestamptz"),
+        ("character varying", "text"),
+        ("character", "char"),
+        ("bpchar", "char"),
+        ("char", "char"),
+        ("varchar", "text"),
+        ("text", "text"),
+        ("citext", "citext"),
+        ("uuid[]", "uuid[]"),
+        ("text[]", "text[]"),
+        ("uuid", "uuid"),
+        ("bigint", "bigint"),
+        ("smallint", "smallint"),
+        ("integer", "integer"),
+        ("boolean", "boolean"),
+        ("bytea", "bytea"),
+        ("jsonb", "jsonb"),
+        ("inet", "inet"),
+        ("date", "date"),
+        ("time", "time"),
+    ):
         if t.startswith(prefix):
             return family
     return t

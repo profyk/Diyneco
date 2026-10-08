@@ -63,19 +63,17 @@ class Mailer:
         body: str,
         subject_ref: dict[str, Any] | None = None,
     ) -> None:
-        notification_id = (
-            await uow.session.execute(
-                insert(Notification)
-                .values(
-                    hotel_id=hotel_id,
-                    channel="email",
-                    template=template,
-                    recipient=to,
-                    subject_ref=subject_ref or {},
-                )
-                .returning(Notification.id)
+        notification_id = (await uow.session.execute(text("SELECT app.uuid_v7()"))).scalar_one()
+        await uow.session.execute(
+            insert(Notification).values(
+                id=notification_id,
+                hotel_id=hotel_id,
+                channel="email",
+                template=template,
+                recipient=to,
+                subject_ref=subject_ref or {},
             )
-        ).scalar_one()
+        )
         message = EmailMessage(to=to, subject=subject, body=body, template=template, sender=self.sender)
 
         async def _send() -> None:

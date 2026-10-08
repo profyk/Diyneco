@@ -16,15 +16,30 @@ from sqlalchemy.exc import DBAPIError
 from tests.conftest import as_hotel
 from tests.db.test_financial_safeguards import sqlstate
 
-STATUSES = ["PENDING_APPROVAL", "NEW", "ACCEPTED", "PREPARING", "READY", "ASSIGNED", "PICKED_UP",
-            "DELIVERED", "CLOSED", "DECLINED", "CANCELLED"]
+STATUSES = [
+    "PENDING_APPROVAL",
+    "NEW",
+    "ACCEPTED",
+    "PREPARING",
+    "READY",
+    "ASSIGNED",
+    "PICKED_UP",
+    "DELIVERED",
+    "CLOSED",
+    "DECLINED",
+    "CANCELLED",
+]
 ALLOWED = {
-    ("PENDING_APPROVAL", "NEW"), ("PENDING_APPROVAL", "DECLINED"),
-    ("NEW", "ACCEPTED"), ("NEW", "CANCELLED"),
-    ("ACCEPTED", "PREPARING"), ("ACCEPTED", "CANCELLED"),
+    ("PENDING_APPROVAL", "NEW"),
+    ("PENDING_APPROVAL", "DECLINED"),
+    ("NEW", "ACCEPTED"),
+    ("NEW", "CANCELLED"),
+    ("ACCEPTED", "PREPARING"),
+    ("ACCEPTED", "CANCELLED"),
     ("PREPARING", "READY"),
     ("READY", "ASSIGNED"),
-    ("ASSIGNED", "READY"), ("ASSIGNED", "PICKED_UP"),
+    ("ASSIGNED", "READY"),
+    ("ASSIGNED", "PICKED_UP"),
     ("PICKED_UP", "DELIVERED"),
     ("DELIVERED", "CLOSED"),
 }
@@ -49,7 +64,7 @@ async def test_transition_matrix(order_env, factory, api_session):
     tried = 0
     for (f, t), order_id in zip(
         itertools.product(STATUSES, STATUSES),
-        [o for f in STATUSES for o in orders[f]],
+        [o for status in STATUSES for o in orders[status]],
         strict=True,
     ):
         if f == t:
@@ -60,8 +75,11 @@ async def test_transition_matrix(order_env, factory, api_session):
                 await api_session.execute(stmt, {"t": t, "id": order_id})
             history = (
                 await api_session.execute(
-                    text("SELECT from_status, to_status, actor_user FROM app.order_status_history "
-                         "WHERE order_id = :id"), {"id": order_id}
+                    text(
+                        "SELECT from_status, to_status, actor_user FROM app.order_status_history "
+                        "WHERE order_id = :id"
+                    ),
+                    {"id": order_id},
                 )
             ).one()
             assert (history.from_status, history.to_status, history.actor_user) == (f, t, actor)
@@ -80,7 +98,9 @@ async def test_amounts_locked_after_acceptance(order_env, factory, api_session, 
     order_id = await factory.order(hotel, stay_id, status="NEW")
     await as_hotel(api_session, hotel.id)
     await api_session.execute(
-        text("UPDATE app.orders SET status = 'ACCEPTED', locked_at = now(), accepted_at = now() WHERE id = :id"),
+        text(
+            "UPDATE app.orders SET status = 'ACCEPTED', locked_at = now(), accepted_at = now() WHERE id = :id"
+        ),
         {"id": order_id},
     )
     # total = subtotal + fee must still hold, so move two columns together where needed.
@@ -92,10 +112,14 @@ async def test_amounts_locked_after_acceptance(order_env, factory, api_session, 
     }[column]
     with pytest.raises(DBAPIError) as err:
         async with api_session.begin_nested():
-            await api_session.execute(text(f"UPDATE app.orders SET {changes} WHERE id = :id"), {"id": order_id})
+            await api_session.execute(
+                text(f"UPDATE app.orders SET {changes} WHERE id = :id"), {"id": order_id}
+            )
     assert sqlstate(err.value) == "P0003"
     # Status can still move on.
-    await api_session.execute(text("UPDATE app.orders SET status = 'PREPARING' WHERE id = :id"), {"id": order_id})
+    await api_session.execute(
+        text("UPDATE app.orders SET status = 'PREPARING' WHERE id = :id"), {"id": order_id}
+    )
 
 
 async def test_amounts_can_change_before_lock(order_env, factory, api_session):
@@ -103,7 +127,8 @@ async def test_amounts_can_change_before_lock(order_env, factory, api_session):
     order_id = await factory.order(hotel, stay_id, status="PENDING_APPROVAL")
     await as_hotel(api_session, hotel.id)
     await api_session.execute(
-        text("UPDATE app.orders SET fee_minor = 0, total_minor = subtotal_minor WHERE id = :id"), {"id": order_id}
+        text("UPDATE app.orders SET fee_minor = 0, total_minor = subtotal_minor WHERE id = :id"),
+        {"id": order_id},
     )
 
 
@@ -112,7 +137,8 @@ async def test_cross_tenant_order_update_touches_nothing(order_env, factory, api
     order_id = await factory.order(hotel, stay_id, status="NEW")
     other = await factory.hotel(roles=())
     await as_hotel(api_session, other.id)
-    result = await api_session.execute(text("UPDATE app.orders SET status = 'ACCEPTED' WHERE id = :id"),
-                                       {"id": order_id})
+    result = await api_session.execute(
+        text("UPDATE app.orders SET status = 'ACCEPTED' WHERE id = :id"), {"id": order_id}
+    )
     assert result.rowcount == 0
     assert uuid.UUID(str(order_id))

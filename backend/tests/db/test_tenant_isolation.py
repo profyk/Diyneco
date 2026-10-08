@@ -17,15 +17,19 @@ async def tenant_tables(owner_engine) -> list[tuple[str, str]]:
     """(table, tenant column) for every app table the migration check treats as tenant data."""
     async with owner_engine.connect() as conn:
         rows = (
-            await conn.execute(
-                text(
-                    "SELECT c.relname FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace "
-                    "WHERE n.nspname = 'app' AND c.relkind IN ('r','p') AND NOT c.relispartition "
-                    "AND EXISTS (SELECT 1 FROM pg_attribute a WHERE a.attrelid = c.oid "
-                    "AND a.attname = 'hotel_id' AND NOT a.attisdropped) ORDER BY 1"
+            (
+                await conn.execute(
+                    text(
+                        "SELECT c.relname FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace "
+                        "WHERE n.nspname = 'app' AND c.relkind IN ('r','p') AND NOT c.relispartition "
+                        "AND EXISTS (SELECT 1 FROM pg_attribute a WHERE a.attrelid = c.oid "
+                        "AND a.attname = 'hotel_id' AND NOT a.attisdropped) ORDER BY 1"
+                    )
                 )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
     return [("hotels", "id"), *[(r, "hotel_id") for r in rows]]
 
 
@@ -40,7 +44,9 @@ async def two_hotels(factory, client):
         headers = await factory.auth(h, "general_manager")
         r = await client.get("/hotel", headers=headers)
         etag = r.headers["ETag"]
-        r = await client.patch("/hotel", json={"phone": "+27 21 555 0100"}, headers={**headers, "If-Match": etag})
+        r = await client.patch(
+            "/hotel", json={"phone": "+27 21 555 0100"}, headers={**headers, "If-Match": etag}
+        )
         assert r.status_code == 200, r.text
     return a, b
 
@@ -64,7 +70,9 @@ async def test_hotel_a_cannot_see_hotel_b_rows_in_any_table(two_hotels, api_sess
     await as_hotel(api_session, a.id)
     for table, column in await tenant_tables(owner_engine):
         leaked = (
-            await api_session.execute(text(f"SELECT count(*) FROM app.{table} WHERE {column} = :b"), {"b": b.id})
+            await api_session.execute(
+                text(f"SELECT count(*) FROM app.{table} WHERE {column} = :b"), {"b": b.id}
+            )
         ).scalar_one()
         assert leaked == 0, f"app.{table}: hotel A sees {leaked} rows of hotel B"
         foreign = (
@@ -81,8 +89,10 @@ async def test_hotel_a_cannot_see_hotel_b_rows_in_any_table(two_hotels, api_sess
     [
         ("guests", "(hotel_id, full_name) VALUES (:b, 'Intruder')"),
         ("kitchen_stations", "(hotel_id, name) VALUES (:b, 'Intruder bar')"),
-        ("audit_logs", "(hotel_id, actor_type, actor_label, action, entity_type) "
-                       "VALUES (:b, 'system', 'x', 'x', 'x')"),
+        (
+            "audit_logs",
+            "(hotel_id, actor_type, actor_label, action, entity_type) VALUES (:b, 'system', 'x', 'x', 'x')",
+        ),
         ("event_outbox", "(hotel_id, type, channels, payload) VALUES (:b, 'X', '{}', '{}')"),
         ("hotel_settings", "(hotel_id, invoice_prefix) VALUES (:b, 'X')"),
     ],
@@ -101,8 +111,9 @@ async def test_hotel_a_cannot_insert_for_existing_hotel_b(factory, api_session):
     b = await factory.hotel(roles=())
     await as_hotel(api_session, a.id)
     with pytest.raises(DBAPIError) as err:
-        await api_session.execute(text("INSERT INTO app.guests (hotel_id, full_name) VALUES (:b, 'x')"),
-                                  {"b": b.id})
+        await api_session.execute(
+            text("INSERT INTO app.guests (hotel_id, full_name) VALUES (:b, 'x')"), {"b": b.id}
+        )
     assert sqlstate(err.value) == "42501"
 
 
@@ -110,7 +121,9 @@ async def test_hotel_a_cannot_update_hotel_b_rows(factory, api_session):
     a = await factory.hotel(roles=())
     b = await factory.hotel(roles=())
     await as_hotel(api_session, a.id)
-    result = await api_session.execute(text("UPDATE app.rooms SET floor = 'x' WHERE hotel_id = :b"), {"b": b.id})
+    result = await api_session.execute(
+        text("UPDATE app.rooms SET floor = 'x' WHERE hotel_id = :b"), {"b": b.id}
+    )
     assert result.rowcount == 0
 
 
@@ -122,16 +135,27 @@ async def test_composite_fk_blocks_cross_hotel_parent(factory, owner_engine):
     b = await factory.hotel(roles=())
     b_rows = await factory.stay_with_folio(b)
     cases = [
-        ("INSERT INTO app.stays (hotel_id, room_id, guest_id, arrival_date, departure_date, nightly_rate_minor) "
-         "VALUES (:a, :b_room, :b_guest, :d1, :d2, 1000)"),
-        ("INSERT INTO app.folio_entries (hotel_id, folio_id, entry_type, category_id, description, "
-         "unit_amount_minor, amount_minor, business_date) VALUES (:a, :b_folio, 'charge', :cat, 'x', 1, 1, :d1)"),
+        (
+            "INSERT INTO app.stays (hotel_id, room_id, guest_id, arrival_date, departure_date, nightly_rate_minor) "
+            "VALUES (:a, :b_room, :b_guest, :d1, :d2, 1000)"
+        ),
+        (
+            "INSERT INTO app.folio_entries (hotel_id, folio_id, entry_type, category_id, description, "
+            "unit_amount_minor, amount_minor, business_date) VALUES (:a, :b_folio, 'charge', :cat, 'x', 1, 1, :d1)"
+        ),
         "INSERT INTO app.devices (hotel_id, label, kind, room_id) VALUES (:a, 'X-1', 'guest', :b_room)",
         "INSERT INTO app.rooms (hotel_id, room_type_id, number) VALUES (:a, :b_room_type, '999')",
     ]
-    params = {"a": a.id, "b_room": b.room_ids[1], "b_guest": b_rows["guest_id"], "b_folio": b_rows["folio_id"],
-              "b_room_type": b.room_type_id, "cat": b_rows["food_category"], "d1": date.today(),
-              "d2": date.today() + timedelta(days=1)}
+    params = {
+        "a": a.id,
+        "b_room": b.room_ids[1],
+        "b_guest": b_rows["guest_id"],
+        "b_folio": b_rows["folio_id"],
+        "b_room_type": b.room_type_id,
+        "cat": b_rows["food_category"],
+        "d1": date.today(),
+        "d2": date.today() + timedelta(days=1),
+    }
     for sql in cases:
         async with owner_engine.connect() as conn:  # owner bypasses RLS: only the FK can stop it
             tx = await conn.begin()
@@ -146,8 +170,13 @@ async def test_user_role_must_be_system_or_same_hotel(factory, owner_engine):
     b = await factory.hotel(roles=())
     async with owner_engine.begin() as conn:
         b_role = (
-            await conn.execute(text("INSERT INTO app.roles (hotel_id, code, name) VALUES (:b, 'custom', 'Custom') "
-                                    "RETURNING id"), {"b": b.id})
+            await conn.execute(
+                text(
+                    "INSERT INTO app.roles (hotel_id, code, name) VALUES (:b, 'custom', 'Custom') "
+                    "RETURNING id"
+                ),
+                {"b": b.id},
+            )
         ).scalar_one()
     async with owner_engine.connect() as conn:
         tx = await conn.begin()
@@ -169,8 +198,9 @@ async def test_folio_balances_view_respects_rls(factory, api_session):
     rows = (await api_session.execute(text("SELECT hotel_id, balance_minor FROM app.folio_balances"))).all()
     assert rows and all(r.hotel_id == a.id for r in rows)
     leaked = (
-        await api_session.execute(text("SELECT count(*) FROM app.folio_balances WHERE folio_id = :f"),
-                                  {"f": b_rows["folio_id"]})
+        await api_session.execute(
+            text("SELECT count(*) FROM app.folio_balances WHERE folio_id = :f"), {"f": b_rows["folio_id"]}
+        )
     ).scalar_one()
     assert leaked == 0
     assert rows[0].balance_minor == 15000
@@ -187,8 +217,13 @@ async def test_one_live_stay_per_room(factory, api_session):
         "INSERT INTO app.stays (hotel_id, room_id, guest_id, status, arrival_date, departure_date, "
         "nightly_rate_minor) VALUES (:h, :r, :g, :st, :d1, :d2, 1000)"
     )
-    params = {"h": hotel.id, "r": hotel.room_ids[0], "g": first["guest_id"], "d1": date.today(),
-              "d2": date.today() + timedelta(days=1)}
+    params = {
+        "h": hotel.id,
+        "r": hotel.room_ids[0],
+        "g": first["guest_id"],
+        "d1": date.today(),
+        "d2": date.today() + timedelta(days=1),
+    }
     for live in ("checked_in", "active", "checkout_pending"):
         with pytest.raises(DBAPIError) as err:
             async with api_session.begin_nested():
@@ -202,15 +237,25 @@ async def test_one_live_stay_per_room(factory, api_session):
 async def test_one_guest_tablet_per_room(factory, api_session):
     hotel = await factory.hotel(roles=())
     await as_hotel(api_session, hotel.id)
-    insert = text("INSERT INTO app.devices (hotel_id, label, kind, room_id, status) VALUES (:h, :l, 'guest', :r, :s)")
-    await api_session.execute(insert, {"h": hotel.id, "l": "DY-101-01", "r": hotel.room_ids[0], "s": "active"})
+    insert = text(
+        "INSERT INTO app.devices (hotel_id, label, kind, room_id, status) VALUES (:h, :l, 'guest', :r, :s)"
+    )
+    await api_session.execute(
+        insert, {"h": hotel.id, "l": "DY-101-01", "r": hotel.room_ids[0], "s": "active"}
+    )
     with pytest.raises(DBAPIError) as err:
         async with api_session.begin_nested():
-            await api_session.execute(insert, {"h": hotel.id, "l": "DY-101-02", "r": hotel.room_ids[0], "s": "locked"})
+            await api_session.execute(
+                insert, {"h": hotel.id, "l": "DY-101-02", "r": hotel.room_ids[0], "s": "locked"}
+            )
     assert sqlstate(err.value) == "23505"
     # A revoked tablet does not count; another room is fine.
-    await api_session.execute(insert, {"h": hotel.id, "l": "DY-101-03", "r": hotel.room_ids[0], "s": "revoked"})
-    await api_session.execute(insert, {"h": hotel.id, "l": "DY-102-01", "r": hotel.room_ids[1], "s": "active"})
+    await api_session.execute(
+        insert, {"h": hotel.id, "l": "DY-101-03", "r": hotel.room_ids[0], "s": "revoked"}
+    )
+    await api_session.execute(
+        insert, {"h": hotel.id, "l": "DY-102-01", "r": hotel.room_ids[1], "s": "active"}
+    )
 
 
 # --- Definer functions and helpers -----------------------------------------------------------
@@ -221,8 +266,10 @@ async def test_redeem_pairing_is_single_use_and_tenant_free(factory, api_session
     code_hash = uuid.uuid4().bytes
     async with owner_engine.begin() as conn:
         await conn.execute(
-            text("INSERT INTO app.device_pairings (hotel_id, kind, room_id, code_hash, created_by, expires_at) "
-                 "VALUES (:h, 'guest', :r, :c, :u, now() + interval '15 minutes')"),
+            text(
+                "INSERT INTO app.device_pairings (hotel_id, kind, room_id, code_hash, created_by, expires_at) "
+                "VALUES (:h, 'guest', :r, :c, :u, now() + interval '15 minutes')"
+            ),
             {"h": hotel.id, "r": hotel.room_ids[0], "c": code_hash, "u": hotel.users["hotel_admin"].user_id},
         )
     await as_hotel(api_session, None)  # pairing runs before any hotel is known

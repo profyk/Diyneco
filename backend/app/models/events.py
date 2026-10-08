@@ -68,6 +68,9 @@ class WebhookDelivery(Base):
 
 class Notification(Base):
     __tablename__ = "notifications"
+    # Rows with hotel_id NULL are write-only for the app roles (RLS), so an INSERT must not
+    # ask for RETURNING: the returned row would have to pass the read policy too.
+    __table_args__ = {"implicit_returning": False}  # noqa: RUF012
     id: Mapped[uuid.UUID] = _pk()
     hotel_id: Mapped[uuid.UUID | None]
     channel: Mapped[str]
@@ -116,6 +119,9 @@ class IdempotencyKey(Base):
 
 class AuditLog(Base):
     __tablename__ = "audit_logs"
+    # Rows with hotel_id NULL are write-only for the app roles (RLS), so an INSERT must not
+    # ask for RETURNING: the returned row would have to pass the read policy too.
+    __table_args__ = {"implicit_returning": False}  # noqa: RUF012
     id: Mapped[int] = mapped_column(BigInteger, Identity(always=True), primary_key=True)
     hotel_id: Mapped[uuid.UUID | None]
     actor_type: Mapped[str]

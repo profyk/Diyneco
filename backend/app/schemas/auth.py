@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, EmailStr, StringConstraints, model_validator
+from pydantic import BaseModel, StringConstraints, model_validator
 
 from app.schemas.common import Name, StrictModel
 
@@ -14,10 +14,12 @@ Password = Annotated[str, StringConstraints(min_length=1, max_length=256, strip_
 Code = Annotated[str, StringConstraints(min_length=6, max_length=8)]
 Pin = Annotated[str, StringConstraints(min_length=4, max_length=6, pattern=r"^\d+$")]
 Token = Annotated[str, StringConstraints(min_length=16, max_length=200)]
+# Lookup only: an existing account is matched, so no syntax rules beyond a bounded length.
+LoginEmail = Annotated[str, StringConstraints(min_length=3, max_length=320)]
 
 
 class LoginRequest(StrictModel):
-    email: EmailStr
+    email: LoginEmail
     password: Password
     hotel_id: uuid.UUID | None = None  # pick one of the caller's hotels (DECISIONS G11)
 
@@ -55,7 +57,7 @@ class SetPinRequest(StrictModel):
 
 
 class ForgotPasswordRequest(StrictModel):
-    email: EmailStr
+    email: LoginEmail
 
 
 class ResetPasswordRequest(StrictModel):

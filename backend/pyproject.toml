@@ -43,8 +43,11 @@ select = ["E", "F", "W", "I", "B", "UP", "S", "ASYNC", "RUF", "SIM", "PL"]
 ignore = ["PLR0913", "PLR0917", "PLR2004", "PLR0911", "PLR0912", "S105", "S106"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101", "S311", "PLR0915"]
-"scripts/**" = ["S603", "S607", "T201"]
+# Tests build SQL from catalogue table names (never user input) and keep long SQL readable.
+"tests/**" = ["S101", "S311", "PLR0915", "S608", "E501", "PLC0415"]
+# Scripts import the app only after preparing the environment.
+"scripts/**" = ["S603", "S607", "T201", "PLC0415"]
+"alembic/alembic_helpers.py" = ["S608"]
 
 [tool.mypy]
 python_version = "3.12"

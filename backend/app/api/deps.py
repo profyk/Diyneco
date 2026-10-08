@@ -376,17 +376,24 @@ StepUp = Annotated[Principal, Depends(require_step_up)]
 # request has already rolled back when the outcome is stored or the key released.
 
 
-async def _idempotency(request: Request, principal_key: str) -> AsyncIterator[IdempotencyClaim]:
-    key = parse_key(request)
+async def _claim(request: Request, principal_key: str) -> IdempotencyClaim:
     body = await request.body()
-    claim_ = await claim(
+    return await claim(
         state_of(request).db.sessionmaker,
         principal_key,
-        key,
+        parse_key(request),
         request.method,
         request.url.path,
         request_fingerprint(request.method, request.url.path, body),
     )
+
+
+# Each dependency yields directly (no nested generator), so an exception raised by the
+# endpoint reaches the `except` below and the outcome is stored or the key released.
+
+
+async def _idempotency_anon(request: Request) -> AsyncIterator[IdempotencyClaim]:
+    claim_ = await _claim(request, "anon")
     try:
         yield claim_
     except BaseException as exc:
@@ -394,15 +401,14 @@ async def _idempotency(request: Request, principal_key: str) -> AsyncIterator[Id
         raise
 
 
-async def _idempotency_anon(request: Request) -> AsyncIterator[IdempotencyClaim]:
-    async for c in _idempotency(request, "anon"):
-        yield c
-
-
 async def _idempotency_user(request: Request) -> AsyncIterator[IdempotencyClaim]:
     claims = state_of(request).jwt.verify(bearer_token(request), "access")
-    async for c in _idempotency(request, f"user:{claims['sub']}"):
-        yield c
+    claim_ = await _claim(request, f"user:{claims['sub']}")
+    try:
+        yield claim_
+    except BaseException as exc:
+        await claim_.fail(exc)
+        raise
 
 
 IdemAnon = Annotated[IdempotencyClaim, Depends(_idempotency_anon, scope="function")]
