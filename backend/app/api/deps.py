@@ -356,18 +356,27 @@ def require_permission(code: str) -> Callable[..., Coroutine[Any, Any, Principal
 
 async def require_step_up(request: Request, principal: CurrentPrincipal) -> Principal:
     """X-Step-Up token from POST /auth/step-up: 5 minutes, bound to this user and session."""
-    token = request.headers.get("x-step-up")
-    if not token:
-        raise AppError("STEP_UP_REQUIRED")
-    claims = state_of(request).jwt.verify(token, "step_up", error_code="STEP_UP_REQUIRED")
-    if claims.get("sub") != str(principal.user_id) or claims.get("sid") != str(principal.session_id):
-        raise AppError("STEP_UP_REQUIRED")
-    if principal.hotel_id is not None and claims.get("hid") != str(principal.hotel_id):
+    if not has_step_up(request, principal):
         raise AppError("STEP_UP_REQUIRED")
     return principal
 
 
 StepUp = Annotated[Principal, Depends(require_step_up)]
+
+
+def has_step_up(request: Request, principal: Principal) -> bool:
+    """For endpoints where only some changes need step-up (e.g. a rate change): False when
+    no X-Step-Up header was sent, True when a valid one was, and STEP_UP_REQUIRED when the
+    header is present but invalid or expired."""
+    if not request.headers.get("x-step-up"):
+        return False
+    token = request.headers["x-step-up"]
+    claims = state_of(request).jwt.verify(token, "step_up", error_code="STEP_UP_REQUIRED")
+    if claims.get("sub") != str(principal.user_id) or claims.get("sid") != str(principal.session_id):
+        raise AppError("STEP_UP_REQUIRED")
+    if principal.hotel_id is not None and claims.get("hid") != str(principal.hotel_id):
+        raise AppError("STEP_UP_REQUIRED")
+    return True
 
 
 # --- Idempotency ---------------------------------------------------------------------------

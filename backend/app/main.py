@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.deps import reject_card_data, reject_unknown_query
-from app.api.v1 import auth, health, hotel
+from app.api.v1 import auth, health, hotel, rooms
 from app.core.config import Settings, get_settings
 from app.core.crypto import LocalKms
 from app.core.errors import install_error_handlers
@@ -77,6 +77,7 @@ def create_app(settings: Settings | None = None, state: AppState | None = None) 
     api.include_router(health.router)
     api.include_router(auth.router)
     api.include_router(hotel.router)
+    api.include_router(rooms.router)
     app.include_router(api)
 
     app.add_middleware(
