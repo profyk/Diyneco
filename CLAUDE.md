@@ -86,13 +86,22 @@ Name: Diyneco. Colours (approximate until an SVG master exists): navy `#0B2350`,
 
 ## Commands
 
-Fill these in as they are created and keep them accurate.
+Keep these accurate.
 
 ```
-docker compose -f infra/docker/compose.yml up -d     # Postgres + Redis
-cd backend && uv sync                                # or: pip install -e ".[dev]"
-cd backend && alembic upgrade head
-cd backend && pytest
-cd backend && ruff check . && mypy app
-cd backend && uvicorn app.main:app --reload
+# Database: native Postgres (see README) or
+docker compose -f infra/docker/compose.yml --env-file infra/docker/.env up -d
+cd backend && uv sync
+cd backend && uv run alembic upgrade head
+cd backend && uv run python scripts/check_migrations.py
+cd backend && uv run python scripts/check_routes.py
+cd backend && uv run python scripts/seed_dev.py                       # development only
+cd backend && uv run pytest                                           # rebuilds diyneco_test
+cd backend && uv run ruff check . && uv run ruff format --check . && uv run mypy
+cd backend && uv run uvicorn app.main:create_app --factory --reload
+cd backend && uv run python -m app.worker
+pnpm gen:types                                                        # packages/shared-types
 ```
+
+Local machine note: this laptop has no hardware virtualisation and 2 GB RAM, so it runs
+PostgreSQL 17 natively and no Docker; Redis is optional in development (docs/DECISIONS.md D2, D3).
