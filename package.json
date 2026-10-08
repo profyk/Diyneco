@@ -1,0 +1,9 @@
+{
+  "name": "diyneco",
+  "private": true,
+  "packageManager": "pnpm@12.10.1",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "gen:types": "pnpm --filter @diyneco/shared-types generate"
+  }
+}
