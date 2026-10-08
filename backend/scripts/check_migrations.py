@@ -1,7 +1,7 @@
 """Fail if the migrated schema breaks a tenancy or financial safeguard.
 
 Run after `alembic upgrade head`, against the same database, with MIGRATIONS_DATABASE_URL
-(or a URL as the first argument). Exits 1 and lists every problem found.
+(or a URL as the first argument; falls back to backend/.env). Exits 1 and lists every problem found.
 
 Checks:
   1. Every app table with hotel_id (and app.hotels) has RLS enabled and forced, and a policy.
@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import os
 import sys
+from pathlib import Path
 
 import psycopg
 
@@ -34,6 +35,13 @@ APP_ROLES = ("diyneco_api", "diyneco_worker")
 
 def _dsn(argv: list[str]) -> str:
     url = argv[1] if len(argv) > 1 else os.environ.get("MIGRATIONS_DATABASE_URL", "")
+    if not url:
+        # Same fallback as alembic/env.py: read backend/.env.
+        env_file = Path(__file__).parent.parent / ".env"
+        if env_file.exists():
+            for line in env_file.read_text(encoding="utf-8").splitlines():
+                if line.startswith("MIGRATIONS_DATABASE_URL="):
+                    url = line.split("=", 1)[1].split("#", 1)[0].strip().strip('"')
     if not url:
         sys.exit("usage: check_migrations.py <postgres url>  (or set MIGRATIONS_DATABASE_URL)")
     return url.replace("postgresql+psycopg://", "postgresql://").replace(
