@@ -1,0 +1,64 @@
+[project]
+name = "diyneco-backend"
+version = "0.1.0"
+description = "Diyneco hotel operations platform API"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.30",
+  "pydantic>=2.8",
+  "pydantic-settings>=2.4",
+  "email-validator>=2.2",
+  "sqlalchemy[asyncio]>=2.0.32",
+  "asyncpg>=0.29",
+  "alembic>=1.13",
+  "psycopg[binary]>=3.2",
+  "argon2-cffi>=23.1",
+  "pyjwt[crypto]>=2.9",
+  "cryptography>=43",
+  "pyotp>=2.9",
+  "redis>=5.0",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3",
+  "pytest-asyncio>=0.24",
+  "httpx>=0.27",
+  "ruff>=0.6",
+  "mypy>=1.11",
+  "pip-audit>=2.7",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+extend-exclude = ["alembic/versions"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "ASYNC", "RUF", "SIM", "PL"]
+ignore = ["PLR0913", "PLR2004", "PLR0911", "PLR0912", "S105", "S106"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S311", "PLR0915"]
+"scripts/**" = ["S603", "S607", "T201"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+files = ["app"]
+
+[[tool.mypy.overrides]]
+module = ["pyotp.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
