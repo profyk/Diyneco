@@ -1,0 +1,1137 @@
+<title>Diyneco Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: brand bar + app switcher on top; the selected app fills the stage; a live event stream runs beside it (below on phones). */
+:root{
+  --bg:#F3F6FA; --surface:#FFFFFF; --surface-2:#F7F9FC; --ink:#0B1F3F; --muted:#5A6A82; --line:#DCE3ED;
+  --brand:#0B2350; --on-brand:#FFFFFF; --blue:#1E7FD8; --teal:#1FA9A1; --green:#13965F;
+  --tint:#E8F1FB; --tint-teal:#E3F5F3; --warn:#9A5B07; --warn-bg:#FDF3E1; --crit:#B23A32; --crit-bg:#FBE9E7; --good:#13965F; --good-bg:#E4F5EC;
+  --bezel:#1A2438; --guest-bg:#FBFCFE; --kds:#F3F6FA;
+  --f-display:"Sora", "Segoe UI", system-ui, sans-serif;
+  --f-body:"IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r:12px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0A1222; --surface:#111C31; --surface-2:#0E182B; --ink:#E5ECF6; --muted:#93A3BB; --line:#24324D;
+  --brand:#2F7FD6; --on-brand:#FFFFFF; --blue:#5AA6F0; --teal:#3CC7BE; --green:#3CC98A;
+  --tint:#132A47; --tint-teal:#123634; --warn:#F0B661; --warn-bg:#33260F; --crit:#F08A80; --crit-bg:#3A1A18; --good:#3CC98A; --good-bg:#11301F;
+  --bezel:#000000; --guest-bg:#0F1A2E; --kds:#0A1222; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0A1222; --surface:#111C31; --surface-2:#0E182B; --ink:#E5ECF6; --muted:#93A3BB; --line:#24324D;
+  --brand:#2F7FD6; --on-brand:#FFFFFF; --blue:#5AA6F0; --teal:#3CC7BE; --green:#3CC98A;
+  --tint:#132A47; --tint-teal:#123634; --warn:#F0B661; --warn-bg:#33260F; --crit:#F08A80; --crit-bg:#3A1A18; --good:#3CC98A; --good-bg:#11301F;
+  --bezel:#000000; --guest-bg:#0F1A2E; --kds:#0A1222; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.5}
+h1,h2,h3,h4{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:-0.01em}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.mono,.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.wrap{max-width:1320px;margin:0 auto;padding-inline:16px}
+
+/* top bar */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:16px;padding-block:10px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.brand svg{width:34px;height:34px;flex:none}
+.word{font-family:var(--f-display);font-weight:700;font-size:18px;letter-spacing:.04em;color:var(--ink)}
+.word b{color:var(--green);font-weight:700}
+.tag{font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.apps{display:flex;gap:4px;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:4px;overflow-x:auto;max-width:100%;flex:1 1 auto;justify-content:flex-start}
+.apps button{border:0;background:transparent;border-radius:999px;padding:7px 14px;white-space:nowrap;color:var(--muted);font-weight:500}
+.apps button[aria-pressed="true"]{background:var(--brand);color:var(--on-brand)}
+.top-actions{display:flex;gap:8px;margin-left:auto}
+
+.ctx{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding-block:12px}
+.ctx label{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px}
+select,input[type=text],input[type=number],input[type=password],input[type=email],textarea{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-height:38px;max-width:100%}
+textarea{width:100%;min-height:64px;resize:vertical}
+
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:20px;padding-bottom:40px}
+@media (max-width:980px){.layout{grid-template-columns:minmax(0,1fr)}}
+
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 14px;font-weight:500;min-height:40px;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn:hover{border-color:var(--blue)}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
+.btn.go{background:var(--green);border-color:var(--green);color:#fff}
+.btn.danger{color:var(--crit);border-color:var(--crit)}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--blue);padding-inline:6px}
+.btn.sm{min-height:32px;padding:5px 10px;font-size:13px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.stack{display:grid;gap:12px}
+.muted{color:var(--muted)}
+.small{font-size:12px}
+.eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;min-width:0}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px;background:var(--tint);color:var(--blue);white-space:nowrap}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.pill.good{background:var(--good-bg);color:var(--good)}
+.pill.warn{background:var(--warn-bg);color:var(--warn)}
+.pill.crit{background:var(--crit-bg);color:var(--crit)}
+.pill.quiet{background:var(--surface-2);color:var(--muted)}
+.note{border-radius:10px;padding:10px 12px;background:var(--tint);color:var(--ink);font-size:13px}
+.note.warn{background:var(--warn-bg)}
+.note.crit{background:var(--crit-bg)}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{text-align:left;font-weight:600;color:var(--muted);font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+td.r,th.r{text-align:right}
+.money-list{display:grid;gap:6px}
+.money-list div{display:flex;justify-content:space-between;gap:12px}
+.money-list .total{border-top:1px solid var(--line);padding-top:8px;font-weight:600}
+.money-list .sub{color:var(--muted);font-size:13px}
+
+/* events */
+.events{position:sticky;top:76px;align-self:start;max-height:calc(100vh - 100px);display:flex;flex-direction:column}
+@media (max-width:980px){.events{position:static;max-height:none}}
+.events ol{list-style:none;margin:8px 0 0;padding:0;overflow:auto;display:grid;gap:6px}
+.events li{border-left:3px solid var(--teal);background:var(--surface-2);border-radius:0 8px 8px 0;padding:6px 10px;font-size:12px}
+.events li .t{font-family:var(--f-mono);font-size:11.5px;color:var(--blue);font-weight:500}
+.events li.err{border-left-color:var(--crit)}
+.events li.err .t{color:var(--crit)}
+
+/* guest tablet */
+.devicebar{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;color:var(--muted);margin-bottom:8px;flex-wrap:wrap}
+.tablet{border:10px solid var(--bezel);border-radius:28px;background:var(--guest-bg);min-height:600px;max-width:820px;overflow:hidden;display:flex;flex-direction:column}
+@media (max-width:520px){.tablet{border-width:6px;border-radius:20px}}
+.g-head{display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border-bottom:1px solid var(--line);gap:10px}
+.g-head .hotel{font-family:var(--f-display);font-weight:600}
+.g-body{padding:20px;flex:1;display:flex;flex-direction:column;gap:16px;min-width:0}
+.welcome{text-align:center;padding:40px 12px;display:grid;gap:10px;justify-items:center}
+.welcome .over{letter-spacing:.24em;font-size:12px;color:var(--muted);text-transform:uppercase}
+.welcome h1{font-size:clamp(26px,5vw,38px)}
+.welcome .roomno{font-family:var(--f-display);font-size:18px;color:var(--teal);font-weight:600}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.tile{border:1px solid var(--line);background:var(--surface);border-radius:16px;padding:18px;text-align:left;display:grid;gap:4px;min-height:104px}
+.tile strong{font-family:var(--f-display);font-size:16px}
+.tile span{color:var(--muted);font-size:13px}
+.tile.primary{background:var(--brand);color:var(--on-brand);border-color:var(--brand)}
+.tile.primary span{color:var(--on-brand);opacity:.8}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 14px;white-space:nowrap}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.menu{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.item{border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.item h4{font-size:15px}
+.item .desc{color:var(--muted);font-size:13px}
+.item .meta{display:flex;gap:6px;flex-wrap:wrap}
+.item .meta span{font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:0 6px}
+.item .foot{display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:6px}
+.qty{display:inline-flex;align-items:center;gap:6px}
+.qty button{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--surface);font-weight:600}
+.qty b{min-width:18px;text-align:center}
+.cartbar{position:sticky;bottom:0;background:var(--brand);color:var(--on-brand);border-radius:14px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.cartbar .btn{background:var(--on-brand);color:var(--brand);border-color:var(--on-brand)}
+.steps{list-style:none;padding:0;margin:0;display:grid;gap:0}
+.steps li{display:flex;gap:10px;align-items:center;padding:5px 0;color:var(--muted);font-size:13px}
+.steps li i{width:20px;height:20px;border-radius:50%;border:2px solid var(--line);flex:none;display:grid;place-items:center;font-style:normal;font-size:11px}
+.steps li.done{color:var(--ink)}
+.steps li.done i{background:var(--green);border-color:var(--green);color:#fff}
+.steps li.now i{border-color:var(--blue);box-shadow:0 0 0 3px var(--tint)}
+.steps li.now{color:var(--ink);font-weight:600}
+
+/* kitchen */
+.kds{background:var(--kds)}
+.kcounts{display:flex;gap:10px;flex-wrap:wrap}
+.kcount{border-radius:12px;padding:10px 16px;background:var(--surface);border:1px solid var(--line);font-family:var(--f-display);font-weight:600}
+.kcount b{font-size:22px;margin-left:6px}
+.board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+@media (max-width:860px){.board{grid-template-columns:minmax(0,1fr)}}
+.col h3{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.kcard{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;display:grid;gap:10px;margin-bottom:12px}
+.kcard.new{border-left:6px solid var(--blue)}
+.kcard.prep{border-left:6px solid var(--warn)}
+.kcard.ready{border-left:6px solid var(--green)}
+.kcard .kh{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.kcard .kh strong{font-family:var(--f-display);font-size:18px}
+.kitems{display:grid;gap:6px}
+.kitem{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-top:1px dashed var(--line)}
+.kitem .q{font-family:var(--f-mono);font-weight:500;margin-right:6px}
+.kbig{min-height:54px;font-size:16px;font-weight:600;border-radius:12px;width:100%}
+.hv .kcard{font-size:16px}
+.hv .kcard .kh strong{font-size:22px}
+.hv .kbig{min-height:64px;font-size:18px}
+
+/* room service */
+.rs{max-width:520px}
+.rcard{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;display:grid;gap:10px;margin-bottom:12px}
+.rcard .due{display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid var(--line);padding-top:10px}
+.rcard .due b{font-family:var(--f-mono);font-size:20px}
+
+/* merchant */
+.mnav{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--line);margin-bottom:16px}
+.mnav button{border:0;background:none;padding:10px 12px;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap;font-weight:500}
+.mnav button[aria-pressed="true"]{color:var(--ink);border-bottom-color:var(--blue)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.kpi .v{font-family:var(--f-mono);font-size:20px;font-weight:500;margin-top:2px}
+.split{display:flex;height:14px;border-radius:7px;overflow:hidden;background:var(--surface-2)}
+.split span{display:block;height:100%}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:8px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.rooms{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.room{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:12px;text-align:left;display:grid;gap:4px}
+.room[aria-pressed="true"]{border-color:var(--blue);box-shadow:0 0 0 2px var(--tint)}
+.room strong{font-family:var(--f-display);font-size:18px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media (max-width:760px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.form{display:grid;gap:10px}
+.form label{display:grid;gap:4px;font-size:12px;color:var(--muted);font-weight:500}
+.form .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:480px){.form .two{grid-template-columns:1fr}}
+
+/* modal */
+.scrim{position:fixed;inset:0;background:rgba(5,12,25,.55);display:grid;place-items:center;padding:16px;z-index:50;overflow:auto}
+.modal{background:var(--surface);border-radius:16px;max-width:560px;width:100%;padding:20px;display:grid;gap:14px;max-height:calc(100vh - 32px);overflow:auto;border:1px solid var(--line)}
+.modal.wide{max-width:720px}
+.bill{font-size:13px}
+.bill .bh{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;border-bottom:2px solid var(--ink);padding-bottom:12px}
+.bill h3{font-size:20px}
+
+/* toast */
+.toasts{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));display:grid;gap:8px;z-index:60;width:min(92vw,460px)}
+.toast{background:var(--ink);color:var(--bg);border-radius:10px;padding:10px 14px;font-size:13px}
+.toast.err{background:var(--crit);color:#fff}
+@media (prefers-reduced-motion:no-preference){.toast{animation:up .2s ease-out}@keyframes up{from{transform:translateY(8px);opacity:.4}to{transform:none;opacity:1}}}
+</style>
+
+<div id="app"></div>
+
+<script>
+/* ============================================================
+   DIYNECO PROTOTYPE — simulated backend + five interfaces
+   All money is integer cents. Every API call is tenant-scoped.
+   ============================================================ */
+const PIN = '1234';
+const VAT = 0.15;
+const now = () => Date.now();
+const uid = p => p + '_' + Math.random().toString(36).slice(2, 9);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function fmt(m){ const neg = m < 0; m = Math.abs(Math.round(m)); const r = Math.floor(m/100), c = m % 100;
+  let s = String(r).replace(/\B(?=(\d{3})+(?!\d))/g, ','); if (c) s += '.' + String(c).padStart(2,'0');
+  return (neg ? '−' : '') + 'R' + s; }
+const toMinor = v => { const n = Number(String(v).replace(/[^0-9.]/g,'')); return Number.isFinite(n) ? Math.round(n*100) : NaN; };
+const clock = t => new Date(t).toLocaleTimeString('en-ZA', {hour:'2-digit', minute:'2-digit', hour12:false});
+const dateStr = t => new Date(t).toLocaleDateString('en-ZA', {day:'numeric', month:'short', year:'numeric'});
+function ago(t){ const m = Math.round((now()-t)/60000); if (m < 1) return 'just now'; if (m < 60) return m + ' min ago'; return Math.floor(m/60) + ' h ' + (m%60) + ' min ago'; }
+const DAY = 864e5;
+
+class ApiError extends Error { constructor(code, msg){ super(msg); this.code = code; } }
+
+/* Hotel staff accounts used by the management app (demo PIN 1234 for everyone).
+   Permissions follow the role matrix in the Security and Compliance spec. */
+const ALL = '*';
+const USERS = {
+  naledi:{name:'Naledi K.', role:'General Manager', perms:[ALL]},
+  sipho:{name:'Sipho D.', role:'Receptionist', perms:['orders.read','orders.create','stays.manage','folio.charge','folio.adjust.request','payments.record','checkout.perform','rooms.status','menu.read']},
+  ayanda:{name:'Ayanda M.', role:'Finance Manager', perms:['orders.read','folio.adjust.request','folio.adjust.approve','folio.discount','payments.record','reports.finance','audit.read','settings.read']}
+};
+function can(p){ const u = USERS[UI.user]; return u.perms.includes(ALL) || u.perms.includes(p); }
+function need(p){ if (!can(p)) throw new ApiError('PERMISSION_DENIED', `${USERS[UI.user].role} does not have permission for this (${p})`); }
+const userLabel = () => `${USERS[UI.user].name} (${USERS[UI.user].role})`;
+
+/* ---------------- seed (development data only) ---------------- */
+function seed(){
+  const t = now();
+  const S = {
+    plans: [{id:'starter', name:'Starter', monthly:120000}, {id:'pro', name:'Professional', monthly:350000}, {id:'ent', name:'Enterprise', monthly:900000}],
+    hotels: [
+      {id:'h1', name:'Grand Example Hotel', short:'GEH', city:'Cape Town', address:'12 Beach Road, Sea Point, Cape Town, 8005', phone:'+27 21 555 0100', email:'reception@grandexample.example',
+       status:'active', plan:'pro', vatRegistered:true, vatNo:'4123456789', roomChargeLimit:50000, roomCharging:true, feeMinor:5000, allowOverride:true, wifi:'GrandGuest', checkoutTime:'10:00', invoiceSeq:122, orderSeq:10481, created:t-86*DAY},
+      {id:'h2', name:'Seabreeze Lodge', short:'SBL', city:'Knysna', address:'4 Lagoon Drive, Knysna, 6571', phone:'+27 44 555 0142', email:'stay@seabreeze.example',
+       status:'active', plan:'starter', vatRegistered:false, vatNo:'', roomChargeLimit:150000, roomCharging:true, feeMinor:3000, allowOverride:false, wifi:'Seabreeze', checkoutTime:'10:30', invoiceSeq:40, orderSeq:2050, created:t-30*DAY}
+    ],
+    rooms: [], stays: [], folio: [], orders: [], payments: [], audit: [], events: [], idem: {}, pairings: [], adjustments: [], closes: {},
+    stations: [
+      {id:'main', hotelId:'h1', name:'Main Kitchen'}, {id:'bar', hotelId:'h1', name:'Bar'}, {id:'dessert', hotelId:'h1', name:'Dessert Station'},
+      {id:'sb-k', hotelId:'h2', name:'Kitchen'}
+    ],
+    menu: [],
+    devices: [
+      {id:'DY-259-01', hotelId:'h1', roomId:'r_h1_259', type:'guest', status:'active', os:'Android 14', app:'1.0.0-proto', lastSeen:t},
+      {id:'DY-104-01', hotelId:'h1', roomId:'r_h1_104', type:'guest', status:'active', os:'Android 13', app:'1.0.0-proto', lastSeen:t},
+      {id:'KITCHEN-01', hotelId:'h1', roomId:null, type:'kitchen', status:'active', os:'Chrome 128', app:'web', lastSeen:t},
+      {id:'SB-03-01', hotelId:'h2', roomId:'r_h2_3', type:'guest', status:'active', os:'Android 14', app:'1.0.0-proto', lastSeen:t},
+      {id:'DY-NEW-07', hotelId:null, roomId:null, type:'guest', status:'unpaired', os:'Android 14', app:'1.0.0-proto', lastSeen:t}
+    ]
+  };
+  const add = (hotelId, number, floor, type, rate, status) => S.rooms.push({id:`r_${hotelId}_${number}`, hotelId, number:String(number), floor, type, rateMinor:rate, status});
+  [101,102,103,104].forEach(n => add('h1', n, 1, 'Standard', 120000, 'available'));
+  [201,202,203,204].forEach(n => add('h1', n, 2, 'Deluxe', 150000, 'available'));
+  add('h1', 259, 2, 'Deluxe', 150000, 'available');
+  [1,2,3,4,5,6].forEach(n => add('h2', n, 1, 'Garden Suite', 95000, 'available'));
+  S.rooms.find(r => r.id==='r_h1_102').status = 'cleaning';
+  S.rooms.find(r => r.id==='r_h1_203').status = 'maintenance';
+
+  const M = (hotelId, cat, name, desc, price, station, extra={}) => S.menu.push({id:uid('m'), hotelId, cat, name, desc, priceMinor:price, station, available:true, diet:extra.diet||[], allergens:extra.allergens||[]});
+  M('h1','Breakfast','Full Breakfast','Two eggs, bacon, pork sausage, grilled tomato, toast.',16500,'main',{allergens:['gluten','egg']});
+  M('h1','Breakfast','Bircher Muesli','Oats soaked in apple juice, yoghurt, berries, honey.',8500,'main',{diet:['vegetarian'],allergens:['dairy','nuts']});
+  M('h1','Lunch & Dinner','Chicken Burger','Chicken breast, cheese, lettuce and sauce.',14500,'main',{allergens:['gluten','dairy','egg']});
+  M('h1','Lunch & Dinner','Ribeye Steak 300g','Grass-fed ribeye, chips, pepper sauce.',48500,'main',{allergens:['dairy']});
+  M('h1','Lunch & Dinner','Cape Malay Vegetable Curry','Butternut, chickpeas, sambals, basmati.',13500,'main',{diet:['vegan']});
+  M('h1','Lunch & Dinner','Caesar Salad','Cos lettuce, parmesan, croutons, anchovy dressing.',11000,'main',{allergens:['gluten','dairy','fish','egg']});
+  M('h1','Snacks','Hand-cut Fries','With chutney mayo.',4500,'main',{diet:['vegetarian'],allergens:['egg']});
+  M('h1','Snacks','Biltong Platter','Beef biltong and droëwors.',9500,'main');
+  M('h1','Drinks','Coca-Cola 330ml','',3500,'bar');
+  M('h1','Drinks','Sparkling Water 500ml','',2800,'bar');
+  M('h1','Drinks','Rooibos Tea','Pot for one, honey and lemon.',3000,'bar',{diet:['vegan']});
+  M('h1','Drinks','Cabernet Sauvignon (bottle)','Stellenbosch, 750ml.',65000,'bar');
+  M('h1','Desserts','Chocolate Cake','Dark chocolate ganache, cream.',9500,'dessert',{diet:['vegetarian'],allergens:['gluten','dairy','egg']});
+  M('h1','Desserts','Malva Pudding','Warm, with custard.',8500,'dessert',{diet:['vegetarian'],allergens:['gluten','dairy','egg']});
+  M('h2','Breakfast','Farm Breakfast','Eggs, boerewors, toast.',14000,'sb-k',{allergens:['gluten','egg']});
+  M('h2','Lunch & Dinner','Line Fish','Catch of the day, lemon butter.',21000,'sb-k',{allergens:['fish','dairy']});
+  M('h2','Drinks','Rooibos Tea','',3000,'sb-k');
+  M('h2','Desserts','Malva Pudding','',8000,'sb-k',{allergens:['gluten','dairy']});
+  return S;
+}
+let S = seed();
+let UI = { app:'guest', hotel:'h1', user:'naledi', staffLines:[], staffKey:null, device:'DY-259-01', guestView:'home', guestCat:null, carts:{}, cartKeys:{}, lastOrder:{}, kitchenStation:'all', hv:false, staff:'Lerato M.',
+  mtab:'dashboard', room:'r_h1_259', modal:null, payKeys:{}, lastPay:{}, toasts:[], isolation:null, showEvents:true };
+
+/* ---------------- backend helpers ---------------- */
+let SEQ = 0;
+function emit(type, hotelId, summary, err=false){ S.events.unshift({seq:++SEQ, type, hotelId, summary, at:now(), err}); if (S.events.length > 120) S.events.pop(); }
+function audit(hotelId, actor, action, entity, oldV, newV){ S.audit.unshift({id:uid('a'), hotelId, actor, action, entity, old:oldV ?? '', new:newV ?? '', at:now()}); }
+const hotelOf = id => S.hotels.find(h => h.id === id);
+function scoped(list, hotelId, id, what){ const x = list.find(e => e.id === id); if (!x || x.hotelId !== hotelId) throw new ApiError('NOT_FOUND', `${what} not found`); return x; }
+function post(hotelId, stayId, group, category, desc, amount, extra={}){ S.folio.push({id:uid('fe'), hotelId, stayId, group, category, desc, amount, at:now(), ...extra}); }
+function activeStay(roomId){ return S.stays.find(s => s.roomId === roomId && ['checked_in','active'].includes(s.status)); }
+function idem(key, fn){ if (key && S.idem[key]) return {...S.idem[key], replay:true}; const r = fn(); if (key) S.idem[key] = r; return r; }
+function requirePin(pin){ if (pin !== PIN) throw new ApiError('PIN_INVALID', 'Authorisation PIN is incorrect'); }
+
+/* folio maths: tips never count toward the bill */
+function folioSummary(stayId){
+  const e = S.folio.filter(x => x.stayId === stayId);
+  const sum = g => e.filter(x => x.group === g).reduce((a,x) => a + x.amount, 0);
+  const acc = sum('acc'), fb = sum('fb'), other = sum('other'), paid = sum('pay'), tips = sum('tip');
+  const charges = acc + fb + other;
+  return {acc, fb, other, paid, tips, charges, balance: charges - paid, totalWithTips: charges + tips, entries:e};
+}
+
+/* ---------------- simulated API (/api/v1) ---------------- */
+const api = {
+  guestSession(deviceId){
+    const d = S.devices.find(x => x.id === deviceId);
+    if (!d) throw new ApiError('DEVICE_UNKNOWN','Device credential is invalid');
+    if (d.status === 'revoked' || d.status === 'disabled') throw new ApiError('DEVICE_DISABLED','This device has been disabled');
+    if (!d.hotelId || d.status === 'unpaired') return {state:'unpaired', device:d};
+    d.lastSeen = now();
+    const hotel = hotelOf(d.hotelId), room = scoped(S.rooms, d.hotelId, d.roomId, 'Room');
+    if (hotel.status !== 'active') return {state:'suspended', device:d, hotel, room};
+    if (d.status === 'locked') return {state:'locked', device:d, hotel, room};
+    const stay = activeStay(room.id);
+    return {state: stay ? 'active' : 'idle', device:d, hotel, room, stay};
+  },
+  guestMenu(deviceId){ const s = api.guestSession(deviceId); if (s.state !== 'active') throw new ApiError('NO_ACTIVE_STAY','No active stay for this room'); return S.menu.filter(m => m.hotelId === s.hotel.id); },
+  guestOrders(deviceId){ const s = api.guestSession(deviceId); if (s.state !== 'active') return []; return S.orders.filter(o => o.stayId === s.stay.id); },
+  guestFolio(deviceId){ const s = api.guestSession(deviceId); if (s.state !== 'active') return null; return folioSummary(s.stay.id); },
+  placeOrder(deviceId, lines, note, key){
+    return idem(key, () => {
+      const s = api.guestSession(deviceId);
+      if (s.state !== 'active') throw new ApiError('NO_ACTIVE_STAY','Ordering opens once reception checks you in');
+      return createOrder(s.hotel, s.room, s.stay, lines, note, {deviceId});
+    });
+  },
+  placeStaffOrder(hotelId, roomId, lines, note, lateReason, key){
+    return idem(key, () => {
+      need('orders.create');
+      const room = scoped(S.rooms, hotelId, roomId, 'Room'), stay = activeStay(room.id);
+      if (!stay) throw new ApiError('NO_ACTIVE_STAY', `Room ${room.number} has no active stay`);
+      return createOrder(hotelOf(hotelId), room, stay, lines, note, {placedBy:userLabel(), lateReason:(lateReason||'').trim()});
+    });
+  },
+  cancelOrder(hotelId, orderId, reason, pin){ requirePin(pin); need('orders.cancel'); const o = scoped(S.orders, hotelId, orderId, 'Order');
+    if (!['NEW','ACCEPTED'].includes(o.status)) throw new ApiError('INVALID_TRANSITION','Only orders not yet in preparation can be cancelled');
+    if (!reason.trim()) throw new ApiError('REASON_REQUIRED','Give a reason for the cancellation');
+    if (o.posted) { post(hotelId, o.stayId, 'fb', 'Reversal', `Order #${o.no} cancelled · ${reason}`, -o.subtotal, {orderId:o.id}); post(hotelId, o.stayId, 'fb', 'Reversal', `Order #${o.no} fee reversed`, -o.fee, {orderId:o.id}); }
+    setStatus(o,'CANCELLED'); o.cancelReason = reason; audit(hotelId, userLabel(), 'order.cancel', `Order #${o.no}`, fmt(o.total), `cancelled · ${reason}`);
+    emit('ORDER_CANCELLED', hotelId, `#${o.no} · Room ${o.roomNo} · charge reversed`); },
+  requestAdjustment(hotelId, orderId, newTotal, reason){ need('folio.adjust.request'); const o = scoped(S.orders, hotelId, orderId, 'Order');
+    if (!o.posted) throw new ApiError('BAD_STATE','Order has not been charged yet');
+    const st = S.stays.find(s => s.id === o.stayId); if (!st || st.status !== 'active') throw new ApiError('BAD_STATE','Stay is closed');
+    if (o.payment?.method === 'card_terminal') throw new ApiError('PAID','Order is already paid; refunds arrive in a later phase');
+    if (S.adjustments.some(a => a.orderId === o.id && a.status === 'pending')) throw new ApiError('ADJUSTMENT_PENDING','An adjustment for this order is already waiting for approval');
+    if (!Number.isInteger(newTotal) || newTotal < 0) throw new ApiError('AMOUNT_INVALID','Enter a valid amount'); if (!reason.trim()) throw new ApiError('REASON_REQUIRED','A reason is required');
+    const cur = orderDue(o); if (newTotal === cur) throw new ApiError('NO_CHANGE','Amount is unchanged');
+    const a = {id:uid('adj'), hotelId, orderId:o.id, no:o.no, roomNo:o.roomNo, from:cur, to:newTotal, reason:reason.trim(), requestedBy:UI.user, requestedName:userLabel(), status:'pending', at:now()};
+    S.adjustments.push(a); audit(hotelId, userLabel(), 'folio.adjust.request', `Order #${o.no}`, fmt(cur), `${fmt(newTotal)} · ${a.reason}`);
+    emit('ADJUSTMENT_REQUESTED', hotelId, `#${o.no} ${fmt(cur)} → ${fmt(newTotal)} · needs a second approver`); return a; },
+  approveAdjustment(hotelId, adjId, pin){ requirePin(pin); need('folio.adjust.approve'); const a = scoped(S.adjustments, hotelId, adjId, 'Adjustment');
+    if (a.status !== 'pending') throw new ApiError('BAD_STATE','Adjustment already decided');
+    if (a.requestedBy === UI.user) throw new ApiError('SELF_APPROVAL','You cannot approve an adjustment you requested. Another manager must approve it.');
+    const o = scoped(S.orders, hotelId, a.orderId, 'Order'), st = S.stays.find(s => s.id === o.stayId); if (!st || st.status !== 'active') throw new ApiError('BAD_STATE','Stay is closed');
+    post(hotelId, o.stayId, 'fb', 'Adjustment', `Order #${o.no} · ${a.reason}`, a.to - a.from, {orderId:o.id});
+    o.adjustments.push({from:a.from, to:a.to, reason:a.reason, by:a.requestedName, approvedBy:userLabel(), at:now()}); a.status = 'approved'; a.decidedBy = userLabel();
+    audit(hotelId, userLabel(), 'folio.adjust.approve', `Order #${o.no}`, fmt(a.from), `${fmt(a.to)} · requested by ${a.requestedName}`); emit('PAYMENT_UPDATED', hotelId, `#${o.no} adjusted ${fmt(a.from)} → ${fmt(a.to)}`); },
+  rejectAdjustment(hotelId, adjId){ need('folio.adjust.approve'); const a = scoped(S.adjustments, hotelId, adjId, 'Adjustment'); if (a.status !== 'pending') throw new ApiError('BAD_STATE','Adjustment already decided');
+    a.status = 'rejected'; a.decidedBy = userLabel(); audit(hotelId, userLabel(), 'folio.adjust.reject', `Order #${a.no}`, fmt(a.from), 'rejected'); emit('ADJUSTMENT_REJECTED', hotelId, `#${a.no}`); },
+  setChargesBlocked(hotelId, stayId, blocked){ need('stays.manage'); const st = scoped(S.stays, hotelId, stayId, 'Stay'); st.chargesBlocked = blocked;
+    audit(hotelId, userLabel(), blocked ? 'stay.block_charges' : 'stay.unblock_charges', `Room ${st.roomNo}`, blocked ? 'allowed' : 'blocked', blocked ? 'blocked' : 'allowed');
+    emit('FOLIO_UPDATED', hotelId, `Room ${st.roomNo} · tablet charges ${blocked ? 'blocked' : 'allowed'}`); },
+  dailyClose(hotelId){ need('reports.finance'); const live = sid => !S.stays.find(s => s.id === sid)?.training;
+    const pays = S.payments.filter(p => p.hotelId === hotelId && live(p.stayId)), sum = (l, f) => l.reduce((a, x) => a + f(x), 0);
+    const card = pays.filter(p => p.method === 'card_terminal'), cash = pays.filter(p => p.method === 'cash'), eft = pays.filter(p => p.method === 'eft');
+    const byStaff = {}; card.forEach(p => { const k = p.staff || 'Reception'; byStaff[k] = byStaff[k] || {count:0, received:0, tips:0}; byStaff[k].count++; byStaff[k].received += p.amountReceived; byStaff[k].tips += p.tipAmount; });
+    const flags = [];
+    pays.filter(p => p.tipAmount > 50000 || p.tipAmount * 4 > p.amountDue && p.tipAmount > 0).forEach(p => flags.push({kind:'High tip', text:`${fmt(p.tipAmount)} tip on ${fmt(p.amountDue)} · ${p.staff}`}));
+    S.adjustments.filter(a => a.hotelId === hotelId && a.status === 'approved').forEach(a => flags.push({kind:'Adjustment', text:`#${a.no} ${fmt(a.from)} → ${fmt(a.to)} · ${a.reason} · asked by ${a.requestedName}, approved by ${a.decidedBy}`}));
+    S.orders.filter(o => o.hotelId === hotelId && o.status === 'CANCELLED').forEach(o => flags.push({kind:'Cancellation', text:`#${o.no} Room ${o.roomNo} · ${o.cancelReason}`}));
+    S.orders.filter(o => o.hotelId === hotelId && o.lateReason).forEach(o => flags.push({kind:'Late entry', text:`#${o.no} Room ${o.roomNo} · ${o.lateReason}`}));
+    S.stays.filter(s => s.hotelId === hotelId && s.override).forEach(s => flags.push({kind:'Checkout override', text:`Room ${s.roomNo} · ${s.override}`}));
+    return {card:sum(card, p => p.amountReceived), cardCount:card.length, cash:sum(cash, p => p.amountReceived), eft:sum(eft, p => p.amountReceived), tips:sum(pays, p => p.tipAmount), byStaff, flags, close:S.closes[hotelId] || {}}; },
+  saveDailyClose(hotelId, terminalMinor, cashMinor, review){ need('reports.finance');
+    if (!Number.isInteger(terminalMinor) || terminalMinor < 0) throw new ApiError('AMOUNT_INVALID','Enter the terminal batch total');
+    if (!Number.isInteger(cashMinor) || cashMinor < 0) throw new ApiError('AMOUNT_INVALID','Enter the cash counted (0 if none)');
+    const d = api.dailyClose(hotelId), c = S.closes[hotelId] = {...(S.closes[hotelId]||{}), terminal:terminalMinor, cash:cashMinor};
+    if (review) { c.reviewedBy = userLabel(); c.reviewedAt = now(); audit(hotelId, userLabel(), 'daily_close.review', 'Business day', `card recorded ${fmt(d.card)}`, `terminal ${fmt(terminalMinor)} · difference ${fmt(terminalMinor - d.card)}`); emit('DAILY_CLOSE_REVIEWED', hotelId, `Difference ${fmt(terminalMinor - d.card)}`); }
+    return c; },
+  approveOrder(hotelId, orderId, pin, actor){ requirePin(pin); need('orders.approve'); const o = scoped(S.orders, hotelId, orderId, 'Order');
+    if (o.status !== 'PENDING_APPROVAL') throw new ApiError('BAD_STATE','Order is not awaiting approval');
+    setStatus(o,'NEW'); postOrder(o); audit(hotelId, actor, 'order.approve', `Order #${o.no}`, 'pending approval', 'approved'); emit('NEW_ORDER', hotelId, `#${o.no} · Room ${o.roomNo} · approved`); },
+  declineOrder(hotelId, orderId, actor){ need('orders.approve'); const o = scoped(S.orders, hotelId, orderId, 'Order');
+    if (o.status !== 'PENDING_APPROVAL') throw new ApiError('BAD_STATE','Order is not awaiting approval');
+    setStatus(o,'DECLINED'); audit(hotelId, actor, 'order.decline', `Order #${o.no}`, 'pending approval', 'declined'); emit('ORDER_DECLINED', hotelId, `#${o.no} · Room ${o.roomNo}`); },
+  kitchenAccept(hotelId, orderId){ const o = scoped(S.orders, hotelId, orderId, 'Order'); if (o.status !== 'NEW') throw new ApiError('BAD_STATE','Order already accepted');
+    setStatus(o,'ACCEPTED'); o.acceptedAt = now(); o.locked = true; emit('ORDER_ACCEPTED', hotelId, `#${o.no} · amounts locked`); },
+  kitchenStart(hotelId, orderId){ const o = scoped(S.orders, hotelId, orderId, 'Order'); if (o.status !== 'ACCEPTED') throw new ApiError('BAD_STATE','Accept the order first');
+    setStatus(o,'PREPARING'); o.items.forEach(i => i.status = 'preparing'); emit('ORDER_PREPARING', hotelId, `#${o.no} · Room ${o.roomNo}`); },
+  itemReady(hotelId, orderId, itemId){ const o = scoped(S.orders, hotelId, orderId, 'Order'); if (o.status !== 'PREPARING') throw new ApiError('BAD_STATE','Start preparing first');
+    const it = o.items.find(i => i.id === itemId); if (!it) throw new ApiError('NOT_FOUND','Item not found'); it.status = 'ready';
+    if (o.items.every(i => i.status === 'ready')) { setStatus(o,'READY'); o.readyAt = now(); emit('ORDER_READY', hotelId, `#${o.no} · Room ${o.roomNo} ready for delivery`); }
+    else emit('ITEM_READY', hotelId, `#${o.no} · ${it.name} (${stationName(it.station)})`); },
+  claim(hotelId, orderId, staff){ const o = scoped(S.orders, hotelId, orderId, 'Order'); if (o.status !== 'READY') throw new ApiError('BAD_STATE','Order is not ready or already claimed');
+    setStatus(o,'ASSIGNED'); o.delivery.staff = staff; o.delivery.assignedAt = now(); emit('DELIVERY_ASSIGNED', hotelId, `#${o.no} → ${staff}`); },
+  pickUp(hotelId, orderId, staff){ const o = scoped(S.orders, hotelId, orderId, 'Order'); if (o.status !== 'ASSIGNED' || o.delivery.staff !== staff) throw new ApiError('FORBIDDEN','Only the assigned staff member can pick this up');
+    setStatus(o,'PICKED_UP'); o.delivery.pickedAt = now(); emit('ORDER_DELIVERING', hotelId, `#${o.no} on its way to Room ${o.roomNo}`); },
+  deliver(hotelId, orderId, staff){ const o = scoped(S.orders, hotelId, orderId, 'Order'); if (o.status !== 'PICKED_UP' || o.delivery.staff !== staff) throw new ApiError('FORBIDDEN','Only the assigned staff member can deliver this');
+    setStatus(o,'DELIVERED'); o.delivery.deliveredAt = now(); emit('ORDER_DELIVERED', hotelId, `#${o.no} · Room ${o.roomNo}`); },
+  leaveOnRoom(hotelId, orderId, staff){ const o = scoped(S.orders, hotelId, orderId, 'Order'); if (o.status !== 'DELIVERED') throw new ApiError('BAD_STATE','Deliver the order first');
+    o.payment = {method:'room_charge'}; setStatus(o,'CLOSED'); audit(hotelId, staff, 'payment.room_charge', `Order #${o.no}`, '', `${fmt(o.total)} on room bill`); emit('PAYMENT_UPDATED', hotelId, `#${o.no} · ${fmt(o.total)} left on room bill`); },
+  previewPayment(hotelId, orderId, receivedMinor){ const o = scoped(S.orders, hotelId, orderId, 'Order'); const due = orderDue(o);
+    if (!Number.isInteger(receivedMinor) || receivedMinor <= 0) throw new ApiError('AMOUNT_INVALID','Enter the amount the terminal approved');
+    const diff = receivedMinor - due; return {due, received:receivedMinor, diff, tip:Math.max(0,diff), shortfall:Math.max(0,-diff)}; },
+  recordCardPayment(hotelId, orderId, receivedMinor, ref, confirmTip, staff, key){
+    return idem(key, () => {
+      const o = scoped(S.orders, hotelId, orderId, 'Order'); if (o.status !== 'DELIVERED') throw new ApiError('BAD_STATE','Deliver the order before recording payment');
+      const p = api.previewPayment(hotelId, orderId, receivedMinor);
+      if (p.tip > 0 && !confirmTip) throw new ApiError('TIP_CONFIRMATION_REQUIRED','Confirm the overpayment as a tip');
+      if (!/^[A-Za-z0-9-]{4,20}$/.test(ref||'')) throw new ApiError('REF_REQUIRED','Enter the terminal approval reference (4–20 letters or digits)');
+      const applied = Math.min(p.received, p.due);
+      const pay = {id:uid('pay'), hotelId, stayId:o.stayId, orderId:o.id, amountDue:p.due, amountReceived:p.received, tipAmount:p.tip, method:'card_terminal', status: p.shortfall ? 'partial' : 'paid', currency:'ZAR', providerRef:ref, staff, createdAt:now()};
+      S.payments.push(pay);
+      post(hotelId, o.stayId, 'pay', 'Card payment', `Order #${o.no} · terminal ref ${ref}`, applied, {orderId:o.id});
+      if (p.tip) post(hotelId, o.stayId, 'tip', 'Tip', `Order #${o.no} · ${staff}`, p.tip, {orderId:o.id});
+      o.payment = {method:'card_terminal', paymentId:pay.id, received:p.received, tip:p.tip, shortfall:p.shortfall}; setStatus(o,'CLOSED');
+      audit(hotelId, staff, 'payment.record', `Order #${o.no}`, `due ${fmt(p.due)}`, `received ${fmt(p.received)}`);
+      if (p.tip) audit(hotelId, staff, 'tip.record', `Order #${o.no}`, '', fmt(p.tip));
+      emit('PAYMENT_UPDATED', hotelId, `#${o.no} · paid ${fmt(applied)}${p.tip ? ' + tip ' + fmt(p.tip) : ''}${p.shortfall ? ' · ' + fmt(p.shortfall) + ' left on room bill' : ''}`);
+      return {paymentId:pay.id, applied, tip:p.tip, shortfall:p.shortfall};
+    });
+  },
+  checkIn(hotelId, roomId, d, actor, key){
+    return idem(key, () => {
+      need('stays.manage');
+      const room = scoped(S.rooms, hotelId, roomId, 'Room'); if (room.status !== 'available') throw new ApiError('ROOM_NOT_AVAILABLE',`Room ${room.number} is ${room.status}`);
+      if (!d.guest.trim()) throw new ApiError('GUEST_REQUIRED','Enter the guest name');
+      const nights = Number(d.nights); if (!Number.isInteger(nights) || nights < 1 || nights > 60) throw new ApiError('NIGHTS_INVALID','Nights must be 1–60');
+      if (d.billing.type === 'company' && !d.billing.company.trim()) throw new ApiError('COMPANY_REQUIRED','Enter the company name for company billing');
+      const stay = {id:uid('st'), hotelId, roomId, roomNo:room.number, training:!!d.training, chargesBlocked:false, guest:d.guest.trim(), email:d.email||'', billing:d.billing, nights, rateMinor:room.rateMinor, checkIn:now(), expectedOut:now()+nights*DAY, status:'active'};
+      S.stays.push(stay); room.status = 'occupied';
+      const acc = room.rateMinor*nights;
+      post(hotelId, stay.id, 'acc', 'Accommodation', `${fmt(room.rateMinor)} × ${nights} night${nights>1?'s':''}`, acc);
+      post(hotelId, stay.id, 'acc', 'Accommodation tax', 'VAT 15%', Math.round(acc*VAT));
+      audit(hotelId, actor, 'stay.check_in', `Room ${room.number}`, '', d.billing.type === 'company' ? `Company: ${d.billing.company}` : 'Personal');
+      emit('STAY_CHECKED_IN', hotelId, `Room ${room.number} · tablet activated`);
+      return {stayId:stay.id};
+    });
+  },
+  addCharge(hotelId, stayId, category, amount, actor){ need('folio.charge'); const st = scoped(S.stays, hotelId, stayId, 'Stay'); if (st.status !== 'active') throw new ApiError('BAD_STATE','Stay is closed');
+    if (!Number.isInteger(amount) || amount <= 0) throw new ApiError('AMOUNT_INVALID','Enter a positive amount');
+    post(hotelId, stayId, 'other', category, category, amount); audit(hotelId, actor, 'folio.charge', `Room ${st.roomNo}`, '', `${category} ${fmt(amount)}`);
+    emit('FOLIO_UPDATED', hotelId, `Room ${st.roomNo} · ${category} ${fmt(amount)}`); },
+  recordFolioPayment(hotelId, stayId, amount, method, actor, key){
+    return idem(key, () => { need('payments.record'); const st = scoped(S.stays, hotelId, stayId, 'Stay'); if (st.status !== 'active') throw new ApiError('BAD_STATE','Stay is closed');
+      const bal = folioSummary(stayId).balance; if (!Number.isInteger(amount) || amount <= 0) throw new ApiError('AMOUNT_INVALID','Enter a positive amount');
+      if (amount > bal) throw new ApiError('OVERPAYMENT','Amount is more than the outstanding balance');
+      S.payments.push({id:uid('pay'), hotelId, stayId, orderId:null, amountDue:bal, amountReceived:amount, tipAmount:0, method, status: amount === bal ? 'paid' : 'partial', currency:'ZAR', providerRef:'', staff:actor, createdAt:now()});
+      post(hotelId, stayId, 'pay', 'Payment', method === 'eft' ? 'EFT' : method === 'cash' ? 'Cash' : 'Card terminal', amount);
+      audit(hotelId, actor, 'payment.record', `Room ${st.roomNo}`, `balance ${fmt(bal)}`, `paid ${fmt(amount)}`);
+      emit('PAYMENT_UPDATED', hotelId, `Room ${st.roomNo} · ${fmt(amount)} received`); return {ok:true}; });
+  },
+  checkout(hotelId, stayId, pin, override, reason, actor, key){
+    return idem(key, () => {
+      requirePin(pin); need('checkout.perform');
+      const st = scoped(S.stays, hotelId, stayId, 'Stay'); if (st.status !== 'active') throw new ApiError('BAD_STATE','Stay already checked out');
+      const h = hotelOf(hotelId), sum = folioSummary(stayId);
+      const open = S.orders.filter(o => o.stayId === stayId && !['CLOSED','DECLINED','CANCELLED'].includes(o.status));
+      if (open.length) throw new ApiError('OPEN_ORDERS', `${open.length} order${open.length>1?'s are':' is'} still in progress`);
+      if (sum.balance > 0 && !override) throw new ApiError('OUTSTANDING_BALANCE', `Outstanding balance: ${fmt(sum.balance)}`);
+      if (sum.balance > 0 && override) { need('checkout.override'); if (!h.allowOverride) throw new ApiError('OVERRIDE_NOT_ALLOWED','Hotel policy does not allow checkout with a balance'); if (!reason.trim()) throw new ApiError('REASON_REQUIRED','Give a reason for the override'); }
+      st.status = 'checked_out'; st.checkOut = now(); st.invoiceNo = `${h.short}-2026-${String(++h.invoiceSeq).padStart(6,'0')}`; st.final = sum; st.override = override && sum.balance > 0 ? reason : '';
+      const room = scoped(S.rooms, hotelId, st.roomId, 'Room'); room.status = 'cleaning';
+      if (st.override) audit(hotelId, actor, 'checkout.override', `Room ${st.roomNo}`, `balance ${fmt(sum.balance)}`, reason);
+      audit(hotelId, actor, 'stay.check_out', `Room ${st.roomNo}`, 'active', `checked out · ${st.invoiceNo}`);
+      emit('STAY_CHECKED_OUT', hotelId, `Room ${st.roomNo} · bill ${st.invoiceNo}`);
+      S.devices.filter(d => d.roomId === room.id).forEach(d => { emit('RESET_ROOM_SESSION', hotelId, `${d.id} → welcome screen`); });
+      return {invoiceNo:st.invoiceNo};
+    });
+  },
+  updatePrice(hotelId, itemId, newMinor, actor){ need('menu.price.update'); const m = scoped(S.menu, hotelId, itemId, 'Menu item'); if (!Number.isInteger(newMinor) || newMinor < 0) throw new ApiError('AMOUNT_INVALID','Enter a valid price');
+    const old = m.priceMinor; if (old === newMinor) return; m.priceMinor = newMinor; audit(hotelId, actor, 'menu.price_change', m.name, fmt(old), fmt(newMinor)); emit('MENU_UPDATED', hotelId, `${m.name} ${fmt(old)} → ${fmt(newMinor)}`); },
+  toggleItem(hotelId, itemId, actor){ need('menu.availability'); const m = scoped(S.menu, hotelId, itemId, 'Menu item'); m.available = !m.available; audit(hotelId, actor, 'menu.availability', m.name, m.available ? 'off' : 'on', m.available ? 'on' : 'off'); emit('MENU_UPDATED', hotelId, `${m.name} ${m.available ? 'available' : 'sold out'}`); },
+  setRoomStatus(hotelId, roomId, status, actor){ need('rooms.status'); const r = scoped(S.rooms, hotelId, roomId, 'Room'); if (r.status === 'occupied' || status === 'occupied') throw new ApiError('BAD_STATE','Use check-in and checkout to change occupancy');
+    const old = r.status; r.status = status; audit(hotelId, actor, 'room.status', `Room ${r.number}`, old, status); emit('ROOM_STATUS', hotelId, `Room ${r.number} ${old} → ${status}`); },
+  createPairing(hotelId, roomId, actor){ need('devices.manage'); const r = scoped(S.rooms, hotelId, roomId, 'Room');
+    const code = String(Math.floor(100000 + Math.random()*900000)); S.pairings.push({code, hotelId, roomId, expires:now()+15*60000, used:false});
+    audit(hotelId, actor, 'device.pairing_created', `Room ${r.number}`, '', 'code issued (15 min)'); emit('PAIRING_CREATED', hotelId, `Room ${r.number} · code valid 15 min`); return {code, room:r.number}; },
+  pair(deviceId, code, key){
+    return idem(key, () => { const d = S.devices.find(x => x.id === deviceId); if (!d) throw new ApiError('DEVICE_UNKNOWN','Unknown device');
+      const p = S.pairings.find(x => x.code === code && !x.used); if (!p || p.expires < now()) throw new ApiError('PAIRING_INVALID','Pairing code is wrong or has expired');
+      S.devices.filter(x => x.roomId === p.roomId && x.id !== d.id && x.type === 'guest').forEach(x => { x.roomId = null; x.status = 'unpaired'; x.hotelId = null; });
+      p.used = true; d.hotelId = p.hotelId; d.roomId = p.roomId; d.status = 'active'; d.lastSeen = now();
+      const r = S.rooms.find(x => x.id === p.roomId);
+      audit(p.hotelId, `Device ${d.id}`, 'device.paired', d.id, '', `Room ${r.number}`); emit('DEVICE_PAIRED', p.hotelId, `${d.id} → Room ${r.number}`); return {room:r.number}; });
+  },
+  setDevice(hotelId, deviceId, status, actor){ need('devices.manage'); const d = scoped(S.devices, hotelId, deviceId, 'Device'); const old = d.status; d.status = status;
+    if (status === 'unpaired') { d.hotelId = null; d.roomId = null; }
+    audit(hotelId, actor, 'device.' + status, deviceId, old, status); emit(status === 'locked' ? 'DEVICE_LOCKED' : 'DEVICE_UPDATED', hotelId, `${deviceId} ${old} → ${status}`); },
+  resetDevice(hotelId, deviceId, actor){ need('devices.manage'); const d = scoped(S.devices, hotelId, deviceId, 'Device'); audit(hotelId, actor, 'device.reset', deviceId, '', 'session cleared'); emit('RESET_ROOM_SESSION', hotelId, `${deviceId} → welcome screen`); return d; },
+  updateSettings(hotelId, patch, actor){ need('settings.update'); const h = hotelOf(hotelId); Object.entries(patch).forEach(([k,v]) => { if (h[k] !== v) { audit(hotelId, actor, 'settings.update', k, String(h[k]), String(v)); h[k] = v; } }); emit('SETTINGS_UPDATED', hotelId, 'Hotel settings saved'); },
+  adminMetrics(){ const t0 = new Date(); t0.setHours(0,0,0,0);
+    return { hotels:S.hotels.length, active:S.hotels.filter(h => h.status==='active').length, rooms:S.rooms.length,
+      devices:S.devices.filter(d => d.hotelId && d.status === 'active' && now()-d.lastSeen < 90000).length,
+      stays:S.stays.filter(s => s.status==='active').length, ordersToday:S.orders.filter(o => o.createdAt >= +t0).length,
+      mrr:S.hotels.filter(h => h.status==='active').reduce((a,h) => a + S.plans.find(p => p.id===h.plan).monthly, 0) }; },
+  adminHotels(){ return S.hotels.map(h => ({id:h.id, name:h.name, city:h.city, status:h.status, plan:h.plan, rooms:S.rooms.filter(r => r.hotelId===h.id).length,
+      devices:S.devices.filter(d => d.hotelId===h.id).length, orders:S.orders.filter(o => o.hotelId===h.id).length, created:h.created,
+      last: Math.max(h.created, ...S.events.filter(e => e.hotelId===h.id).map(e => e.at)) })); },
+  adminSetStatus(hotelId, status){ const h = hotelOf(hotelId); const old = h.status; h.status = status; audit(hotelId, 'Platform admin', 'tenant.' + status, h.name, old, status); emit(status === 'active' ? 'TENANT_REACTIVATED' : 'TENANT_SUSPENDED', hotelId, h.name); },
+  adminSetPlan(hotelId, plan){ const h = hotelOf(hotelId); const old = h.plan; h.plan = plan; audit(hotelId, 'Platform admin', 'subscription.change', h.name, old, plan); emit('SUBSCRIPTION_CHANGED', hotelId, `${h.name} → ${plan}`); }
+};
+function setStatus(o, s){ o.status = s; o.history.push({s, at:now()}); }
+/* One set of order rules for tablet orders and staff-entered (phone) orders */
+function createOrder(h, room, stay, lines, note, meta){
+  if (!h.roomCharging) throw new ApiError('ROOM_CHARGE_DISABLED','This hotel does not allow charges to the room');
+  if (stay.chargesBlocked) throw new ApiError('STAY_BLOCKED','Room charges are paused for this stay. Please contact reception.');
+  if (!lines.length) throw new ApiError('EMPTY_ORDER','Add at least one item');
+  const items = lines.map(l => { const m = scoped(S.menu, h.id, l.menuId, 'Menu item'); if (!isAvailableNow(m)) throw new ApiError('ITEM_UNAVAILABLE', `${m.name} is not available right now`);
+    if (!Number.isInteger(l.qty) || l.qty < 1 || l.qty > 99) throw new ApiError('ORDER_TOO_LARGE','Quantity must be 1–99');
+    return {id:uid('oi'), menuId:m.id, name:m.name, unitMinor:m.priceMinor, qty:l.qty, station:m.station, status:'pending'}; });
+  const subtotal = items.reduce((a,i) => a + i.unitMinor*i.qty, 0), fee = h.feeMinor, total = subtotal + fee;
+  const needsApproval = total > h.roomChargeLimit;
+  const o = {id:uid('o'), no:++h.orderSeq, hotelId:h.id, stayId:stay.id, roomId:room.id, roomNo:room.number, deviceId:meta.deviceId || null, placedBy:meta.placedBy || null, lateReason:meta.lateReason || '',
+    items, note, subtotal, fee, total, posted:false, status: needsApproval ? 'PENDING_APPROVAL' : 'NEW', createdAt:now(), history:[{s: needsApproval ? 'PENDING_APPROVAL' : 'NEW', at:now()}], adjustments:[], payment:null, delivery:{}};
+  S.orders.push(o);
+  if (!needsApproval) postOrder(o);
+  audit(h.id, meta.placedBy || `Device ${meta.deviceId}`, 'order.create', `Order #${o.no}`, '', fmt(total) + (meta.placedBy ? ' · staff-entered' : '') + (o.lateReason ? ` · late: ${o.lateReason}` : ''));
+  emit(needsApproval ? 'ORDER_PENDING_APPROVAL' : 'NEW_ORDER', h.id, `#${o.no} · Room ${o.roomNo} · ${fmt(total)}${meta.placedBy ? ' · by reception' : ''}`);
+  return {orderId:o.id, no:o.no, status:o.status};
+}
+function postOrder(o){ if (o.posted) return; const lines = o.items.map(i => `${i.qty}× ${i.name}`).join(', ');
+  post(o.hotelId, o.stayId, 'fb', 'Food & beverage', `Order #${o.no} · ${lines}`, o.subtotal, {orderId:o.id});
+  post(o.hotelId, o.stayId, 'fb', 'Room-service fee', `Order #${o.no}`, o.fee, {orderId:o.id}); o.posted = true; }
+function orderDue(o){ return o.total + o.adjustments.reduce((a,x) => a + (x.to - x.from), 0); }
+const stationName = id => S.stations.find(s => s.id === id)?.name || id;
+const SCHED = {'Breakfast':[6,11], 'Lunch & Dinner':[11,22], 'Snacks':[0,24], 'Drinks':[0,24], 'Desserts':[11,23]};
+function isAvailableNow(m){ if (!m.available) return false; const [a,b] = SCHED[m.cat] || [0,24]; const hr = new Date().getHours(); return hr >= a && hr < b; }
+
+/* seed some live activity through the API itself */
+function boot(){
+  const T = 'Seed';
+  api.checkIn('h1','r_h1_259',{guest:'John Smith', email:'travel@abctech.example', nights:3, billing:{type:'company', company:'ABC Technologies (Pty) Ltd', reg:'2019/123456/07', vat:'4870012345', address:'1 Loop Street, Cape Town, 8001', email:'accounts@abctech.example', ref:'TRAVEL-10482', traveller:'John Smith'}}, T);
+  api.addCharge('h1', S.stays[0].id, 'Laundry', 35000, T);
+  api.checkIn('h1','r_h1_104',{guest:'Aisha Naidoo', nights:2, billing:{type:'personal'}}, T);
+  api.checkIn('h2','r_h2_3',{guest:'Mandla Dube', nights:2, billing:{type:'personal'}}, T);
+  const sal = S.menu.find(m => m.hotelId==='h1' && m.name==='Caesar Salad'), sw = S.menu.find(m => m.hotelId==='h1' && m.name.startsWith('Sparkling'));
+  const sal_ok = isAvailableNow(sal);
+  if (sal_ok) api.placeOrder('DY-104-01', [{menuId:sal.id, qty:1}, {menuId:sw.id, qty:2}], 'Dressing on the side.', 'seed-104');
+  else { const fr = S.menu.find(m => m.hotelId==='h1' && m.name==='Hand-cut Fries'); api.placeOrder('DY-104-01', [{menuId:fr.id, qty:1}, {menuId:sw.id, qty:2}], 'Extra chutney mayo.', 'seed-104'); }
+  S.audit.forEach(a => a.at -= 3600000); S.events.forEach(e => e.at -= 60000);
+}
+boot();
+
+/* ---------------- UI plumbing ---------------- */
+const $app = document.getElementById('app');
+function toast(msg, err=false){ const id = uid('t'); UI.toasts.push({id, msg, err}); render(); setTimeout(() => { UI.toasts = UI.toasts.filter(t => t.id !== id); render(); }, err ? 4200 : 2800); }
+function run(fn, okMsg){ try { const r = fn(); if (okMsg) toast(typeof okMsg === 'function' ? okMsg(r) : okMsg); render(); return r; }
+  catch (e) { if (e instanceof ApiError) { emit('API_ERROR', UI.hotel, `${e.code} · ${e.message}`, true); toast(`${e.message} (${e.code})`, true); render(); return null; } throw e; } }
+const actorFor = () => ({merchant:userLabel(), kitchen:'Thabo S. (Kitchen)', rs:UI.staff, admin:'Platform admin'}[UI.app] || 'Staff');
+const val = id => document.getElementById(id)?.value ?? '';
+
+const LOGO = `<svg viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="lgw" x1="0" x2="1"><stop offset="0" stop-color="#1E7FD8"/><stop offset=".55" stop-color="#2CC9C0"/><stop offset="1" stop-color="#16B57A"/></linearGradient><linearGradient id="lgd" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0B2350"/><stop offset="1" stop-color="#2AA8F0"/></linearGradient></defs><path d="M6 4h12.5C28 4 35 11 35 19.5c0 4.4-1.6 8-4.2 10.5L26 27.6c1.6-1.9 2.6-4.6 2.6-8.1 0-6-4.3-9.6-10.6-9.6H12.2v15.6L6 29.4z" fill="url(#lgd)"/><rect x="15" y="15" width="9" height="5" rx="1.2" fill="url(#lgd)"/><rect x="13.5" y="12.5" width="2" height="7.5" rx=".8" fill="url(#lgd)"/><path d="M3.5 35c6-6.5 13-8 20-5s10 2.4 14-1.8C34 35.5 26 38.5 18.5 35.5 13 33.3 8 32.6 3.5 35z" fill="url(#lgw)"/></svg>`;
+
+function render(){
+  const apps = [['guest','Guest tablet'],['kitchen','Kitchen'],['rs','Room service'],['merchant','Hotel management'],['admin','Diyneco admin']];
+  $app.innerHTML = `
+  <header class="top"><div class="wrap">
+    <div class="brand">${LOGO}<div><div class="word">DIYNE<b>CO</b></div><div class="tag">Prototype · Phase 0</div></div></div>
+    <nav class="apps" aria-label="Interfaces">${apps.map(([k,l]) => `<button data-a="app" data-k="${k}" aria-pressed="${UI.app===k}">${l}</button>`).join('')}</nav>
+    <div class="top-actions"><button class="btn sm" data-a="restart" title="Reload seed data">Restart demo</button></div>
+  </div></header>
+  <div class="wrap">
+    ${ctxBar()}
+    <div class="layout">
+      <main>${({guest:viewGuest, kitchen:viewKitchen, rs:viewRS, merchant:viewMerchant, admin:viewAdmin})[UI.app]()}</main>
+      ${viewEvents()}
+    </div>
+  </div>
+  ${UI.modal ? viewModal() : ''}
+  <div class="toasts" role="status" aria-live="polite">${UI.toasts.map(t => `<div class="toast ${t.err?'err':''}">${esc(t.msg)}</div>`).join('')}</div>`;
+}
+function hotelSelect(){ return `<label>Hotel <select id="hotelSel" data-c="hotel">${S.hotels.map(h => `<option value="${h.id}" ${UI.hotel===h.id?'selected':''}>${esc(h.name)}</option>`).join('')}</select></label>`; }
+function ctxBar(){
+  if (UI.app === 'guest') return `<div class="ctx"><label>Tablet <select id="devSel" data-c="device">${S.devices.filter(d => d.type==='guest').map(d => {
+      const r = S.rooms.find(x => x.id === d.roomId), h = hotelOf(d.hotelId); return `<option value="${d.id}" ${UI.device===d.id?'selected':''}>${d.id} · ${h ? esc(h.name) + ', Room ' + r.number : 'not paired'}</option>`; }).join('')}</select></label>
+      <span class="small muted">The guest never chooses a room. The server resolves device → hotel → room → active stay.</span></div>`;
+  if (UI.app === 'kitchen') return `<div class="ctx">${hotelSelect()}<label>Station <select id="stSel" data-c="station"><option value="all">All stations</option>${S.stations.filter(s => s.hotelId===UI.hotel).map(s => `<option value="${s.id}" ${UI.kitchenStation===s.id?'selected':''}>${esc(s.name)}</option>`).join('')}</select></label>
+      <label><input type="checkbox" id="hv" data-c="hv" ${UI.hv?'checked':''}> High visibility</label><span class="small muted">Signed in: Thabo S. · Kitchen Staff (cannot see prices or bills)</span></div>`;
+  if (UI.app === 'rs') return `<div class="ctx">${hotelSelect()}<label>Staff <select id="staffSel" data-c="staff">${['Lerato M.','Sipho K.'].map(s => `<option ${UI.staff===s?'selected':''}>${s}</option>`).join('')}</select></label><span class="small muted">Room-Service Staff</span></div>`;
+  if (UI.app === 'merchant') return `<div class="ctx">${hotelSelect()}<label>Signed in as <select id="userSel" data-c="user">${Object.entries(USERS).map(([k,u]) => `<option value="${k}" ${UI.user===k?'selected':''}>${u.name} · ${u.role}</option>`).join('')}</select></label><span class="small muted">Demo PIN for every user: <b class="mono">1234</b></span></div>`;
+  return `<div class="ctx"><span class="pill good">MFA verified</span><span class="small muted">Platform Super Admin · sees tenants and aggregates, never guest records</span></div>`;
+}
+function viewEvents(){
+  const ev = UI.app === 'admin' ? S.events : S.events.filter(e => e.hotelId === (UI.app === 'guest' ? (S.devices.find(d => d.id===UI.device)?.hotelId) : UI.hotel));
+  return `<aside class="panel events" aria-label="Realtime events">
+    <div class="row" style="justify-content:space-between"><h3 style="font-size:15px">Live events</h3><span class="small muted">${UI.app === 'admin' ? 'all tenants' : 'this hotel only'}</span></div>
+    <p class="small muted" style="margin:4px 0 0">What the WebSocket gateway would push to subscribed apps.</p>
+    <ol>${ev.slice(0,40).map(e => `<li class="${e.err?'err':''}"><div class="row" style="justify-content:space-between"><span class="t">${e.type}</span><span class="muted mono" style="font-size:11px">#${e.seq} · ${clock(e.at)}</span></div><div>${esc(e.summary)}</div></li>`).join('') || '<li>No events yet</li>'}</ol>
+  </aside>`;
+}
+
+/* ---------------- GUEST ---------------- */
+function viewGuest(){
+  let s; try { s = api.guestSession(UI.device); } catch (e) { return `<div class="tablet"><div class="g-body"><div class="welcome"><h1>Device not recognised</h1><p class="muted">${esc(e.message)}</p></div></div></div>`; }
+  const d = s.device;
+  const bar = `<div class="devicebar"><span class="mono">${d.id}</span><span>${d.os} · app ${d.app}</span></div>`;
+  if (s.state === 'unpaired') return bar + `<div class="tablet"><div class="g-body"><div class="welcome">
+      <div class="over">Diyneco</div><h1>Pair this device</h1><p class="muted" style="max-width:40ch">Hotel staff: in Hotel management → Devices, choose a room and generate a pairing code, then enter it here.</p>
+      <div class="row" style="justify-content:center"><input type="text" id="pairCode" inputmode="numeric" maxlength="6" placeholder="6-digit code" class="mono" style="width:150px;text-align:center;font-size:18px"><button class="btn primary" data-a="pair">Pair</button></div>
+      <p class="small muted">QR scanning is part of the Phase 2 build.</p></div></div></div>`;
+  const head = `<div class="g-head"><div><div class="hotel">${esc(s.hotel.name)}</div><div class="small muted">Room ${s.room.number}</div></div>
+     ${s.state === 'active' && UI.guestView !== 'home' ? `<button class="btn sm" data-a="gview" data-v="home">Home</button>` : `<span class="small muted">${clock(now())}</span>`}</div>`;
+  if (s.state === 'suspended') return bar + `<div class="tablet">${head}<div class="g-body"><div class="welcome"><h1>Service unavailable</h1><p class="muted">Please contact reception.</p></div></div></div>`;
+  if (s.state === 'locked') return bar + `<div class="tablet">${head}<div class="g-body"><div class="welcome"><h1>This tablet is paused</h1><p class="muted">Reception has locked this device. Please call reception on 0.</p></div></div></div>`;
+  if (s.state === 'idle') return bar + `<div class="tablet">${head}<div class="g-body"><div class="welcome"><div class="over">Welcome to</div><h1>${esc(s.hotel.name)}</h1><div class="roomno">Room ${s.room.number}</div>
+      <p class="muted" style="max-width:42ch">This tablet activates when reception checks you in. Nothing from a previous stay is stored on it.</p></div></div></div>`;
+  const v = UI.guestView;
+  let body = '';
+  if (v === 'home') body = guestHome(s);
+  else if (v === 'menu') body = guestMenu(s);
+  else if (v === 'cart') body = guestCart(s);
+  else if (v === 'orders') body = guestOrders(s);
+  else if (v === 'bill') body = guestBill(s);
+  else if (v === 'info') body = guestInfo(s);
+  else if (v === 'service') body = `<h2>Room service requests</h2><p class="muted">Towels, housekeeping and maintenance requests arrive in a later phase. For now, please call reception on 0.</p>`;
+  return bar + `<div class="tablet">${head}<div class="g-body">${body}</div></div>`;
+}
+function guestHome(s){
+  const first = s.stay.guest.split(' ')[0];
+  return `<div class="welcome" style="padding:18px 8px 6px"><div class="over">Welcome to</div><h1>${esc(s.hotel.name)}</h1><div class="roomno">Room ${s.room.number} · Welcome, ${esc(first)}</div></div>
+   <div class="tiles">
+     <button class="tile primary" data-a="gview" data-v="menu"><strong>Food & Beverage</strong><span>Order to your room, charged to your bill</span></button>
+     <button class="tile" data-a="gview" data-v="service"><strong>Room Service</strong><span>Housekeeping and requests</span></button>
+     <button class="tile" data-a="gview" data-v="orders"><strong>View My Orders</strong><span>${api.guestOrders(UI.device).filter(o => !['CLOSED','DECLINED','CANCELLED'].includes(o.status)).length} in progress</span></button>
+     <button class="tile" data-a="gview" data-v="bill"><strong>My Bill</strong><span>Current stay charges</span></button>
+     <button class="tile" data-a="gview" data-v="info"><strong>Hotel Information</strong><span>Wi-Fi, check-out, contacts</span></button>
+   </div>`;
+}
+function cartOf(){ return UI.carts[UI.device] || (UI.carts[UI.device] = {}); }
+function guestMenu(s){
+  const menu = api.guestMenu(UI.device); const cats = [...new Set(menu.map(m => m.cat))];
+  if (!UI.guestCat || !cats.includes(UI.guestCat)) UI.guestCat = cats.find(c => menu.some(m => m.cat===c && isAvailableNow(m))) || cats[0];
+  const cart = cartOf(); const count = Object.values(cart).reduce((a,b) => a+b, 0);
+  const subtotal = Object.entries(cart).reduce((a,[id,q]) => a + (menu.find(m => m.id===id)?.priceMinor||0)*q, 0);
+  const sched = c => { const [a,b] = SCHED[c] || [0,24]; return a===0&&b===24 ? 'All day' : `${String(a).padStart(2,'0')}:00–${String(b).padStart(2,'0')}:00`; };
+  return `<div class="row" style="justify-content:space-between"><h2>Food & Beverage</h2>${s.hotel.id==='h1' ? `<button class="btn ghost sm" data-a="sample">Fill spec test order</button>` : ''}</div>
+   <div class="chips" role="tablist">${cats.map(c => `<button class="chip" data-a="gcat" data-v="${esc(c)}" aria-pressed="${UI.guestCat===c}">${esc(c)}</button>`).join('')}</div>
+   <p class="small muted" style="margin:-6px 0 0">${esc(UI.guestCat)} · ${sched(UI.guestCat)}</p>
+   <div class="menu">${menu.filter(m => m.cat===UI.guestCat).map(m => { const ok = isAvailableNow(m), q = cart[m.id]||0; return `<div class="item" ${ok?'':'style="opacity:.55"'}>
+     <h4>${esc(m.name)}</h4>${m.desc ? `<div class="desc">${esc(m.desc)}</div>` : ''}
+     <div class="meta">${m.diet.map(t => `<span>${t}</span>`).join('')}${m.allergens.length ? `<span>contains: ${m.allergens.join(', ')}</span>` : ''}</div>
+     <div class="foot"><b class="num">${fmt(m.priceMinor)}</b>${!ok ? `<span class="small muted">${m.available ? 'Not served now' : 'Sold out'}</span>` : q ? `<span class="qty"><button data-a="qty" data-id="${m.id}" data-d="-1" aria-label="Remove one">−</button><b class="num">${q}</b><button data-a="qty" data-id="${m.id}" data-d="1" aria-label="Add one">+</button></span>` : `<button class="btn sm primary" data-a="qty" data-id="${m.id}" data-d="1">Add to order</button>`}</div></div>`; }).join('')}</div>
+   ${count ? `<div class="cartbar"><span><b>${count}</b> item${count>1?'s':''} · <span class="num">${fmt(subtotal)}</span></span><button class="btn sm" data-a="gview" data-v="cart">Review order</button></div>` : ''}`;
+}
+function guestCart(s){
+  const menu = api.guestMenu(UI.device), cart = cartOf();
+  const lines = Object.entries(cart).filter(([,q]) => q>0).map(([id,q]) => ({m:menu.find(x => x.id===id), q})).filter(l => l.m);
+  if (!lines.length) { UI.guestView = 'menu'; return guestMenu(s); }
+  const sub = lines.reduce((a,l) => a + l.m.priceMinor*l.q, 0), fee = s.hotel.feeMinor, total = sub + fee;
+  if (!UI.cartKeys[UI.device]) UI.cartKeys[UI.device] = uid('idem');
+  const over = total > s.hotel.roomChargeLimit;
+  return `<h2>Review your order</h2>
+   <div class="panel"><div class="money-list">
+     <div><span>Room</span><b>${s.room.number}</b></div>
+     ${lines.map(l => `<div class="sub"><span>${esc(l.m.name)} × ${l.q}</span><span class="num">${fmt(l.m.priceMinor*l.q)}</span></div>`).join('')}
+     <div class="total"><span>Subtotal</span><span class="num">${fmt(sub)}</span></div>
+     <div><span>Room-service fee</span><span class="num">${fmt(fee)}</span></div>
+     <div class="total" style="font-size:18px"><span>Amount due</span><span class="num">${fmt(total)}</span></div>
+     <div class="sub"><span>Payment</span><span>Charge to Room ${s.room.number}</span></div>
+     <div class="sub"><span>Prices include VAT</span><span></span></div>
+   </div></div>
+   ${over ? `<div class="note warn">Orders over ${fmt(s.hotel.roomChargeLimit)} need a manager's approval before the kitchen starts. You'll see it update here.</div>` : ''}
+   <label class="small muted">Special instructions<textarea id="gnote" maxlength="200" placeholder="e.g. No onions. Extra sauce."></textarea></label>
+   <div class="row"><button class="btn" data-a="gview" data-v="menu">Back to menu</button><button class="btn go kbig" style="flex:1" data-a="place">Place order · ${fmt(total)}</button></div>`;
+}
+const STEPS = [['NEW','Order received'],['ACCEPTED','Kitchen accepted'],['PREPARING','Preparing'],['READY','Ready'],['PICKED_UP','Room service delivering'],['DELIVERED','Delivered']];
+const RANK = {CANCELLED:-3, PENDING_APPROVAL:-1, NEW:0, ACCEPTED:1, PREPARING:2, READY:3, ASSIGNED:3, PICKED_UP:4, DELIVERED:5, CLOSED:5, DECLINED:-2};
+function guestOrders(){
+  const orders = api.guestOrders(UI.device).slice().reverse();
+  const last = UI.lastOrder[UI.device];
+  return `<h2>My orders</h2>${orders.length ? '' : '<p class="muted">No orders yet during this stay.</p>'}
+   ${orders.map(o => { const r = RANK[o.status]; return `<div class="panel stack">
+     <div class="row" style="justify-content:space-between"><b class="mono">Order #${o.no}</b><span class="muted small">${clock(o.createdAt)}</span></div>
+     ${o.status === 'PENDING_APPROVAL' ? `<div class="note warn">Waiting for manager approval (over the room-charge limit).</div>` : o.status === 'DECLINED' ? `<div class="note crit">This order was declined by the hotel. Please call reception.</div>` : o.status === 'CANCELLED' ? `<div class="note crit">This order was cancelled by the hotel and the charge was reversed.</div>` :
+     `<ol class="steps">${STEPS.map(([k,l],i) => `<li class="${i < r || (i===r && r===5) ? 'done' : i===r ? 'now' : ''}"><i>${i < r || (i===r && r===5) ? '✓' : ''}</i>${l}</li>`).join('')}</ol>`}
+     <div class="money-list small">${o.items.map(i => `<div class="sub"><span>${esc(i.name)} × ${i.qty}</span><span class="num">${fmt(i.unitMinor*i.qty)}</span></div>`).join('')}
+       <div class="sub"><span>Room-service fee</span><span class="num">${fmt(o.fee)}</span></div>
+       ${o.adjustments.map(a => `<div class="sub"><span>Adjusted: ${esc(a.reason)}</span><span class="num">${fmt(a.to-a.from)}</span></div>`).join('')}
+       <div class="total"><span>Official amount due</span><span class="num">${fmt(orderDue(o))}</span></div>
+       ${o.payment?.method === 'card_terminal' ? `<div class="sub"><span>Paid by card${o.payment.tip ? ` · tip ${fmt(o.payment.tip)}` : ''}</span><span>${o.payment.shortfall ? fmt(o.payment.shortfall) + ' on room bill' : 'Settled'}</span></div>` : o.status === 'CLOSED' ? `<div class="sub"><span>Charged to room</span><span></span></div>` : ''}
+     </div>
+     ${last && last.orderId === o.id ? `<button class="btn ghost sm" data-a="retryOrder" style="justify-self:start">Simulate a network retry of this order</button>` : ''}
+   </div>`; }).join('')}`;
+}
+function guestBill(s){
+  const f = api.guestFolio(UI.device), e = f.entries;
+  const sec = (title, g) => { const rows = e.filter(x => x.group===g); if (!rows.length) return ''; return `<div class="stack" style="gap:6px"><div class="eyebrow">${title}</div><div class="money-list">${rows.map(x => `<div class="sub"><span>${esc(x.category)}${x.desc && x.desc!==x.category ? ' · ' + esc(x.desc) : ''}</span><span class="num">${g==='pay' ? fmt(-x.amount) : fmt(x.amount)}</span></div>`).join('')}<div class="total"><span>${title}</span><span class="num">${g==='pay' ? fmt(-rows.reduce((a,x)=>a+x.amount,0)) : fmt(rows.reduce((a,x)=>a+x.amount,0))}</span></div></div></div>`; };
+  return `<h2>My bill</h2><p class="small muted" style="margin:-8px 0 0">${esc(s.stay.guest)} · check-out ${dateStr(s.stay.expectedOut)}</p>
+   <div class="panel stack">${sec('Accommodation','acc')}${sec('Food & Beverage','fb')}${sec('Other services','other')}${sec('Payments','pay')}
+     <div class="money-list"><div class="total" style="font-size:17px"><span>Balance due</span><span class="num">${fmt(f.balance)}</span></div></div></div>
+   ${f.tips ? `<div class="panel"><div class="money-list"><div><span>Tips given (not part of your bill)</span><span class="num">${fmt(f.tips)}</span></div></div></div>` : ''}`;
+}
+function guestInfo(s){ const h = s.hotel; return `<h2>Hotel information</h2><div class="panel"><div class="money-list">
+   <div><span>Wi-Fi network</span><b class="mono">${esc(h.wifi)}</b></div><div><span>Check-out time</span><b>${h.checkoutTime}</b></div>
+   <div><span>Reception</span><b>Dial 0</b></div><div><span>Breakfast</span><b>06:00–11:00</b></div><div><span>Address</span><span style="text-align:right">${esc(h.address)}</span></div></div></div>`; }
+
+/* ---------------- KITCHEN ---------------- */
+function viewKitchen(){
+  const hid = UI.hotel, st = UI.kitchenStation;
+  const orders = S.orders.filter(o => o.hotelId === hid && ['NEW','ACCEPTED','PREPARING','READY'].includes(o.status) && (st==='all' || o.items.some(i => i.station===st)));
+  const col = (title, list, cls) => `<section class="col"><h3>${title} · ${list.length}</h3>${list.map(o => kcard(o, cls)).join('') || '<p class="muted small">Nothing here.</p>'}</section>`;
+  const n = s => orders.filter(o => s.includes(o.status)).length;
+  return `<div class="kds ${UI.hv?'hv':''} stack">
+    <div class="kcounts"><span class="kcount">NEW<b class="num">${n(['NEW'])}</b></span><span class="kcount">PREPARING<b class="num">${n(['ACCEPTED','PREPARING'])}</b></span><span class="kcount">READY<b class="num">${n(['READY'])}</b></span></div>
+    <div class="board">${col('New', orders.filter(o => o.status==='NEW'), 'new')}${col('In progress', orders.filter(o => ['ACCEPTED','PREPARING'].includes(o.status)), 'prep')}${col('Ready for pickup', orders.filter(o => o.status==='READY'), 'ready')}</div>
+    ${S.orders.some(o => o.hotelId===hid && o.status==='PENDING_APPROVAL') ? `<p class="small muted">Orders waiting for manager approval are hidden from the kitchen until approved.</p>` : ''}
+  </div>`;
+}
+function kcard(o, cls){
+  const st = UI.kitchenStation, items = o.items.filter(i => st==='all' || i.station===st);
+  return `<article class="kcard ${cls}">
+    <div class="kh"><strong>#${o.no}</strong><span class="pill ${cls==='ready'?'good':cls==='prep'?'warn':''}">Room ${o.roomNo}</span></div>
+    <div class="small muted">${clock(o.createdAt)} · ${ago(o.createdAt)}</div>
+    <div class="kitems">${items.map(i => `<div class="kitem"><span><span class="q">${i.qty}×</span>${esc(i.name)}${st==='all' ? ` <span class="small muted">· ${esc(stationName(i.station))}</span>` : ''}</span>
+      ${o.status==='PREPARING' ? (i.status==='ready' ? `<span class="pill good">Ready</span>` : `<button class="btn sm go" data-a="kitem" data-id="${o.id}" data-i="${i.id}">Ready</button>`) : ''}</div>`).join('')}</div>
+    ${o.note ? `<div class="note warn"><b>Special instructions:</b> ${esc(o.note)}</div>` : ''}
+    ${o.status==='NEW' ? `<button class="btn primary kbig" data-a="kaccept" data-id="${o.id}">Accept</button>` : ''}
+    ${o.status==='ACCEPTED' ? `<button class="btn primary kbig" data-a="kstart" data-id="${o.id}">Start preparing</button>` : ''}
+    ${o.status==='PREPARING' ? `<button class="btn go kbig" data-a="kall" data-id="${o.id}" ${items.every(i => i.status==='ready')?'disabled':''}>${st==='all' ? 'Mark all items ready' : 'Mark station items ready'}</button>` : ''}
+    ${o.status==='READY' ? `<div class="small muted">Room service has been notified.</div>` : ''}
+  </article>`;
+}
+
+/* ---------------- ROOM SERVICE ---------------- */
+function viewRS(){
+  const hid = UI.hotel, me = UI.staff;
+  const ready = S.orders.filter(o => o.hotelId===hid && o.status==='READY');
+  const mine = S.orders.filter(o => o.hotelId===hid && ['ASSIGNED','PICKED_UP','DELIVERED'].includes(o.status) && o.delivery.staff===me);
+  const done = S.orders.filter(o => o.hotelId===hid && o.status==='CLOSED' && o.delivery.staff===me).slice(-3).reverse();
+  return `<div class="rs stack">
+    <h2>Ready for delivery</h2>${ready.map(o => rcard(o)).join('') || '<p class="muted">No orders waiting.</p>'}
+    <h2>My deliveries</h2>${mine.map(o => rcard(o)).join('') || '<p class="muted">You have no active deliveries.</p>'}
+    ${done.length ? `<h2>Recently closed</h2>${done.map(o => rcard(o)).join('')}` : ''}
+  </div>`;
+}
+function rcard(o){
+  const due = orderDue(o), lp = UI.lastPay[o.id];
+  let actions = '';
+  if (o.status==='READY') actions = `<button class="btn primary kbig" data-a="claim" data-id="${o.id}">Accept delivery</button>`;
+  if (o.status==='ASSIGNED') actions = `<button class="btn primary kbig" data-a="pickup" data-id="${o.id}">Picked up</button>`;
+  if (o.status==='PICKED_UP') actions = `<button class="btn go kbig" data-a="deliver" data-id="${o.id}">Delivered</button>`;
+  if (o.status==='DELIVERED') { if (!UI.payKeys[o.id]) UI.payKeys[o.id] = uid('idem');
+    actions = `<div class="stack" style="gap:8px"><div class="eyebrow">Payment</div>
+      <button class="btn" data-a="leave" data-id="${o.id}">Guest keeps it on the room bill</button>
+      <div class="panel stack" style="gap:8px;background:var(--surface-2)"><b>Guest pays by card on the hotel terminal</b>
+        <div class="form two"><label>Amount approved on terminal (R)<input type="number" id="rcv-${o.id}" min="0" step="0.01" placeholder="${(due/100).toFixed(2)}" inputmode="decimal"></label>
+        <label>Terminal approval ref<input type="text" id="ref-${o.id}" maxlength="20" placeholder="e.g. 4F82C1"></label></div>
+        <button class="btn primary" data-a="checkpay" data-id="${o.id}">Record card payment</button>
+        <p class="small muted" style="margin:0">Card numbers, CVV and PINs are never entered or stored.</p></div></div>`; }
+  if (o.status==='CLOSED') actions = `<div class="note ${o.payment?.tip ? '' : ''}">${o.payment?.method==='card_terminal' ? `Paid ${fmt(Math.min(o.payment.received,due))} by card${o.payment.tip ? ` · tip ${fmt(o.payment.tip)}` : ''}${o.payment.shortfall ? ` · ${fmt(o.payment.shortfall)} left on room bill` : ''}` : 'Left on room bill'}</div>
+      ${lp ? `<button class="btn ghost sm" data-a="retryPay" data-id="${o.id}" style="justify-self:start">Simulate a network retry of this payment</button>` : ''}`;
+  return `<article class="rcard">
+    <div class="row" style="justify-content:space-between"><b class="mono">Order #${o.no}</b><span class="pill ${o.status==='READY'?'good':o.status==='CLOSED'?'quiet':''}">Room ${o.roomNo}</span></div>
+    <div class="small">${o.items.map(i => `${i.qty} × ${esc(i.name)}`).join('<br>')}</div>
+    ${o.note ? `<div class="small muted">Note: ${esc(o.note)}</div>` : ''}
+    <div class="due"><span class="muted">Amount due</span><b>${fmt(due)}</b></div>
+    ${o.delivery.pickedAt ? `<div class="small muted">Picked up ${clock(o.delivery.pickedAt)}${o.delivery.deliveredAt ? ' · delivered ' + clock(o.delivery.deliveredAt) : ''}</div>` : ''}
+    ${actions}</article>`;
+}
+
+/* ---------------- MERCHANT ---------------- */
+function viewMerchant(){
+  const tabs = [['dashboard','Dashboard'],['orders','Orders'],['rooms','Rooms & stays'],['menu','Menu'],['devices','Devices'],['close','Daily close','reports.finance'],['audit','Audit log','audit.read'],['settings','Settings','settings.read']].filter(t => !t[2] || can(t[2]));
+  if (!tabs.some(t => t[0] === UI.mtab)) UI.mtab = 'dashboard';
+  const h = hotelOf(UI.hotel);
+  if (h.status !== 'active') return `<div class="note crit">This hotel account is suspended by Diyneco. Contact platform support.</div>`;
+  return `<nav class="mnav">${tabs.map(([k,l]) => `<button data-a="mtab" data-k="${k}" aria-pressed="${UI.mtab===k}">${l}${k==='orders' && pending() ? ` <span class="pill warn">${pending()}</span>` : ''}</button>`).join('')}</nav>
+    ${({dashboard:mDash, orders:mOrders, rooms:mRooms, menu:mMenu, devices:mDevices, close:mClose, audit:mAudit, settings:mSettings})[UI.mtab]()}`;
+}
+const pending = () => S.orders.filter(o => o.hotelId===UI.hotel && o.status==='PENDING_APPROVAL').length + S.adjustments.filter(a => a.hotelId===UI.hotel && a.status==='pending').length;
+function mDash(){
+  const hid = UI.hotel, f = S.folio.filter(e => e.hotelId===hid && !S.stays.find(s => s.id===e.stayId)?.training), sum = g => f.filter(e => e.group===g).reduce((a,e) => a+e.amount, 0);
+  const acc = sum('acc'), fb = sum('fb'), other = sum('other'), tips = sum('tip'), paid = sum('pay');
+  const rooms = S.rooms.filter(r => r.hotelId===hid), occ = rooms.filter(r => r.status==='occupied').length, avail = rooms.filter(r => r.status==='available').length;
+  const ords = S.orders.filter(o => o.hotelId===hid), active = ords.filter(o => !['CLOSED','DECLINED','CANCELLED'].includes(o.status)).length;
+  const timed = ords.filter(o => o.readyAt && o.acceptedAt), avgPrep = timed.length ? Math.round(timed.reduce((a,o) => a + (o.readyAt-o.acceptedAt), 0)/timed.length/60000) : null;
+  const rev = acc + fb + other, pc = x => rev ? (x/rev*100).toFixed(1) : 0;
+  const k = (l, v, s='') => `<div class="kpi"><div class="eyebrow">${l}</div><div class="v">${v}</div>${s ? `<div class="small muted">${s}</div>` : ''}</div>`;
+  return `<div class="stack">
+    <div class="kpis">${k('Orders today', ords.length, `${active} active`)}${k('Accommodation', fmt(acc), 'incl. tax')}${k('Food & beverage', fmt(fb))}${k('Other services', fmt(other))}${k('Tips', fmt(tips), 'not revenue')}${k('Total collected', fmt(paid + tips), 'payments + tips')}${k('Occupied rooms', `${occ} / ${rooms.length}`, `${avail} available`)}${k('Avg. prep time', avgPrep === null ? '—' : avgPrep + ' min', 'accept → ready')}</div>
+    <div class="panel"><div class="row" style="justify-content:space-between"><h3 style="font-size:15px">Charges by category</h3><span class="num">${fmt(rev)}</span></div>
+      <div class="split" style="margin-top:10px"><span style="width:${pc(acc)}%;background:var(--brand)"></span><span style="width:${pc(fb)}%;background:var(--teal)"></span><span style="width:${pc(other)}%;background:var(--green)"></span></div>
+      <div class="legend"><span><i style="background:var(--brand)"></i>Accommodation ${pc(acc)}%</span><span><i style="background:var(--teal)"></i>F&B ${pc(fb)}%</span><span><i style="background:var(--green)"></i>Other ${pc(other)}%</span></div>
+      <p class="small muted" style="margin:10px 0 0">Daily charts, popular items and room-service performance are part of Phase 8 reporting.</p></div>
+    ${pending() ? `<div class="note warn">${pending()} item${pending()>1?'s':''} waiting for approval (orders over the limit or bill adjustments). <button class="btn ghost sm" data-a="mtab" data-k="orders">Review</button></div>` : ''}
+  </div>`;
+}
+function mOrders(){
+  const list = S.orders.filter(o => o.hotelId===UI.hotel).slice().reverse();
+  const pillFor = s => ({PENDING_APPROVAL:'warn', DECLINED:'crit', CANCELLED:'crit', CLOSED:'quiet', DELIVERED:'good', READY:'good'}[s] || '');
+  const adjs = S.adjustments.filter(a => a.hotelId===UI.hotel && a.status==='pending');
+  const pend = id => S.adjustments.some(a => a.orderId===id && a.status==='pending');
+  return `<div class="stack">
+  ${adjs.length ? `<div class="panel stack"><div class="eyebrow">Bill adjustments waiting for a second approver</div>${adjs.map(a => `<div class="row" style="justify-content:space-between;border-top:1px solid var(--line);padding-top:8px">
+      <div><b class="mono">#${a.no}</b> · Room ${a.roomNo} · <span class="num">${fmt(a.from)} → ${fmt(a.to)}</span><div class="small muted">${esc(a.reason)} · requested by ${esc(a.requestedName)} ${ago(a.at)}</div></div>
+      <div class="row"><button class="btn sm go" data-a="adjapprove" data-id="${a.id}">Approve</button><button class="btn sm danger" data-a="adjreject" data-id="${a.id}">Reject</button></div></div>`).join('')}
+      <p class="small muted" style="margin:0">The person who requested an adjustment cannot approve it. Switch "Signed in as" to try it.</p></div>` : ''}
+  ${staffOrderForm()}
+  <div class="panel tablewrap"><table><thead><tr><th>Order</th><th>Room</th><th>Items</th><th class="r">Food & bev</th><th class="r">Fee</th><th class="r">Due</th><th>Status</th><th>Payment</th><th></th></tr></thead><tbody>
+    ${list.map(o => `<tr><td class="mono">#${o.no}<div class="small muted">${clock(o.createdAt)}${o.placedBy ? ' · reception' : ''}</div>${o.lateReason ? `<div class="small" style="color:var(--warn)">Late: ${esc(o.lateReason)}</div>` : ''}</td><td>${o.roomNo}</td><td class="small">${o.items.map(i => `${i.qty}× ${esc(i.name)}`).join('<br>')}${o.adjustments.map(a => `<div class="small" style="color:var(--warn)">Adjusted ${fmt(a.from)} → ${fmt(a.to)}: ${esc(a.reason)} (approved by ${esc(a.approvedBy)})</div>`).join('')}${pend(o.id) ? '<div class="small" style="color:var(--warn)">Adjustment awaiting approval</div>' : ''}${o.cancelReason ? `<div class="small" style="color:var(--crit)">Cancelled: ${esc(o.cancelReason)}</div>` : ''}</td>
+      <td class="r num">${fmt(o.subtotal)}</td><td class="r num">${fmt(o.fee)}</td><td class="r num"><b>${fmt(orderDue(o))}</b></td>
+      <td><span class="pill ${pillFor(o.status)}">${o.status.replace('_',' ').toLowerCase()}</span></td>
+      <td class="small">${o.payment ? (o.payment.method==='card_terminal' ? `Card ${fmt(o.payment.received)}${o.payment.tip ? `<br>Bill ${fmt(Math.min(o.payment.received,orderDue(o)))} · Tip ${fmt(o.payment.tip)}` : ''}` : 'Room bill') : '—'}</td>
+      <td><div class="row" style="flex-wrap:nowrap">${o.status==='PENDING_APPROVAL' ? `<button class="btn sm go" data-a="approve" data-id="${o.id}">Approve</button><button class="btn sm danger" data-a="decline" data-id="${o.id}">Decline</button>` : ''}
+        ${['NEW','ACCEPTED'].includes(o.status) ? `<button class="btn sm danger" data-a="cancel" data-id="${o.id}">Cancel</button>` : ''}
+        ${o.posted && !['CANCELLED'].includes(o.status) && o.payment?.method !== 'card_terminal' && !pend(o.id) && S.stays.find(s => s.id===o.stayId)?.status==='active' ? `<button class="btn sm" data-a="adjust" data-id="${o.id}">Adjust</button>` : ''}</div></td></tr>`).join('') || `<tr><td colspan="9" class="muted">No orders yet.</td></tr>`}
+  </tbody></table></div></div>`;
+}
+function staffOrderForm(){
+  const rooms = S.rooms.filter(r => r.hotelId===UI.hotel && activeStay(r.id));
+  if (!rooms.length) return '';
+  const menu = S.menu.filter(m => m.hotelId===UI.hotel && isAvailableNow(m));
+  const lines = UI.staffLines.map((l,i) => ({...l, i, m:S.menu.find(m => m.id===l.menuId)})).filter(l => l.m);
+  return `<details class="panel" ${lines.length ? 'open' : ''}><summary style="cursor:pointer;font-weight:600">New order for a room (phone order or outage fallback)</summary>
+    <div class="form" style="margin-top:12px">
+      <div class="two"><label>Room<select id="soRoom">${rooms.map(r => `<option value="${r.id}" ${UI.soRoom===r.id?'selected':''}>Room ${r.number} · ${esc(activeStay(r.id).guest)}</option>`).join('')}</select></label>
+      <label>Item<select id="soItem">${menu.map(m => `<option value="${m.id}">${esc(m.name)} · ${fmt(m.priceMinor)}</option>`).join('')}</select></label></div>
+      <div class="two"><label>Quantity<input type="number" id="soQty" min="1" max="99" value="1"></label><div style="align-self:end"><button class="btn" data-a="soadd">Add item</button></div></div>
+      ${lines.length ? `<div class="money-list">${lines.map(l => `<div class="sub"><span>${l.qty} × ${esc(l.m.name)}</span><span class="row"><span class="num">${fmt(l.m.priceMinor*l.qty)}</span><button class="btn ghost sm" data-a="sorm" data-i="${l.i}" aria-label="Remove">Remove</button></span></div>`).join('')}</div>` : ''}
+      <label>Special instructions<input type="text" id="soNote" maxlength="200"></label>
+      <label>Entered after the fact? Give the reason (leave empty for a live order)<input type="text" id="soLate" maxlength="120" placeholder="e.g. Wi-Fi outage 19:10–20:05, taken by phone"></label>
+      <button class="btn primary" data-a="soplace" ${lines.length ? '' : 'disabled'}>Place order to room bill</button>
+      <p class="small muted" style="margin:0">Same prices, room-service fee and approval limit as the guest tablet. The order is recorded as placed by ${esc(userLabel())}.</p></div></details>`;
+}
+function mClose(){
+  let d; try { d = api.dailyClose(UI.hotel); } catch (e) { return `<div class="note crit">${esc(e.message)}</div>`; }
+  const c = d.close, diff = c.terminal !== undefined ? c.terminal - d.card : null;
+  return `<div class="stack">
+    <div class="kpis">
+      <div class="kpi"><div class="eyebrow">Card recorded</div><div class="v">${fmt(d.card)}</div><div class="small muted">${d.cardCount} payment${d.cardCount===1?'':'s'}, incl. tips</div></div>
+      <div class="kpi"><div class="eyebrow">Cash recorded</div><div class="v">${fmt(d.cash)}</div></div>
+      <div class="kpi"><div class="eyebrow">EFT recorded</div><div class="v">${fmt(d.eft)}</div></div>
+      <div class="kpi"><div class="eyebrow">Tips</div><div class="v">${fmt(d.tips)}</div><div class="small muted">not hotel revenue</div></div>
+      ${diff !== null ? `<div class="kpi" style="border-color:${diff===0?'var(--good)':'var(--crit)'}"><div class="eyebrow">Terminal vs recorded</div><div class="v" style="color:${diff===0?'var(--good)':'var(--crit)'}">${diff===0 ? 'Balanced' : fmt(diff)}</div></div>` : ''}
+    </div>
+    <div class="grid2">
+      <div class="panel form"><div class="eyebrow">Reconcile today</div>
+        <label>Card terminal batch total (R)<input type="number" id="dcTerm" step="0.01" min="0" value="${c.terminal!==undefined ? (c.terminal/100).toFixed(2) : ''}" placeholder="${(d.card/100).toFixed(2)}"></label>
+        <label>Cash counted (R)<input type="number" id="dcCash" step="0.01" min="0" value="${c.cash!==undefined ? (c.cash/100).toFixed(2) : ''}" placeholder="0.00"></label>
+        <div class="row"><button class="btn" data-a="dcsave">Compare</button><button class="btn primary" data-a="dcreview">Mark day reviewed</button></div>
+        ${c.reviewedBy ? `<div class="note">Reviewed by ${esc(c.reviewedBy)} at ${clock(c.reviewedAt)}. Recorded in the audit log.</div>` : ''}
+        <p class="small muted" style="margin:0">If the terminal is higher, a payment was taken but not recorded; if lower, something was recorded that the terminal did not take. Fix it with an approved adjustment, never by editing.</p></div>
+      <div class="panel stack"><div class="eyebrow">Card payments by staff member</div>
+        ${Object.keys(d.byStaff).length ? `<div class="tablewrap"><table><thead><tr><th>Staff</th><th class="r">Count</th><th class="r">Received</th><th class="r">Tips</th></tr></thead><tbody>${Object.entries(d.byStaff).map(([k,v]) => `<tr><td>${esc(k)}</td><td class="r num">${v.count}</td><td class="r num">${fmt(v.received)}</td><td class="r num">${fmt(v.tips)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted small" style="margin:0">No card payments yet today.</p>'}</div>
+    </div>
+    <div class="panel stack"><div class="eyebrow">Flags to review · ${d.flags.length}</div>
+      ${d.flags.length ? `<div class="tablewrap"><table><tbody>${d.flags.map(f => `<tr><td><span class="pill ${f.kind==='High tip'||f.kind==='Checkout override'?'warn':f.kind==='Cancellation'?'crit':''}">${f.kind}</span></td><td class="small">${esc(f.text)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted small" style="margin:0">Nothing flagged.</p>'}
+      <p class="small muted" style="margin:0">High tip = more than 25% of the bill or over R500. Training stays are excluded.</p></div>
+  </div>`;
+}
+function mRooms(){
+  const rooms = S.rooms.filter(r => r.hotelId===UI.hotel);
+  if (!rooms.some(r => r.id===UI.room)) UI.room = rooms[0].id;
+  const r = rooms.find(x => x.id===UI.room), stay = activeStay(r.id);
+  const tone = {available:'good', occupied:'', cleaning:'warn', maintenance:'crit', reserved:'', out_of_service:'crit'};
+  const last = S.stays.filter(s => s.roomId===r.id && s.status==='checked_out').slice(-1)[0];
+  return `<div class="grid2">
+    <div class="stack"><div class="rooms">${rooms.map(x => `<button class="room" data-a="room" data-id="${x.id}" aria-pressed="${x.id===UI.room}"><strong>${x.number}</strong><span class="small muted">${x.type} · ${fmt(x.rateMinor)}</span><span class="pill ${tone[x.status]}">${x.status.replace('_',' ')}</span></button>`).join('')}</div>
+      <p class="small muted">Bulk creation (e.g. 301–350) and CSV import are part of the Phase 2 onboarding wizard.</p></div>
+    <div class="panel stack">
+      <div class="row" style="justify-content:space-between"><h3>Room ${r.number}</h3><span class="small muted">Floor ${r.floor} · ${r.type} · ${fmt(r.rateMinor)}/night</span></div>
+      ${stay ? stayPanel(stay) : r.status==='available' ? checkInForm(r) : `<p>Room is <b>${r.status}</b>.</p><div class="row">${r.status!=='available' ? `<button class="btn go" data-a="rstatus" data-id="${r.id}" data-s="available">Mark available</button>` : ''}${r.status!=='maintenance' ? `<button class="btn" data-a="rstatus" data-id="${r.id}" data-s="maintenance">Maintenance</button>` : ''}</div>`}
+      ${!stay && last ? `<div class="note">Last stay: ${esc(last.guest)} · checked out ${clock(last.checkOut)} · bill ${last.invoiceNo} <button class="btn ghost sm" data-a="bill" data-id="${last.id}">View bill</button></div>` : ''}
+    </div></div>`;
+}
+function stayPanel(st){
+  const f = folioSummary(st.id), b = st.billing;
+  return `<div class="stack" style="gap:10px">
+    <div><b>${esc(st.guest)}</b> <span class="pill">active</span>${st.training ? ' <span class="pill quiet">training stay</span>' : ''}${st.chargesBlocked ? ' <span class="pill crit">tablet charges paused</span>' : ''}<div class="small muted">In ${dateStr(st.checkIn)} · out ${dateStr(st.expectedOut)} · ${st.nights} night${st.nights>1?'s':''}</div>
+    ${b.type==='company' ? `<div class="small" style="margin-top:4px">Billed to <b>${esc(b.company)}</b> · VAT ${esc(b.vat||'—')} · Ref ${esc(b.ref||'—')}</div>` : `<div class="small muted">Personal billing</div>`}</div>
+    <div class="money-list"><div><span>Accommodation</span><span class="num">${fmt(f.acc)}</span></div><div><span>Food & beverage</span><span class="num">${fmt(f.fb)}</span></div><div><span>Other services</span><span class="num">${fmt(f.other)}</span></div>
+      <div class="sub"><span>Payments received</span><span class="num">${fmt(-f.paid)}</span></div><div class="total"><span>Outstanding balance</span><span class="num">${fmt(f.balance)}</span></div>
+      <div class="sub"><span>Tips (separate)</span><span class="num">${fmt(f.tips)}</span></div></div>
+    <div class="form two"><label>Add charge<select id="chgCat"><option>Laundry</option><option>Spa</option><option>Minibar</option><option>Transport</option><option>Activities</option><option>Extra bed</option></select></label><label>Amount (R)<input type="number" id="chgAmt" min="0" step="0.01" placeholder="350.00"></label></div>
+    <div class="row"><button class="btn" data-a="addcharge" data-id="${st.id}">Add charge</button><button class="btn" data-a="bill" data-id="${st.id}">Preview bill</button><button class="btn" data-a="block" data-id="${st.id}" data-v="${st.chargesBlocked ? '0' : '1'}">${st.chargesBlocked ? 'Allow tablet charges' : 'Pause tablet charges'}</button><button class="btn primary" data-a="checkout" data-id="${st.id}">Guest check out</button></div>
+  </div>`;
+}
+function checkInForm(r){
+  return `<div class="form"><div class="eyebrow">Check in</div>
+    <div class="two"><label>Guest name<input type="text" id="ciName" placeholder="Full name"></label><label>Nights<input type="number" id="ciNights" min="1" max="60" value="2"></label></div>
+    <label>Guest email (for the bill)<input type="email" id="ciEmail" placeholder="optional"></label>
+    <label>Billing<select id="ciType" data-c="citype"><option value="personal">Personal</option><option value="company" ${UI.ciType==='company'?'selected':''}>Company</option></select></label>
+    ${UI.ciType==='company' ? `<div class="two"><label>Company name<input type="text" id="ciCo"></label><label>Registration no.<input type="text" id="ciReg"></label><label>VAT number<input type="text" id="ciVat"></label><label>PO / reference<input type="text" id="ciRef"></label></div><label>Billing address<input type="text" id="ciAddr"></label><label>Company email<input type="email" id="ciCoEmail"></label>` : ''}
+    <label><span><input type="checkbox" id="ciTraining"> Training stay (go-live test; kept, but left out of reports)</span></label>
+    <button class="btn primary" data-a="checkin" data-id="${r.id}">Check in to Room ${r.number}</button>
+    <p class="small muted" style="margin:0">Charges ${fmt(r.rateMinor)} × nights plus 15% accommodation VAT. The room's tablet activates immediately.</p></div>`;
+}
+function mMenu(){
+  const items = S.menu.filter(m => m.hotelId===UI.hotel);
+  return `<div class="panel tablewrap"><table><thead><tr><th>Item</th><th>Category</th><th>Station</th><th class="r">Price (R)</th><th>Status</th><th></th></tr></thead><tbody>
+    ${items.map(m => `<tr><td>${esc(m.name)}</td><td>${esc(m.cat)}</td><td>${esc(stationName(m.station))}</td><td class="r"><input type="number" id="pr-${m.id}" value="${(m.priceMinor/100).toFixed(2)}" step="0.01" min="0" style="width:100px;text-align:right" class="mono"></td>
+      <td>${isAvailableNow(m) ? '<span class="pill good">serving</span>' : m.available ? '<span class="pill quiet">outside hours</span>' : '<span class="pill crit">sold out</span>'}</td>
+      <td><div class="row" style="flex-wrap:nowrap"><button class="btn sm" data-a="price" data-id="${m.id}">Save price</button><button class="btn sm" data-a="toggleItem" data-id="${m.id}">${m.available ? 'Sold out' : 'Restock'}</button></div></td></tr>`).join('')}
+  </tbody></table><p class="small muted">Price changes apply to new orders only; past orders keep their snapshot. Photos, modifiers and schedules editing arrive in Phase 3.</p></div>`;
+}
+function mDevices(){
+  const devs = S.devices.filter(d => d.hotelId===UI.hotel), rooms = S.rooms.filter(r => r.hotelId===UI.hotel);
+  const state = d => d.status==='locked' ? '<span class="pill warn">locked</span>' : now()-d.lastSeen < 90000 ? '<span class="pill good">online</span>' : '<span class="pill quiet">offline</span>';
+  return `<div class="stack"><div class="panel tablewrap"><table><thead><tr><th>Device</th><th>Room</th><th>Type</th><th>Status</th><th>Last seen</th><th>OS / app</th><th></th></tr></thead><tbody>
+    ${devs.map(d => `<tr><td class="mono">${d.id}</td><td>${d.roomId ? S.rooms.find(r => r.id===d.roomId).number : '—'}</td><td>${d.type}</td><td>${state(d)}</td><td class="small">${ago(d.lastSeen)}</td><td class="small">${d.os} · ${d.app}</td>
+      <td><div class="row" style="flex-wrap:nowrap">${d.type==='guest' ? `${d.status==='locked' ? `<button class="btn sm" data-a="dev" data-id="${d.id}" data-s="active">Unlock</button>` : `<button class="btn sm" data-a="dev" data-id="${d.id}" data-s="locked">Lock</button>`}<button class="btn sm" data-a="devreset" data-id="${d.id}">Reset</button><button class="btn sm danger" data-a="dev" data-id="${d.id}" data-s="unpaired">Unpair</button>` : ''}</div></td></tr>`).join('')}
+  </tbody></table></div>
+  <div class="panel form"><div class="eyebrow">Pair a guest tablet</div><div class="two"><label>Room<select id="pairRoom">${rooms.map(r => `<option value="${r.id}">Room ${r.number}${S.devices.some(d => d.roomId===r.id) ? ' (replaces current tablet)' : ''}</option>`).join('')}</select></label><div style="align-self:end"><button class="btn primary" data-a="mkpair">Generate pairing code</button></div></div>
+  <p class="small muted" style="margin:0">Then open Guest tablet → DY-NEW-07 and enter the code.</p></div></div>`;
+}
+function mAudit(){
+  const list = S.audit.filter(a => a.hotelId===UI.hotel);
+  return `<div class="panel tablewrap"><table><thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Entity</th><th>Old</th><th>New</th></tr></thead><tbody>
+    ${list.map(a => `<tr><td class="small mono">${clock(a.at)}</td><td class="small">${esc(a.actor)}</td><td class="mono small">${a.action}</td><td class="small">${esc(a.entity)}</td><td class="small muted">${esc(a.old)}</td><td class="small">${esc(a.new)}</td></tr>`).join('')}
+  </tbody></table><p class="small muted">Append-only. Nobody, including hotel admins, can edit or delete entries.</p></div>`;
+}
+function mSettings(){ const h = hotelOf(UI.hotel);
+  return `<div class="panel form" style="max-width:560px">
+    <label>Auto-approve room charges up to (R)<input type="number" id="setLimit" value="${(h.roomChargeLimit/100).toFixed(2)}" min="0" step="0.01"></label>
+    <label>Room-service fee per order (R)<input type="number" id="setFee" value="${(h.feeMinor/100).toFixed(2)}" min="0" step="0.01"></label>
+    <label><span><input type="checkbox" id="setCharge" ${h.roomCharging?'checked':''}> Allow guests to charge orders to the room</span></label>
+    <label><span><input type="checkbox" id="setOverride" ${h.allowOverride?'checked':''}> Allow manager override of checkout with an outstanding balance</span></label>
+    <label><span><input type="checkbox" id="setVat" ${h.vatRegistered?'checked':''}> Hotel is VAT-registered (bills show "Tax Invoice")</span></label>
+    <label>VAT number<input type="text" id="setVatNo" value="${esc(h.vatNo)}"></label>
+    <button class="btn primary" data-a="savesettings">Save settings</button><p class="small muted" style="margin:0">Every change is written to the audit log.</p></div>`; }
+
+/* ---------------- ADMIN ---------------- */
+function viewAdmin(){
+  const m = api.adminMetrics(), hs = api.adminHotels();
+  const k = (l, v, s='') => `<div class="kpi"><div class="eyebrow">${l}</div><div class="v">${v}</div>${s ? `<div class="small muted">${s}</div>` : ''}</div>`;
+  const iso = UI.isolation;
+  return `<div class="stack">
+    <div class="kpis">${k('Hotels', m.hotels, `${m.active} active`)}${k('Rooms', m.rooms)}${k('Devices online', m.devices)}${k('Active stays', m.stays)}${k('Orders today', m.ordersToday)}${k('Subscription MRR', fmt(m.mrr), 'illustrative plan prices')}</div>
+    <div class="panel tablewrap"><table><thead><tr><th>Hotel</th><th>Status</th><th>Plan</th><th class="r">Rooms</th><th class="r">Devices</th><th class="r">Orders</th><th>Created</th><th>Last activity</th><th></th></tr></thead><tbody>
+      ${hs.map(h => `<tr><td><b>${esc(h.name)}</b><div class="small muted">${esc(h.city)}</div></td><td><span class="pill ${h.status==='active'?'good':'crit'}">${h.status}</span></td>
+        <td><select id="plan-${h.id}" data-c="plan" data-id="${h.id}">${S.plans.map(p => `<option value="${p.id}" ${h.plan===p.id?'selected':''}>${p.name}</option>`).join('')}</select></td>
+        <td class="r num">${h.rooms}</td><td class="r num">${h.devices}</td><td class="r num">${h.orders}</td><td class="small">${dateStr(h.created)}</td><td class="small">${ago(h.last)}</td>
+        <td>${h.status==='active' ? `<button class="btn sm danger" data-a="suspend" data-id="${h.id}">Suspend</button>` : `<button class="btn sm go" data-a="reactivate" data-id="${h.id}">Reactivate</button>`}</td></tr>`).join('')}
+    </tbody></table><p class="small muted">Guest names, folios and orders are not available here. Support access to a tenant would be time-boxed and audited.</p></div>
+    <div class="panel stack"><div class="row" style="justify-content:space-between"><h3 style="font-size:15px">Tenant isolation checks</h3><button class="btn primary sm" data-a="isocheck">Run checks</button></div>
+      ${iso ? `<div class="tablewrap"><table><tbody>${iso.map(t => `<tr><td>${t.ok ? '<span class="pill good">pass</span>' : '<span class="pill crit">fail</span>'}</td><td>${esc(t.name)}</td><td class="small mono muted">${esc(t.detail)}</td></tr>`).join('')}</tbody></table></div>` : `<p class="small muted" style="margin:0">Runs cross-tenant requests against the API. Each must be refused.</p>`}</div>
+  </div>`;
+}
+function isolationChecks(){
+  const res = []; const t = (name, fn) => { try { fn(); res.push({name, ok:false, detail:'request succeeded'}); } catch (e) { res.push({name, ok:e instanceof ApiError, detail:e.code || e.message}); } };
+  const o1 = S.orders.find(o => o.hotelId==='h1'), st1 = S.stays.find(s => s.hotelId==='h1');
+  t('Seabreeze kitchen accepts a Grand Example order', () => api.kitchenAccept('h2', o1.id));
+  t('Seabreeze reception checks out a Grand Example stay', () => api.checkout('h2', st1.id, PIN, false, '', 'test'));
+  t('Seabreeze adds a charge to a Grand Example folio', () => api.addCharge('h2', st1.id, 'Spa', 100, 'test'));
+  t('Seabreeze edits a Grand Example menu price', () => api.updatePrice('h2', S.menu.find(m => m.hotelId==='h1').id, 1, 'test'));
+  t('Seabreeze locks a Grand Example tablet', () => api.setDevice('h2', 'DY-259-01', 'locked', 'test'));
+  t('Unknown device credential requests a session', () => api.guestSession('FORGED-001'));
+  t('Checkout with a wrong PIN', () => api.checkout('h1', st1.id, '0000', false, '', 'test'));
+  const g = api.guestOrders('SB-03-01'); res.push({name:'Seabreeze tablet sees only its own stay\'s orders', ok:g.every(o => o.hotelId==='h2'), detail:`${g.length} order(s) returned, all hotel h2`});
+  emit('ISOLATION_CHECK', null, `${res.filter(r => r.ok).length}/${res.length} checks passed`);
+  return res;
+}
+
+/* ---------------- MODALS ---------------- */
+function viewModal(){
+  const m = UI.modal;
+  if (m.type === 'tip') { const p = m.preview; return `<div class="scrim"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="mt">
+      <h3 id="mt">${p.tip ? 'Overpayment' : 'Part payment'}</h3>
+      <div class="money-list"><div><span>Amount due</span><span class="num">${fmt(p.due)}</span></div><div><span>Amount received</span><span class="num">${fmt(p.received)}</span></div><div class="total"><span>Difference</span><span class="num">${fmt(p.diff)}</span></div></div>
+      <p style="margin:0">${p.tip ? `Guest paid ${fmt(p.tip)} above the amount due. Record ${fmt(p.tip)} as a tip?` : `Guest paid ${fmt(p.shortfall)} less than the amount due. Record a part payment and leave ${fmt(p.shortfall)} on the room bill?`}</p>
+      ${p.tip ? `<div class="money-list small"><div><span>Bill</span><span class="num">${fmt(p.due)}</span></div><div><span>Tip</span><span class="num">${fmt(p.tip)}</span></div><div class="total"><span>Total collected</span><span class="num">${fmt(p.received)}</span></div><div class="sub"><span>Hotel revenue stays</span><span class="num">${fmt(p.due)}</span></div></div>` : ''}
+      <div class="row" style="justify-content:flex-end"><button class="btn" data-a="close">Cancel</button><button class="btn go" data-a="confirmpay">${p.tip ? 'Confirm tip' : 'Record part payment'}</button></div></div></div>`; }
+  if (m.type === 'adjust') { const o = S.orders.find(x => x.id===m.id); return `<div class="scrim"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="ma">
+      <h3 id="ma">Request adjustment · order #${o.no}</h3><p class="small muted" style="margin:0">Accepted orders are locked. This request needs approval from a second manager or finance; it then posts a correcting entry and keeps the original.</p>
+      <div class="form"><label>Current amount due<input type="text" value="${fmt(orderDue(o))}" disabled></label><label>New amount (R)<input type="number" id="adjAmt" step="0.01" min="0"></label>
+      <label>Reason<input type="text" id="adjReason" maxlength="120" placeholder="e.g. Cake not delivered"></label></div>
+      <div class="row" style="justify-content:flex-end"><button class="btn" data-a="close">Cancel</button><button class="btn primary" data-a="doadjust" data-id="${o.id}">Send for approval</button></div></div></div>`; }
+  if (m.type === 'adjapprove') { const a = S.adjustments.find(x => x.id===m.id); return `<div class="scrim"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="maa">
+      <h3 id="maa">Approve adjustment · order #${a.no}</h3>
+      <div class="money-list"><div><span>Current</span><span class="num">${fmt(a.from)}</span></div><div><span>New</span><span class="num">${fmt(a.to)}</span></div><div class="total"><span>Change to the bill</span><span class="num">${fmt(a.to - a.from)}</span></div></div>
+      <p class="small" style="margin:0">Reason: ${esc(a.reason)}<br><span class="muted">Requested by ${esc(a.requestedName)}</span></p>
+      <div class="form"><label>Your PIN (${esc(userLabel())})<input type="password" id="aaPin" inputmode="numeric" maxlength="6"></label></div>
+      <div class="row" style="justify-content:flex-end"><button class="btn" data-a="close">Cancel</button><button class="btn go" data-a="doadjapprove" data-id="${a.id}">Approve</button></div></div></div>`; }
+  if (m.type === 'cancel') { const o = S.orders.find(x => x.id===m.id); return `<div class="scrim"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="mcx">
+      <h3 id="mcx">Cancel order #${o.no} · ${fmt(orderDue(o))}</h3><p class="small muted" style="margin:0">Room ${o.roomNo}. The kitchen board removes it and the charge is reversed on the folio. Only possible before preparation starts.</p>
+      <div class="form"><label>Reason<input type="text" id="cxReason" maxlength="120" placeholder="e.g. Guest changed their mind"></label><label>Your PIN<input type="password" id="cxPin" inputmode="numeric" maxlength="6"></label></div>
+      <div class="row" style="justify-content:flex-end"><button class="btn" data-a="close">Keep order</button><button class="btn danger" data-a="docancel" data-id="${o.id}">Cancel order</button></div></div></div>`; }
+  if (m.type === 'approve') { const o = S.orders.find(x => x.id===m.id); return `<div class="scrim"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="mp">
+      <h3 id="mp">Approve order #${o.no} · ${fmt(o.total)}</h3><p class="small muted" style="margin:0">Room ${o.roomNo}. Over the auto-approve limit of ${fmt(hotelOf(o.hotelId).roomChargeLimit)}.</p>
+      <div class="form"><label>Manager PIN<input type="password" id="apPin" inputmode="numeric" maxlength="6"></label></div>
+      <div class="row" style="justify-content:flex-end"><button class="btn" data-a="close">Cancel</button><button class="btn go" data-a="doapprove" data-id="${o.id}">Approve and send to kitchen</button></div></div></div>`; }
+  if (m.type === 'pairing') return `<div class="scrim"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="mpc"><h3 id="mpc">Pairing code for Room ${m.room}</h3>
+      <div class="mono" style="font-size:40px;letter-spacing:.2em;text-align:center">${m.code}</div><p class="small muted" style="margin:0;text-align:center">Valid for 15 minutes, single use. Enter it on the tablet's "Pair this device" screen.</p>
+      <div class="row" style="justify-content:flex-end"><button class="btn" data-a="close">Done</button><button class="btn primary" data-a="gotoPair">Open DY-NEW-07</button></div></div></div>`;
+  if (m.type === 'checkout') { const st = S.stays.find(s => s.id===m.id), f = folioSummary(st.id), h = hotelOf(st.hotelId);
+    if (!m.key) m.key = uid('idem');
+    return `<div class="scrim"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="mc">
+      <h3 id="mc">Guest check out · Room ${st.roomNo}</h3><div class="small muted">${esc(st.guest)}${st.billing.type==='company' ? ' · ' + esc(st.billing.company) : ''}</div>
+      <div class="money-list"><div><span>Accommodation</span><span class="num">${fmt(f.acc)}</span></div><div><span>F&B</span><span class="num">${fmt(f.fb)}</span></div><div><span>Other services</span><span class="num">${fmt(f.other)}</span></div><div><span>Tips</span><span class="num">${fmt(f.tips)}</span></div>
+        <div class="total"><span>Total</span><span class="num">${fmt(f.totalWithTips)}</span></div><div class="sub"><span>Payments received (excl. tips)</span><span class="num">${fmt(-f.paid)}</span></div>
+        <div class="total" style="font-size:17px"><span>Outstanding balance</span><span class="num" style="color:${f.balance>0?'var(--crit)':'var(--good)'}">${fmt(f.balance)}</span></div></div>
+      ${f.balance > 0 ? `<div class="note crit">Outstanding balance: <b>${fmt(f.balance)}</b>. Take payment before checkout${h.allowOverride ? ', or use a manager override' : ''}.</div>
+        <div class="form"><div class="two"><label>Payment amount (R)<input type="number" id="coPay" value="${(f.balance/100).toFixed(2)}" step="0.01" min="0"></label><label>Method<select id="coMethod"><option value="card_terminal">Card terminal</option><option value="eft">EFT</option><option value="cash">Cash</option></select></label></div>
+        <button class="btn" data-a="copay" data-id="${st.id}">Record payment</button>
+        ${h.allowOverride ? `<label><span><input type="checkbox" id="coOverride"> Manager override: check out with balance</span></label><label>Override reason<input type="text" id="coReason" maxlength="120" placeholder="e.g. Company account, invoice to follow"></label>` : ''}</div>` : `<div class="note">Balance settled. Ready to check out.</div>`}
+      <div class="form"><label>Bill delivery<select id="coDeliver"><option>Download PDF</option><option>Email</option><option>Print</option><option>Print + Email</option></select></label>
+        <p class="small muted" style="margin:0">PDF, print and email are built in Phase 6. The prototype shows the bill on screen.</p>
+        <label>Authorisation PIN<input type="password" id="coPin" inputmode="numeric" maxlength="6" placeholder="1234"></label></div>
+      <div class="row" style="justify-content:flex-end"><button class="btn" data-a="close">Cancel</button><button class="btn primary" data-a="docheckout" data-id="${st.id}">Confirm guest checkout</button></div></div></div>`; }
+  if (m.type === 'bill') return `<div class="scrim"><div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="mb">${billHtml(m.id)}<div class="row" style="justify-content:flex-end"><button class="btn primary" data-a="close">Close</button></div></div></div>`;
+  return '';
+}
+function billHtml(stayId){
+  const st = S.stays.find(s => s.id===stayId), h = hotelOf(st.hotelId), f = st.final || folioSummary(st.id), b = st.billing;
+  const label = h.vatRegistered && h.vatNo ? 'Tax Invoice' : 'Guest Statement';
+  const rows = g => f.entries.filter(e => e.group===g).map(e => `<tr><td>${dateStr(e.at)}</td><td>${esc(e.category)}${e.desc && e.desc!==e.category ? `<div class="small muted">${esc(e.desc)}</div>` : ''}</td><td class="r num">${fmt(g==='pay' ? -e.amount : e.amount)}</td></tr>`).join('');
+  const vatIncl = Math.round((f.fb + f.other) * VAT / (1+VAT)), accVat = f.entries.filter(e => e.category==='Accommodation tax').reduce((a,e) => a+e.amount, 0);
+  return `<div class="bill stack">
+    <div class="bh"><div class="row" style="align-items:flex-start;gap:12px">${LOGO.replace('<svg','<svg width="40" height="40"')}<div><h3>${esc(h.name)}</h3><div class="small muted">${esc(h.address)}<br>${esc(h.phone)} · ${esc(h.email)}${h.vatRegistered && h.vatNo ? `<br>VAT no. ${esc(h.vatNo)}` : ''}</div></div></div>
+      <div style="text-align:right"><div class="eyebrow">${label}</div><div class="mono" style="font-size:15px">${st.invoiceNo || 'DRAFT · not issued'}</div><div class="small muted">${dateStr(st.checkOut || now())}</div></div></div>
+    <div class="grid2"><div><div class="eyebrow">Billed to</div>${b.type==='company' ? `<b>${esc(b.company)}</b><div class="small">Reg. ${esc(b.reg||'—')} · VAT ${esc(b.vat||'—')}<br>${esc(b.address||'')}<br>${esc(b.email||'')}</div>` : `<b>${esc(st.guest)}</b>`}</div>
+      <div><div class="eyebrow">Stay</div><div class="small">${b.type==='company' ? `Traveller: ${esc(b.traveller || st.guest)}<br>Reference: ${esc(b.ref||'—')}<br>` : ''}Room ${st.roomNo} · ${dateStr(st.checkIn)} – ${dateStr(st.checkOut || st.expectedOut)}</div></div></div>
+    <div class="tablewrap"><table><thead><tr><th>Date</th><th>Description</th><th class="r">Amount</th></tr></thead><tbody>
+      <tr><td colspan="3" class="eyebrow">Accommodation</td></tr>${rows('acc')}
+      ${f.fb ? `<tr><td colspan="3" class="eyebrow">Food & beverage</td></tr>${rows('fb')}` : ''}
+      ${f.other ? `<tr><td colspan="3" class="eyebrow">Other services</td></tr>${rows('other')}` : ''}
+      ${f.paid ? `<tr><td colspan="3" class="eyebrow">Payments</td></tr>${rows('pay')}` : ''}
+    </tbody></table></div>
+    <div class="money-list" style="max-width:340px;margin-left:auto"><div><span>Charges</span><span class="num">${fmt(f.charges)}</span></div><div class="sub"><span>of which accommodation VAT</span><span class="num">${fmt(accVat)}</span></div><div class="sub"><span>of which VAT in F&B and services (15/115)</span><span class="num">${fmt(vatIncl)}</span></div>
+      <div><span>Payments</span><span class="num">${fmt(-f.paid)}</span></div><div class="total"><span>Balance</span><span class="num">${fmt(f.balance)}</span></div>
+      <div class="sub"><span>Tips received (staff, not hotel revenue)</span><span class="num">${fmt(f.tips)}</span></div></div>
+    ${st.override ? `<div class="note warn">Checked out with balance by manager override: ${esc(st.override)}</div>` : ''}
+    <p class="small muted" style="margin:0">Generated by Diyneco. Card details are never stored.</p></div>`;
+}
+
+/* ---------------- ACTIONS ---------------- */
+const A = {
+  app:d => { UI.app = d.k; UI.modal = null; render(); window.scrollTo(0,0); },
+  restart:() => { S = seed(); SEQ = 0; UI = {...UI, user:'naledi', staffLines:[], staffKey:null, guestView:'home', carts:{}, cartKeys:{}, lastOrder:{}, payKeys:{}, lastPay:{}, modal:null, isolation:null, room:'r_h1_259', hotel:'h1', device:'DY-259-01'}; boot(); toast('Demo data restored'); },
+  gview:d => { UI.guestView = d.v; render(); },
+  gcat:d => { UI.guestCat = d.v; render(); },
+  qty:d => { const c = cartOf(); c[d.id] = Math.max(0, (c[d.id]||0) + Number(d.d)); if (!c[d.id]) delete c[d.id]; UI.cartKeys[UI.device] = null; render(); },
+  sample:() => { const s = api.guestSession(UI.device), menu = api.guestMenu(UI.device), by = n => menu.find(m => m.name===n);
+    const c = {}; [['Ribeye Steak 300g',4],['Chicken Burger',2],['Coca-Cola 330ml',2],['Cabernet Sauvignon (bottle)',1]].forEach(([n,q]) => { const m = by(n); if (m && isAvailableNow(m)) c[m.id] = q; });
+    if (!Object.keys(c).length) return toast('Spec items are outside serving hours right now', true);
+    UI.carts[UI.device] = c; UI.cartKeys[UI.device] = null; UI.guestView = 'cart'; render(); },
+  place:() => { const c = cartOf(), key = UI.cartKeys[UI.device] || (UI.cartKeys[UI.device] = uid('idem'));
+    const lines = Object.entries(c).map(([menuId,qty]) => ({menuId, qty}));
+    const r = run(() => api.placeOrder(UI.device, lines, val('gnote'), key));
+    if (r) { UI.lastOrder[UI.device] = {...r, lines, note:val('gnote'), key}; UI.carts[UI.device] = {}; UI.guestView = 'orders'; toast(r.status==='PENDING_APPROVAL' ? `Order #${r.no} sent for manager approval` : `Order #${r.no} placed and charged to your room`); } },
+  retryOrder:() => { const l = UI.lastOrder[UI.device]; const r = run(() => api.placeOrder(UI.device, l.lines, l.note, l.key));
+    if (r) { emit('IDEMPOTENT_REPLAY', api.guestSession(UI.device).hotel.id, `Order create retried with same key → returned #${r.no}, no duplicate`); toast(`Server returned order #${r.no} again. No duplicate created.`); } },
+  pair:() => { const code = val('pairCode').trim(); const r = run(() => api.pair(UI.device, code, 'pair-' + UI.device + '-' + code)); if (r) toast(`Paired to Room ${r.room}`); },
+  kaccept:d => run(() => api.kitchenAccept(UI.hotel, d.id)),
+  kstart:d => run(() => api.kitchenStart(UI.hotel, d.id)),
+  kitem:d => run(() => api.itemReady(UI.hotel, d.id, d.i)),
+  kall:d => { const o = S.orders.find(x => x.id===d.id); run(() => o.items.filter(i => i.status!=='ready' && (UI.kitchenStation==='all' || i.station===UI.kitchenStation)).forEach(i => api.itemReady(UI.hotel, o.id, i.id))); },
+  claim:d => run(() => api.claim(UI.hotel, d.id, UI.staff), 'Delivery assigned to you'),
+  pickup:d => run(() => api.pickUp(UI.hotel, d.id, UI.staff)),
+  deliver:d => run(() => api.deliver(UI.hotel, d.id, UI.staff)),
+  leave:d => run(() => api.leaveOnRoom(UI.hotel, d.id, UI.staff), 'Left on the room bill'),
+  checkpay:d => { const received = toMinor(val('rcv-' + d.id)), ref = val('ref-' + d.id).trim();
+    const p = run(() => api.previewPayment(UI.hotel, d.id, received)); if (!p) return;
+    if (!/^[A-Za-z0-9-]{4,20}$/.test(ref)) return run(() => { throw new ApiError('REF_REQUIRED','Enter the terminal approval reference (4–20 letters or digits)'); });
+    const pending = {orderId:d.id, received, ref, key:UI.payKeys[d.id]};
+    if (p.diff === 0) return A.confirmpay(null, pending);
+    UI.modal = {type:'tip', preview:p, pending}; render(); },
+  confirmpay:(d, direct) => { const pd = direct || UI.modal.pending; const tip = (UI.modal?.preview?.tip || 0) > 0;
+    const r = run(() => api.recordCardPayment(UI.hotel, pd.orderId, pd.received, pd.ref, tip, UI.staff, pd.key));
+    if (r) { UI.lastPay[pd.orderId] = {...pd, tip}; UI.modal = null; toast(r.tip ? `Bill ${fmt(r.applied)} and tip ${fmt(r.tip)} recorded` : r.shortfall ? `Part payment recorded. ${fmt(r.shortfall)} stays on the room bill` : 'Payment recorded'); } },
+  retryPay:d => { const l = UI.lastPay[d.id]; const r = run(() => api.recordCardPayment(UI.hotel, d.id, l.received, l.ref, l.tip, UI.staff, l.key));
+    if (r) { emit('IDEMPOTENT_REPLAY', UI.hotel, `Payment retried with same key → original returned, no duplicate`); toast('Server returned the original payment. No duplicate charge or tip.'); } },
+  mtab:d => { UI.mtab = d.k; render(); },
+  room:d => { UI.room = d.id; render(); },
+  approve:d => { UI.modal = {type:'approve', id:d.id}; render(); },
+  doapprove:d => { if (run(() => api.approveOrder(UI.hotel, d.id, val('apPin'), actorFor()) ?? true, 'Approved and sent to the kitchen')) { UI.modal = null; render(); } },
+  decline:d => run(() => api.declineOrder(UI.hotel, d.id, actorFor()), 'Order declined'),
+  adjust:d => { UI.modal = {type:'adjust', id:d.id}; render(); },
+  doadjust:d => { if (run(() => api.requestAdjustment(UI.hotel, d.id, toMinor(val('adjAmt')), val('adjReason')), 'Sent for approval by a second person')) { UI.modal = null; render(); } },
+  adjapprove:d => { UI.modal = {type:'adjapprove', id:d.id}; render(); },
+  doadjapprove:d => { if (run(() => api.approveAdjustment(UI.hotel, d.id, val('aaPin')) ?? true, 'Adjustment approved, posted and audited')) { UI.modal = null; render(); } },
+  adjreject:d => run(() => api.rejectAdjustment(UI.hotel, d.id), 'Adjustment rejected'),
+  cancel:d => { UI.modal = {type:'cancel', id:d.id}; render(); },
+  docancel:d => { if (run(() => api.cancelOrder(UI.hotel, d.id, val('cxReason'), val('cxPin')) ?? true, 'Order cancelled and charge reversed')) { UI.modal = null; render(); } },
+  block:d => run(() => api.setChargesBlocked(UI.hotel, d.id, d.v === '1'), d.v === '1' ? 'Tablet charges paused for this stay' : 'Tablet charges allowed'),
+  soadd:() => { const q = Number(val('soQty')); if (!Number.isInteger(q) || q < 1 || q > 99) return toast('Quantity must be 1–99', true); UI.soRoom = val('soRoom'); UI.staffLines.push({menuId:val('soItem'), qty:q}); UI.staffKey = null; render(); },
+  sorm:d => { UI.soRoom = val('soRoom'); UI.staffLines.splice(Number(d.i), 1); UI.staffKey = null; render(); },
+  soplace:() => { const key = UI.staffKey || (UI.staffKey = uid('idem'));
+    const r = run(() => api.placeStaffOrder(UI.hotel, val('soRoom'), UI.staffLines, val('soNote'), val('soLate'), key));
+    if (r) { UI.staffLines = []; UI.staffKey = null; toast(r.status==='PENDING_APPROVAL' ? `Order #${r.no} needs approval (over the limit)` : `Order #${r.no} sent to the kitchen`); } },
+  dcsave:() => run(() => api.saveDailyClose(UI.hotel, toMinor(val('dcTerm') || 0), toMinor(val('dcCash') || 0), false)),
+  dcreview:() => run(() => api.saveDailyClose(UI.hotel, toMinor(val('dcTerm') || 0), toMinor(val('dcCash') || 0), true), 'Day marked reviewed'),
+  checkin:d => { const type = val('ciType'); const billing = type==='company' ? {type, company:val('ciCo'), reg:val('ciReg'), vat:val('ciVat'), ref:val('ciRef'), address:val('ciAddr'), email:val('ciCoEmail'), traveller:val('ciName')} : {type:'personal'};
+    run(() => api.checkIn(UI.hotel, d.id, {guest:val('ciName'), email:val('ciEmail'), nights:Number(val('ciNights')), billing, training:document.getElementById('ciTraining')?.checked}, actorFor(), uid('idem')), 'Guest checked in. Tablet activated.'); },
+  addcharge:d => run(() => api.addCharge(UI.hotel, d.id, val('chgCat'), toMinor(val('chgAmt')), actorFor()), 'Charge added to folio'),
+  bill:d => { UI.modal = {type:'bill', id:d.id}; render(); },
+  checkout:d => { UI.modal = {type:'checkout', id:d.id}; render(); },
+  copay:d => run(() => api.recordFolioPayment(UI.hotel, d.id, toMinor(val('coPay')), val('coMethod'), actorFor(), uid('idem')), 'Payment recorded'),
+  docheckout:d => { const ov = document.getElementById('coOverride')?.checked || false;
+    const r = run(() => api.checkout(UI.hotel, d.id, val('coPin'), ov, val('coReason'), actorFor(), UI.modal.key));
+    if (r) { S.devices.filter(x => x.roomId === S.stays.find(s => s.id===d.id).roomId).forEach(x => { UI.carts[x.id] = {}; UI.lastOrder[x.id] = null; if (UI.device === x.id) UI.guestView = 'home'; });
+      UI.modal = {type:'bill', id:d.id}; toast(`Checked out. Bill ${r.invoiceNo}. Room tablet reset.`); } },
+  rstatus:d => run(() => api.setRoomStatus(UI.hotel, d.id, d.s, actorFor())),
+  price:d => run(() => api.updatePrice(UI.hotel, d.id, toMinor(val('pr-' + d.id)), actorFor()), 'Price saved. Past orders unchanged.'),
+  toggleItem:d => run(() => api.toggleItem(UI.hotel, d.id, actorFor())),
+  dev:d => run(() => api.setDevice(UI.hotel, d.id, d.s, actorFor())),
+  devreset:d => { if (run(() => api.resetDevice(UI.hotel, d.id, actorFor()), 'Tablet returned to its welcome screen')) { UI.carts[d.id] = {}; if (UI.device===d.id) UI.guestView = 'home'; render(); } },
+  mkpair:() => { const r = run(() => api.createPairing(UI.hotel, val('pairRoom'), actorFor())); if (r) { UI.modal = {type:'pairing', ...r}; render(); } },
+  gotoPair:() => { UI.modal = null; UI.app = 'guest'; UI.device = 'DY-NEW-07'; if (!S.devices.find(d => d.id==='DY-NEW-07')) S.devices.push({id:'DY-NEW-07', hotelId:null, roomId:null, type:'guest', status:'unpaired', os:'Android 14', app:'1.0.0-proto', lastSeen:now()}); render(); },
+  savesettings:() => { const lim = toMinor(val('setLimit')), fee = toMinor(val('setFee'));
+    if (!Number.isInteger(lim) || !Number.isInteger(fee)) return toast('Enter valid amounts', true);
+    run(() => api.updateSettings(UI.hotel, {roomChargeLimit:lim, feeMinor:fee, roomCharging:document.getElementById('setCharge').checked, allowOverride:document.getElementById('setOverride').checked, vatRegistered:document.getElementById('setVat').checked, vatNo:val('setVatNo').trim()}, actorFor()), 'Settings saved'); },
+  suspend:d => run(() => api.adminSetStatus(d.id, 'suspended'), 'Hotel suspended. Its tablets now show "Service unavailable".'),
+  reactivate:d => run(() => api.adminSetStatus(d.id, 'active'), 'Hotel reactivated'),
+  isocheck:() => { UI.isolation = isolationChecks(); render(); },
+  close:() => { UI.modal = null; render(); }
+};
+document.addEventListener('click', e => { const b = e.target.closest('[data-a]'); if (!b || b.disabled) return; const f = A[b.dataset.a]; if (f) { e.preventDefault(); f(b.dataset); } });
+document.addEventListener('change', e => { const c = e.target.dataset?.c; if (!c) return; const v = e.target.value;
+  if (c==='hotel') { UI.hotel = v; UI.kitchenStation = 'all'; }
+  if (c==='device') { UI.device = v; UI.guestView = 'home'; }
+  if (c==='station') UI.kitchenStation = v;
+  if (c==='hv') UI.hv = e.target.checked;
+  if (c==='staff') UI.staff = v;
+  if (c==='user') { UI.user = v; UI.modal = null; }
+  if (c==='citype') { UI.ciType = v; const keep = {n:val('ciName'), ni:val('ciNights'), em:val('ciEmail')}; render(); const s = (id,x) => { const el = document.getElementById(id); if (el) el.value = x; }; s('ciName',keep.n); s('ciNights',keep.ni); s('ciEmail',keep.em); return; }
+  if (c==='plan') { run(() => api.adminSetPlan(e.target.dataset.id, v), 'Plan changed'); return; }
+  render(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && UI.modal) { UI.modal = null; render(); } });
+setInterval(() => { if (!UI.modal && !document.activeElement?.matches('input,textarea,select')) { S.devices.forEach(d => { if (d.hotelId && d.status !== 'unpaired') d.lastSeen = now(); }); render(); } }, 30000);
+render();
+</script>

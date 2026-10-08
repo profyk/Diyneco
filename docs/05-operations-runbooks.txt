@@ -1,0 +1,712 @@
+Diyneco — Operations Runbooks
+
+
+
+
+  Diyneco — Operations Runbooks
+    Oct 8, 2026       · ​@Profy D Keakile
+
+  These runbooks tell the Diyneco team how to deploy, watch and recover the platform, and
+  how to handle the hotel-side situations that will happen in the first months: a lost tablet, a
+  bad Wi-Fi night, a till that does not balance. Each runbook names its trigger, its owner and
+  its steps.
+
+
+  Environments and release pipeline
+  Three fully separate environments, each with its own Supabase project, secrets and app
+  builds; nothing is shared between them.
+
+
+    Environment                 Purpose               Data               Deploys            Who has
+                                                                                            access
+
+    Development                 Local work and        Seed data only     On every push to   Engineers
+                                feature branches                         a branch
+                                                                         (preview)
+
+    Staging                     Release               Seed + load-       On merge to        Engineers, QA,
+                                candidates, pen       test data, never   main ,             pilot hotel
+                                tests, hotel pilots   production data    automatically      testers
+                                on test devices
+
+    Production                  Live hotels           Real data          Manual             Release
+                                                                         promotion of a     managers;
+                                                                         tested staging     read-only for
+                                                                         build              others
+
+
+  Pipeline, from merge to production
+
+   1. Merge to main after review and all security gates pass.
+   2. CI builds the backend container, the three web apps and an OpenAPI client package;
+      tags them with the commit hash.
+   3. Alembic migrations run against staging, then the backend rolls out to staging.
+   4. End-to-end suite runs on staging, including the spec test case 70 and the tenant
+      isolation suite.
+
+
+
+
+                                                                                                        Page 1 of 14
+Diyneco — Operations Runbooks
+
+
+
+
+   5. A release manager promotes the same artefacts to production: migrations first (they
+      are always backward compatible), then a rolling backend deploy with health checks,
+       then web apps.
+   6. Mobile apps ship through EAS: internal track → staging testers → production. Over-the-
+       air updates are used only for JavaScript fixes that need no native change, and the
+       guest app pins to a minimum API version.
+   7. If health checks or error rates fail within 15 minutes, roll back the backend to the
+      previous image. Migrations are not rolled back; the expand-contract rule means the old
+      code still works with the new schema.
+
+  Release windows: production deploys happen Tuesday to Thursday, 10:00–15:00 South
+  African time, avoiding hotel breakfast and dinner rushes. Emergency fixes follow the
+  incident process.
+
+
+  Configuration and secrets
+  All configuration comes from environment variables; secrets come from the hosting
+  provider's secret manager and never sit in the repository. The backend refuses to start if a
+  required variable is missing.
+
+  Backend and worker .env.example (committed with placeholder values only)
+
+     # Runtime
+     APP_ENV=development                  # development | staging | production
+     API_BASE_URL=http://localhost:8000
+     CORS_ALLOWED_ORIGINS=http://localhost:3001,http://localhost:3002,http://local
+     host:3003
+     LOG_LEVEL=info
+
+
+     # Database (Supabase Postgres). API and worker use their own least-privilege
+     roles.
+     DATABASE_URL=postgresql+asyncpg://diyneco_api:CHANGE_ME@localhost:5432/diynec
+     o
+     WORKER_DATABASE_URL=postgresql+asyncpg://diyneco_worker:CHANGE_ME@localhost:5
+     432/diyneco
+     MIGRATIONS_DATABASE_URL=postgresql+psycopg://diyneco_owner:CHANGE_ME@localhos
+     t:5432/diyneco
+
+
+     # Supabase (backend only; never in any frontend build)
+     SUPABASE_URL=https://YOUR-PROJECT.supabase.co
+     SUPABASE_SERVICE_ROLE_KEY=CHANGE_ME
+
+
+
+                                                                                            Page 2 of 14
+Diyneco — Operations Runbooks
+
+
+
+
+     STORAGE_BUCKET_ASSETS=hotel-assets
+     STORAGE_BUCKET_INVOICES=invoices
+
+
+     # Auth
+     JWT_SIGNING_KEYS_JSON=CHANGE_ME           # JWK set: current + previous Ed25519
+     keys with kid
+     JWT_ACTIVE_KID=CHANGE_ME
+     PAIRING_CODE_PEPPER=CHANGE_ME
+     KMS_MASTER_KEY_ID=CHANGE_ME               # wraps per-hotel data keys
+
+
+     # Realtime and jobs
+     REDIS_URL=redis://localhost:6379/0        # pub/sub fan-out and rate limits;
+     optional in development
+
+
+     # Email
+     EMAIL_PROVIDER=console               # console | smtp | provider name
+     EMAIL_PROVIDER_KEY=CHANGE_ME
+     EMAIL_FROM="Diyneco <no-reply@diyneco.com>"
+
+
+     # Monitoring
+     SENTRY_DSN=
+
+
+  Frontend variables are public by nature and hold no secrets:
+  NEXT_PUBLIC_API_BASE_URL , NEXT_PUBLIC_WS_URL and NEXT_PUBLIC_ENV for web apps;
+   EXPO_PUBLIC_API_BASE_URL , EXPO_PUBLIC_WS_URL and EXPO_PUBLIC_CERT_PINS for
+  mobile apps. A CI check fails any frontend build that references
+  SUPABASE_SERVICE_ROLE_KEY , JWT_ or DATABASE_URL .
+
+  Rotation: JWT keys every 90 days (add new key, switch JWT_ACTIVE_KID , remove the old
+  key after 24 hours); database role passwords every 90 days; everything immediately when
+  someone with access leaves.
+
+
+  Service levels and operational alerts
+  The internal targets below are proposals for v1; customer-facing SLA terms should be set
+  only after a few months of measured production data.
+
+
+    Objective                   Target                       Measured by
+
+    API availability            99.9% per month (about 43    Synthetic checks every minute
+                                minutes of downtime)         from two regions
+
+
+
+                                                                                       Page 3 of 14
+Diyneco — Operations Runbooks
+
+
+
+
+    Objective                        Target                          Measured by
+
+    Order placed → visible           95% within 2 seconds            Timestamp in event vs. client
+    on kitchen board                                                 receipt
+
+    API latency                      p95 under 300 ms for guest,     Server metrics
+                                     kitchen and delivery
+                                     endpoints
+
+    Realtime delivery                99% of events delivered         Outbox published_at minus
+                                     within 2 seconds of commit          created_at
+
+    Data durability                  Recovery point under 5          Restore drills
+                                     minutes; recovery time under
+                                     4 hours
+
+
+  Operational alerts
+
+
+    Signal                      Threshold                     Severity      First action
+
+    API 5xx rate                Above 1% for 5 minutes        Critical      Incident runbook; check
+                                                                            last deploy, roll back if
+                                                                            related
+
+    API p95 latency             Above 1 s for 10 minutes      High          Check database load and
+                                                                            slow queries
+
+    Synthetic check             2 consecutive failures from   Critical      Incident runbook
+    failing                     both regions
+
+    Outbox backlog              Oldest unpublished event      High          Check worker and Redis;
+                                older than 30 s                             restart worker
+
+    WebSocket                   Drop of more than 30% in 5    High          Check gateway and load
+    connections                 minutes                                     balancer
+
+    Database CPU or             Above 80% for 10 minutes      High          Identify top queries; scale
+    connections                                                             if sustained
+
+    Database                    Above 60 s                    Medium        Reports may lag; check
+    replication lag                                                         replica
+
+    Email provider              Above 5% of sends in 30       Medium        Check provider status;
+    errors                      minutes                                     queue retries
+
+
+
+
+                                                                                                     Page 4 of 14
+Diyneco — Operations Runbooks
+
+
+
+
+    Signal                      Threshold                     Severity    First action
+
+    Backup job                  Missed or failed              High        Backup runbook
+
+    Hotel devices               More than 50% of a hotel's    Medium      Hotel Wi-Fi runbook;
+    offline                     tablets offline for 10                    contact the hotel
+                                minutes
+
+    Certificate expiry          Under 21 days                 Medium      Renew
+
+
+
+
+  Runbook: incident response
+  Trigger: a Critical or High alert, a hotel reporting that ordering, kitchen, payments or
+  checkout do not work, or any suspected security event. Owner: on-call engineer, who
+  becomes incident lead until handing over.
+
+  Severity levels
+
+
+    Level         Meaning                           Example                              Update
+                                                                                         cadence
+
+    SEV1          Platform down or money or data    API unreachable; wrong totals;       Every 30
+                  at risk for many hotels           cross-tenant exposure                minutes
+
+    SEV2          A core flow broken for some       Kitchen board not updating;          Every hour
+                  hotels, or degraded for all       checkout failing at one hotel
+
+    SEV3          Minor or single-feature issue     Emails delayed; one report           Daily
+                  with a workaround                 wrong
+
+
+  Steps
+
+   1. Acknowledge the alert within 5 minutes (SEV1) or 15 minutes (SEV2). Open an incident
+      channel and an incident record with start time.
+   2. Assess scope: which hotels, which interfaces, since when. Check the last deploy,
+      status pages for Supabase, hosting, email and the CDN.
+   3. Declare severity and name the incident lead and a communications person. For SEV1,
+       page a second engineer.
+   4. Stabilise before fixing: roll back the last deploy if it correlates; disable a feature flag;
+       scale the database; pause the outbox worker if it is sending bad events. Never edit
+       financial rows by hand.
+
+
+                                                                                                    Page 5 of 14
+Diyneco — Operations Runbooks
+
+
+
+
+   5. Communicate to affected hotels through the in-app banner and email using the
+       templates below. Hotels can always fall back to taking orders by phone and recording
+       charges on the folio once the system is back.
+   6. Resolve and confirm with synthetic checks and with at least one affected hotel.
+   7. Reconcile if any money flow was affected: run the folio balance check (sum of entries
+       vs. reported totals) for affected hotels and the date range; flag any order placed but
+       not posted, or payment recorded twice.
+   8. Review within 5 business days for SEV1 and SEV2: timeline, cause, what detected it,
+       what slowed the fix, and dated actions. Blameless format.
+
+  Hotel message template (initial)
+
+     Subject: Diyneco service issue – [orders | kitchen display | payments |
+     checkout]
+
+
+     We are aware that [what is not working] since [time]. Your data is safe.
+     While we fix this, please [take room-service orders by phone / record
+     payments on paper
+     with the terminal slip / delay non-urgent checkouts].
+     Next update by [time]. Contact: support@diyneco.com
+
+
+  If the incident may involve personal data, start the data breach runbook in parallel; do not
+  wait for the incident to close.
+
+
+  Runbook: personal data breach
+  Trigger: any reasonable grounds to believe personal information has been accessed or
+  acquired by someone unauthorised: a cross-tenant exposure, a leaked credential or
+  backup, a lost unrevoked staff device with an open session, or a report from a hotel or
+  researcher. Owner: Diyneco Information Officer, with the incident lead.
+
+  POPIA section 22 requires the responsible party (the hotel, for guest data) to notify the
+  Information Regulator and affected people as soon as reasonably possible. Diyneco's job
+  as operator is to tell each affected hotel fast and give them what they need to notify.
+  Confirm current Regulator procedures and forms with legal counsel when this runbook is
+  used.
+
+   1. Contain (first hour): revoke exposed credentials, sessions, API keys or device
+      credentials; close the hole (roll back, block the endpoint, rotate keys); preserve logs
+       and evidence. Do not delete logs.
+
+
+
+                                                                                           Page 6 of 14
+Diyneco — Operations Runbooks
+
+
+
+
+   2. Assess (within 24 hours): what data, whose, how many people, which hotels, time
+      window, whether data was encrypted, and whether misuse is likely. Use audit_logs ,
+       API logs and storage access logs.
+   3. Notify hotels within 24 hours of confirming a compromise: affected hotel owners and
+       their Information Officers by email and phone, with the facts known so far, the data
+       categories, the number of guests, the containment steps and a named contact.
+   4. Support the hotel's notifications: provide per-hotel lists of affected guests (through
+      the hotel's own export), a draft guest notice, and a factual summary suitable for the
+       Regulator notification. The hotel sends its notices; Diyneco does not contact guests
+       directly unless the hotel asks in writing.
+   5. Notify for Diyneco's own data: if Diyneco's own customer data (hotel owner or staff
+       accounts) is affected, Diyneco as responsible party notifies the Regulator and those
+       people itself.
+   6. Record the breach in the breach register: date found, date contained, scope,
+       notifications sent with dates, and remediation.
+   7. Review and fix root causes; add a regression test for the specific exposure.
+
+  Guest notice must include (as POPIA expects): what happened, the possible
+  consequences, what the hotel and Diyneco have done, what the guest can do to protect
+  themselves, and who to contact. If the identity of the unauthorised person is known,
+  include it.
+
+
+  Runbook: backup and restore
+  What is backed up: the production database (daily snapshots plus point-in-time recovery,
+  which is a paid Supabase add-on; confirm the retention window on the chosen plan),
+  storage buckets (daily copy to a second, separately keyed bucket in another region),
+  secrets and key material (in the key management service, with its own backup). Tablets
+  hold nothing that needs backing up, so a dead tablet loses no data.
+
+  Targets: recovery point under 5 minutes; recovery time under 4 hours for the full platform.
+
+  Restore a mistake for one hotel (for example, a bulk menu import that went wrong).
+  Financial tables are never restored this way, because append-only entries are corrected
+  with new entries, not by rewinding.
+
+   1. Restore point-in-time to a new, isolated database at a moment before the mistake.
+   2. Export only the affected configuration rows for that hotel ( WHERE hotel_id = ... ).
+
+
+
+
+                                                                                          Page 7 of 14
+Diyneco — Operations Runbooks
+
+
+
+
+   3. Apply them to production through the API or a reviewed script that writes audit
+      entries.
+   4. Destroy the temporary database the same day.
+
+  Restore the whole platform (database lost or corrupted):
+
+   1. Declare SEV1 and put all apps into maintenance mode (API returns 503
+       SERVICE_UNAVAILABLE ; tablets show a paused screen).
+   2. Restore point-in-time to the latest consistent moment into a new database.
+   3. Run integrity checks: row counts against the last metrics snapshot; every folio balance
+      equals the sum of its entries; no orders posted without folio entries; invoice sequences
+      have no gaps.
+   4. Point the API at the restored database, rotate database credentials, lift maintenance
+       mode.
+   5. Ask hotels to compare their last recorded payments and checkouts with paper records
+      from the outage window, and record any missing ones through the normal API.
+
+  Restore drill: quarterly, from a real production backup restored into an isolated, access-
+  controlled restore environment (never staging), timed against the 4-hour target and
+  destroyed the same day. Results go in the drill log. A failed drill is a SEV2.
+
+
+  Runbook: hotel onboarding and go-live
+  Trigger: a hotel signs up. Owner: Diyneco onboarding lead, with the hotel's General
+  Manager.
+
+  Before approval (Diyneco)
+
+       Confirm the business is real: company registration or trading name, address, a named
+       owner who answered a call.
+       Confirm the plan and room count; set the subscription.
+       Check the Data Processing Agreement was accepted.
+       Approve the hotel in the admin panel.
+
+  Setup (hotel, guided by the wizard; Diyneco assists)
+
+       Hotel profile, logo, address, contacts.
+       Settings: VAT registration and number, room-charge auto-approve limit, room-service
+       fee, checkout override policy, invoice prefix, retention period.
+       Room types and rates; rooms by range or CSV; check numbers and floors on screen.
+
+
+
+                                                                                         Page 8 of 14
+Diyneco — Operations Runbooks
+
+
+
+
+       Kitchen stations (Main Kitchen, Bar, Dessert Station, Pool Bar as needed).
+       Menu: categories, schedules (breakfast, lunch, dinner hours), items with station, price,
+       allergens and photos.
+       Staff invitations by role; each accepts and sets a password and PIN; owners, admins,
+       GMs and finance enrol MFA.
+       Devices: pair one tablet per room (tablet provisioning runbook) and each kitchen
+       display.
+
+  Go-live test, on site, with real devices (about 45 minutes)
+
+       Check in a test guest to a real room.
+       Order from that room's tablet; confirm it reaches the right station(s) within 2 seconds.
+       Kitchen accepts, prepares, marks ready; room service claims, picks up, delivers.
+       Pay at the door with the hotel's real terminal for more than the amount; confirm the tip
+       prompt and amounts on all screens.
+       Place one order above the approval limit; approve it as a manager.
+       Check out with PIN; open the bill; confirm VAT label and numbering are right.
+       Confirm the tablet returns to the welcome screen and shows no history.
+       Void the test: the test stay is marked as a training stay so it is excluded from reports
+       (the folio is kept, as always).
+
+  First week: daily check-in call with the GM; review the daily close report together on day 1
+  and day 7; collect issues in the support queue.
+
+
+  Runbook: tablet provisioning, replacement and loss
+  Owner: hotel IT or the GM, with Diyneco support on call.
+
+  Provision a new guest tablet
+
+   1. Factory-reset the tablet; connect it to the hotel's staff Wi-Fi (not the guest network).
+   2. Install the Diyneco Guest app from the managed store or the build link support
+       provides. In v1.1, enrol it in the MDM instead, which installs the app and applies the
+       kiosk policy.
+   3. In the Merchant app: Devices → Pair a guest tablet → choose the room → Generate
+       pairing code. The code is valid for 15 minutes.
+   4. On the tablet, enter the code or scan the QR. The tablet shows the hotel name and
+      room number. Check they are right before mounting it.
+
+
+
+                                                                                             Page 9 of 14
+Diyneco — Operations Runbooks
+
+
+
+
+   5. Turn on screen pinning with the staff exit PIN; disable notifications, USB debugging and
+       the status bar.
+   6. Label the back of the tablet with its device label (e.g. DY-259-01).
+   7. Confirm it appears as Online in the Devices list.
+
+  Replace a broken tablet: pair the replacement to the same room; the old device's binding
+  ends automatically and its credential stops working. No data moves, because none lives
+  on the tablet.
+
+  Tablet missing or stolen
+
+   1. In Devices, select it → Unpair (step-up required). Its credential is revoked immediately.
+   2. Note the time in the incident log; no guest data is at risk because the tablet holds only
+      the active stay's view, but log it as a security event.
+   3. Pair a replacement as above.
+
+  Tablet showing the wrong room or a previous guest's data: lock it from the Merchant app
+  straight away, then Reset. If the previous guest's orders appeared after a checkout, treat
+  it as a possible breach and open the data breach runbook.
+
+  Kitchen display: same flow, choosing Kitchen display and its stations. Staff sign in with
+  their own PIN each shift.
+
+
+  Runbook: hotel Wi-Fi or realtime outage
+  Trigger: a hotel reports tablets offline or orders not reaching the kitchen, or the "hotel
+  devices offline" alert fires. Owner: Diyneco support, with the hotel's duty manager.
+
+  Decide where the problem is
+
+
+    Symptom                        Likely cause                  Check
+
+    One hotel's tablets offline,   Hotel Wi-Fi, router, power,   Devices list last_seen_at ; ask
+    other hotels fine              or load shedding              whether the hotel has power
+                                                                 and internet
+
+    All hotels' realtime slow,     WebSocket gateway or          Gateway metrics; outbox
+    REST fine                      Redis                         backlog alert
+
+    Everything failing             Platform outage               Incident runbook, SEV1
+
+
+
+
+                                                                                            Page 10 of 14
+Diyneco — Operations Runbooks
+
+
+
+
+    Symptom                        Likely cause                  Check
+
+    Some rooms offline,            Weak Wi-Fi coverage on        Group offline devices by floor
+    others fine                    those floors
+
+
+  What keeps working during a hotel's outage: the tablet shows an offline banner and
+  blocks new orders (no orders are queued on the device, so nothing duplicates later). The
+  kitchen display shows a reconnecting banner and keeps the last board on screen. Room-
+  service phones on mobile data keep working and still see their assigned deliveries.
+
+  Fallback at the hotel
+
+   1. Guests order by phone to reception.
+   2. Reception enters each phone order in the Merchant app on mobile data (Orders →
+       New order for room), so it still reaches the kitchen and the folio; or writes it on paper if
+       the Merchant app is also offline.
+   3. Card payments are taken on the terminal as usual; staff keep the slip with the room
+       number.
+   4. When service returns, reception enters paper orders and payments through the
+      Merchant app. Each needs a reason ("Wi-Fi outage 19:10–20:05") and is flagged on the
+      daily close report.
+
+  During load shedding: hotels with backup power should put the router, access points and
+  kitchen display on it. The daily close report shows outage windows from device
+  heartbeats so finance can match paper slips.
+
+
+  Runbook: daily close and payment discrepancies
+  Trigger: every morning, and whenever the daily close report shows a flag. Owner: the
+  hotel's Finance Manager; Diyneco support helps if the cause looks like a system fault.
+
+  Daily close (about 15 minutes)
+
+   1. Open yesterday's daily close report (emailed at 06:00, also in Reports).
+   2. Enter the card terminal's batch total for the business day. The report compares it with
+      the card payments recorded in Diyneco, overall and per staff member.
+   3. Count cash and enter it; compare with cash payments recorded.
+   4. Review every flag: tip above the threshold, adjustments, discounts, cancellations after
+      acceptance, checkout overrides, open balances on checked-out stays, paper entries
+       made after an outage.
+
+
+
+                                                                                             Page 11 of 14
+Diyneco — Operations Runbooks
+
+
+
+
+   5. Mark the day reviewed. The review, and who did it, is written to the audit log.
+
+  When card totals do not match
+
+
+    Difference                     Common cause                  Action
+
+    Terminal higher than           A payment taken on the        Find the slip; record the
+    Diyneco                        terminal but not recorded     payment with its terminal
+                                   (outage, staff forgot)        reference and reason
+
+    Diyneco higher than            A payment recorded but the    Check the terminal reference
+    terminal                       terminal transaction          against the terminal report; if it
+                                   declined or was voided        does not exist, raise an
+                                                                 adjustment to reverse it (two-
+                                                                 person approval) and speak to
+                                                                 the staff member
+
+    Difference equals a tip        Tip recorded in Diyneco but   Compare amount_received
+                                   staff keyed only the bill     with the terminal slip; correct
+                                   amount on the terminal, or    with an approved adjustment
+                                   the reverse
+
+    Repeated differences for       Process gap or possible       Hotel management follows its
+    one staff member               theft                         own HR process; Diyneco
+                                                                 provides the audit trail and
+                                                                 payment history for that staff
+                                                                 member
+
+
+  Diyneco support never edits a hotel's financial records. Every correction is made by hotel
+  staff through approved adjustments, so the trail shows who corrected what and why.
+
+
+  Runbook: tenant suspension, offboarding and data requests
+  Suspend a hotel (non-payment past the grace period, abuse, or the owner's request).
+  Owner: Platform Super Admin.
+
+   1. Confirm the reason and that the owner was warned at least 7 days earlier, unless it is
+       abuse or a security risk.
+   2. Admin panel → hotel → Suspend, with reason (step-up required).
+   3. Effect: tablets show "service unavailable"; staff can sign in read-only to export data
+       and close open stays' bills; no new orders or check-ins. Audit entry written.
+
+
+
+                                                                                               Page 12 of 14
+Diyneco — Operations Runbooks
+
+
+
+
+   4. Reactivation restores everything; no data is lost by suspension.
+
+  Offboard a hotel (contract ended). Owner: Platform Super Admin with a second admin
+  approving.
+
+   1. Give the owner 30 days' read-only access and a full export: rooms, menu, stays, folios,
+      invoices (PDF), payments, audit log, as CSV and PDF in one archive.
+   2. Revoke all devices, API keys and webhooks; deactivate staff memberships.
+   3. After 30 days, anonymise guest personal data per pii_columns . Keep invoices, folio
+       entries and payments for the tax retention period, then archive them encrypted.
+   4. Mark the hotel closed . Record the offboarding in the audit log and the customer file.
+
+  Guest data request received by Diyneco (a guest writes to Diyneco directly). Owner:
+  Information Officer.
+
+   1. Diyneco is the operator, so it does not answer the request itself. Reply to the guest
+      within 5 business days saying the hotel holds their data and that the request has been
+      passed on.
+   2. Forward the request to the hotel's owner and Information Officer, and offer help.
+   3. The hotel uses Guests → Export or Anonymise ( privacy.manage , step-up).
+      Anonymisation keeps financial amounts and invoice numbers, as the law requires.
+
+  Law-enforcement or legal request for data: forward to legal counsel the same day.
+  Diyneco discloses only what a valid legal instrument requires, tells the affected hotel
+  unless legally prohibited, and records the request and the response.
+
+
+  Release checklist and on-call
+  Before promoting a release to production
+
+       All pipeline gates green, including tenant isolation and spec test case 70 on staging.
+       Migrations reviewed: backward compatible, lock_timeout set, indexes built
+       concurrently, RLS and append-only rules present for new tables.
+       New permissions added to the catalogue and assigned to the right system roles.
+       New endpoints listed in the API spec with permission, idempotency and step-up
+       marked.
+       Feature flags default off for anything a hotel must opt into.
+       Release notes written for hotels if anything they see changes.
+       Rollback plan stated (previous image tag).
+
+
+
+                                                                                           Page 13 of 14
+Diyneco — Operations Runbooks
+
+
+
+
+       Inside the release window (Tue–Thu, 10:00–15:00 SAST), or approved as an emergency
+       fix.
+
+  After promoting
+
+       Health checks and synthetic checks green for 15 minutes.
+       Error rate and p95 latency at or below the previous release.
+       One real order placed and closed on the Diyneco test hotel in production.
+
+  On-call
+
+
+    Item                        Rule
+
+    Rotation                    Weekly, one primary and one secondary engineer;
+                                hand-over Monday 10:00 SAST with open issues
+                                reviewed
+
+    Response                    Critical: acknowledge in 5 minutes, any hour. High:
+                                30 minutes in business hours (07:00–22:00 SAST,
+                                matching hotel service hours), next morning
+                                otherwise
+
+    Escalation                  Primary → secondary after 10 minutes →
+                                engineering lead after 20 minutes
+
+    Tools                       Pager app, incident channel, read-only production
+                                dashboards; write access to production only
+                                through the deploy pipeline or a recorded break-
+                                glass procedure
+
+    Break-glass                 Time-limited elevated access with a ticket
+                                reference, a second person informed, every
+                                command logged, and an incident review
+                                afterwards
+
+    Support hours for hotels    Phone and chat 07:00–22:00 SAST every day; SEV1
+                                any hour
+
+
+
+
+                                                                                      Page 14 of 14
+

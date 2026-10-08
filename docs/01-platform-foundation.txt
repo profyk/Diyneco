@@ -1,0 +1,618 @@
+Diyneco — Platform Foundation (Phase 1)
+
+
+
+
+  Diyneco — Platform Foundation (Phase 1)
+    Oct 8, 2026        · ​@Profy D Keakile
+
+
+  Purpose and scope
+  Diyneco is one hotel platform with one source of truth and five specialised interfaces:
+  Guest, Kitchen, Room Service, Merchant and Admin. This document fixes the
+  architecture, structure, data model, compliance posture and phase plan before
+  production code is written. It follows the 82-section build spec and is the reference every
+  phase is checked against.
+
+  In scope for v1: tenancy, devices, rooms, stays and folios, menu and ordering, kitchen
+  stations, delivery, charge-to-room and card-at-door payments, tips, checkout with tablet
+  reset, PDF bills, corporate billing, RBAC, audit, reports and the platform admin. Out of
+  scope for v1: online payment gateways, PMS/POS integrations, push/SMS/WhatsApp,
+  CSV/PDF report export. These are designed for, not built.
+
+
+  Key architecture decisions
+  These are proposed defaults. Each is reversible until Phase 1 code lands.
+
+
+     Decision                             Proposed choice                      Why
+
+     Auth owner                           FastAPI issues and validates all     One enforcement point; device
+                                          tokens (staff JWT, device            auth does not fit Supabase Auth
+                                          credentials, admin MFA).             well.
+                                          Supabase Auth not used.
+
+     Realtime transport                   FastAPI WebSocket gateway            Clients never hold Supabase
+                                          publishing events per hotel_id       keys; tenant checks happen in
+                                          channel; Postgres LISTEN/NOTIFY      one place. Supabase Realtime
+                                          (or Redis pub/sub at scale) behind   stays an option for internal fan-
+                                          it                                   out.
+
+     Database access                      FastAPI uses a service               Defence in depth: a missed
+                                          connection; Postgres RLS enabled     WHERE hotel_id still returns
+                                          as a second line of defence via      nothing.
+                                          app.hotel_id session setting
+
+
+
+
+                                                                                                             Page 1 of 13
+Diyneco — Platform Foundation (Phase 1)
+
+
+
+
+     Decision                             Proposed choice                        Why
+
+     Money                                BIGINT minor units (cents) +           No float drift; multi-currency
+                                          currency CHAR(3) on every              ready.
+                                          financial row
+
+     Tips                                 Their own folio entry and payment      Covers overpayment at door and
+                                          allocation, never F&B revenue          a tip added to a room charge.
+
+     Underpayment                         Payment recorded as partial;           Nothing silently written off.
+                                          balance stays on the folio
+
+     VAT                                  Prices stored VAT-inclusive with       Matches SA retail practice and
+                                          rate snapshot; "Tax invoice" label     SARS invoice rules.
+                                          only if hotel is VAT-registered with
+                                          a VAT number
+
+     Guest tablet                         v1: Android screen pinning + app-      Expo alone cannot enforce full
+     lockdown                             level PIN exit; v1.1: device-          kiosk mode.
+                                          owner/MDM provisioning
+
+     Hosting                              Backend in a container (Docker)        Confirm provider before Phase
+                                          on a region close to SA; Supabase      9.
+                                          project region chosen for lowest
+                                          SA latency
+
+
+
+
+                                                                                                                  Page 2 of 13
+Diyneco — Platform Foundation (Phase 1)
+
+
+
+
+  System architecture
+
+
+
+
+  Diyneco system architecture · 5 clients, 1 API, 3 stores
+
+  All five interfaces talk only to the FastAPI backend over HTTPS and an authenticated
+  WebSocket. Only the API holds database and storage credentials, so tenant isolation and
+  every financial rule are enforced in one place.
+
+
+  Monorepo structure
+  One repository, pnpm workspaces for the TypeScript apps and a separate Python
+  package for the backend. Shared API types are generated from the FastAPI OpenAPI
+  schema so frontends cannot drift from the backend.
+
+     diyneco/
+       apps/
+         guest/                           Expo + Expo Router (Android tablet, kiosk)
+         room-service/                    Expo + Expo Router (staff phones)
+         kitchen/                         Next.js KDS (touch, high-visibility)
+         merchant/                        Next.js + shadcn/ui (hotel control centre)
+         admin/                           Next.js + shadcn/ui (platform, MFA)
+       backend/
+
+
+
+
+                                                                                         Page 3 of 13
+Diyneco — Platform Foundation (Phase 1)
+
+
+
+
+         app/
+           api/v1/                        routers by domain (auth, hotels, rooms, devices, stays,
+     menu, orders,
+                                          kitchen, deliveries, folios, payments, invoices, staff,
+     reports,
+                                          subscriptions, admin, api_keys, webhooks)
+           core/                          config, security, tenancy context, errors, idempotency,
+     logging
+           models/       SQLAlchemy 2.x models
+           schemas/      Pydantic request/response models
+           services/     business rules (one module per domain)
+           repositories/ tenant-scoped data access
+           realtime/     WebSocket gateway + event bus
+           billing/      folio engine, tax, tip, checkout
+           payments/     provider abstraction (room_charge, card_terminal, future
+     gateways)
+           notifications/ email provider abstraction
+           audit/        audit writer
+           integrations/ PMS/POS/accounting adapters (stubs, not exposed)
+         tests/
+       database/
+         migrations/     Alembic
+         seeds/          dev-only demo hotels
+       packages/
+         shared-types/   generated from OpenAPI
+         shared-ui/      Diyneco tokens, logo, primitives
+         config/         eslint, tsconfig, tailwind preset
+       docs/ architecture/ api/ database/ security/
+       infra/ docker/ deployment/ (dev, staging, prod)
+       .env.example
+
+
+
+
+  Data layering
+  Every request passes through the same six layers, and each layer has one job. Business
+  rules live only in services; nothing financial is decided in a frontend.
+
+
+
+
+                                                                                                Page 4 of 13
+Diyneco — Platform Foundation (Phase 1)
+
+
+
+
+     Layer                         Responsibility                          Never does
+
+     1. Router                     Parse request, validate with            Business logic, SQL
+     ( api/v1 )                    Pydantic, resolve principal (staff,
+                                   device, API key), apply permission
+                                   dependency, read Idempotency-
+                                   Key
+
+     2. Tenancy                    Bind hotel_id from the principal,       Trust a hotel_id sent in the body
+     context                       set app.hotel_id on the DB
+                                   session for RLS
+
+     3. Service                    Business rules: room-charge limits,     Raw SQL, HTTP concerns
+                                   order state machine, tip calculation,
+                                   checkout validation, adjustments
+                                   with approval
+
+     4. Repository                 Tenant-scoped queries; every query      Cross-tenant joins (admin repos
+                                   filters by hotel_id                     are separate and aggregate-only)
+
+     5. Database                   Constraints, FKs, check constraints,    Cascade-delete financial history
+                                   RLS, append-only triggers on
+                                   financial tables
+
+     6. Events +                   After commit: write audit_logs ,        Publish before the transaction
+     audit                         publish realtime event, enqueue         commits
+                                   email/PDF jobs (outbox table)
+
+
+  An outbox table ( event_outbox ) guarantees an event is published if and only if its
+  transaction committed. A worker drains it to the WebSocket gateway and to background
+  jobs.
+
+
+  Database schema
+  All primary keys are UUIDv7 (time-ordered). Every hotel-owned table carries hotel_id
+  UUID NOT NULL REFERENCES hotels and a composite index starting with hotel_id .
+  Financial tables use ON DELETE RESTRICT and soft deletion ( deleted_at ) where
+  deletion is allowed at all.
+
+
+
+
+                                                                                                            Page 5 of 13
+Diyneco — Platform Foundation (Phase 1)
+
+
+
+
+     Domain                   Tables                               Key constraints
+
+     Tenancy &                 hotels , hotel_settings , plans ,   hotel_settings.hotel_id unique; plan limits as
+     platform                  subscriptions , feature_flags       JSONB, not code
+
+     Identity &                users , roles , permissions ,       users.email unique; PINs and secrets stored as
+     access                    role_permissions , hotel_users ,    Argon2id hashes; api_keys store prefix + hash
+                               user_roles , invitations ,          only
+                               sessions , mfa_factors , api_keys
+
+     Property                  room_types , rooms ,                UNIQUE(hotel_id, room_number) ; room status
+                               kitchen_stations                    check constraint
+
+     Devices                   devices , device_pairings ,         Guest device UNIQUE(room_id) while active;
+                               device_stations                     pairing code single-use, expires in 15 min
+
+     Guests &                  guests , billing_profiles ,         One active stay per room (partial unique index
+     stays                     stays , folios                      WHERE status IN
+                                                                   ('checked_in','active','checkout_pending') );
+                                                                   one open folio per stay
+
+     Menu                      menu_categories , menu_items ,      price_minor >= 0 ; preparation_station_id FK
+                               menu_modifiers ,
+                               menu_item_modifiers ,
+                               menu_schedules
+
+     Orders                    orders , order_items ,              Snapshot columns (name, unit price, VAT rate) on
+                               order_item_modifiers ,              items; UNIQUE(hotel_id, order_number) ;
+                               order_status_history ,              UNIQUE(hotel_id, idempotency_key)
+                               deliveries
+
+     Billing                   folio_entries ,                     folio_entries append-only (trigger blocks
+                               accommodation_charges ,             UPDATE/DELETE); corrections are reversing
+                               service_charges , discounts ,       entries
+                               adjustments , charge_categories
+
+     Payments                  payments , payment_allocations ,    amount_received_minor >= 0 ; tip_minor >= 0 ;
+                               tips                                UNIQUE(hotel_id, idempotency_key)
+
+     Invoicing                 invoice_sequences , invoices ,      Gap-free numbering per hotel via locked
+                               invoice_items                       sequence row; invoice immutable once issued
+
+     Ops &                     notifications , webhooks ,          audit_logs append-only; idempotency_keys
+     integration               webhook_deliveries ,                store request hash + response
+                               event_outbox , idempotency_keys ,
+                               audit_logs
+
+
+
+
+                                                                                                                 Page 6 of 13
+Diyneco — Platform Foundation (Phase 1)
+
+
+
+
+   charge_categories (Accommodation, F&B, Laundry, Spa, Minibar, Transport, Other)
+  keeps the folio open to new services without schema changes. Tips are a category of their
+  own and are excluded from revenue reports by flag, not by name.
+
+
+  Money, billing and folio model
+  Every charge and payment for a stay is a row on one folio, and the folio balance is the
+  single number checkout trusts. Amounts are integers in cents: R3,000.00 is stored as
+   300000 .
+
+  Folio entry types: charge (positive, has a category), payment (negative), reversal
+  (mirrors a prior entry), adjustment (requires approval record). Balance = sum of charges
+  − sum of payments, tips excluded from both sides.
+
+  Tip rule (server-side only):
+
+     \text{tip} = \max(0,\ \text{amount received} - \text{amount due})
+
+
+  If received is greater than due, the API returns a pending tip and requires an explicit
+  confirm call; staff cannot type a tip amount directly. If received is less than due, the
+  payment is partial and the remainder stays on the folio. Worked example from the spec:
+  due R3,000, received R4,000, tip R1,000; hotel revenue stays R3,000.
+
+  Order financial lock: once the kitchen accepts an order, its line totals are frozen. Any
+  change goes through adjustments with original amount, new amount, reason, requester,
+  approver, timestamps and an audit entry.
+
+  Room-charge authorisation: the service checks device→room→active stay, hotel allows
+  room charging, stay not blocked, and the hotel's limit rule (e.g. auto-approve under R500,
+  manager approval above). Orders over the limit sit in pending_approval and do not reach
+  the kitchen.
+
+  Checkout: blocked if balance ≠ 0 unless a manager with checkout.override re-
+  authenticates and gives a reason. Checkout closes the stay, finalises the folio, issues the
+  bill, publishes RESET_ROOM_SESSION , and sets the room to Cleaning.
+
+
+  Security, tenancy and devices
+  Tenant isolation is enforced four times: principal-bound hotel_id , repository filters,
+  Postgres RLS, and automated cross-tenant tests that must fail closed.
+
+
+
+
+                                                                                            Page 7 of 13
+Diyneco — Platform Foundation (Phase 1)
+
+
+
+
+       Principals: staff user (JWT access 15 min + rotating refresh 30 days, revocable
+       sessions), guest device (long-lived device credential, SHA-256-hashed on the server,
+       held in Android Keystore via SecureStore), kitchen device (device credential + staff
+       PIN per action session), API key (hashed, shown once), platform admin (password +
+       TOTP MFA mandatory).
+       Permissions, not just roles: permission strings such as orders.read ,
+        kitchen.update , folio.adjust.request , folio.adjust.approve ,
+        checkout.perform , checkout.override , menu.price.update . The 10 hotel + 2 platform roles are
+       seeded bundles; hotels can edit bundles within limits.
+       Step-up auth: checkout, adjustments, discounts, refunds, device reset and permission
+       changes require a fresh PIN or password within 5 minutes.
+       Device binding: every guest request resolves device → hotel → room → active stay on
+       the server. Rejected if the device is disabled, revoked, reassigned or its credential fails.
+       Heartbeat every 30 s updates last_seen_at ; offline after 90 s.
+       Idempotency: Idempotency-Key header required on order create, payment record, tip
+       confirm, checkout, pairing and adjustments. Same key + same body returns the stored
+       response; same key + different body returns 409.
+       Rate limiting and lockout: 5 failed PINs locks that PIN for 15 min; login and pairing
+       endpoints rate-limited per IP and per account.
+       Errors: clients get {code, message, request_id} ; stack traces and SQL errors stay in
+       server logs only.
+
+
+  Compliance
+  Diyneco is an operator for guest data (the hotel is the responsible party under POPIA) and
+  holds no card data, which keeps PCI scope minimal. This section is an engineering
+  checklist, not legal advice; have an SA attorney and tax practitioner confirm it before
+  launch.
+
+
+     Area                                 Requirement                   How the platform meets it
+
+     POPIA:                               Collect only what is needed   Guest record = name, contact, ID only if
+     minimality                                                         the hotel enables it; no guest accounts
+                                                                        on tablets
+
+     POPIA: operator                      Written operator terms with   Data Processing Agreement in hotel
+     agreement                            each hotel                    onboarding; acceptance logged
+
+
+
+
+                                                                                                             Page 8 of 13
+Diyneco — Platform Foundation (Phase 1)
+
+
+
+
+     Area                                 Requirement                  How the platform meets it
+
+     POPIA: security                      Reasonable technical         TLS everywhere, encryption at rest,
+     safeguards                           measures                     RBAC, audit logs, MFA for admin
+
+     POPIA: breach                        Notify Regulator and data    Incident runbook; per-hotel affected-
+     notification                         subjects as soon as          guest export
+                                          reasonably possible
+
+     POPIA: cross-                        Transfers outside SA need    DPA clauses; disclose hosting region;
+     border transfer                      adequate protection          prefer an SA-proximate region
+
+     POPIA: data                          Access and correction        Merchant export of one guest's data;
+     subject rights                       requests                     anonymise on request where retention
+                                                                       law allows
+
+     Tablet privacy                       Next guest never sees        Session tokens bound to stay_id ;
+                                          previous data                reset wipes local cache; API returns
+                                                                       nothing without an active stay
+
+     VAT / SARS                           Tax invoice only for VAT     hotel_settings.vat_registered +
+                                          vendors, with prescribed     VAT number gate the "Tax Invoice" label;
+                                          fields                       full vs abridged invoice by threshold,
+                                                                       configurable
+
+     VAT rate                             Standard rate applies to     Rate stored per entry as a snapshot;
+                                          accommodation and F&B,       tips carry 0 VAT
+                                          not tips
+
+     Record retention                     Financial records kept at    Financial rows never hard-deleted;
+                                          least 5 years                guest PII anonymised after retention
+                                                                       window
+
+     PCI DSS                              No storage of PAN, CVV,      Card terminal stays standalone; app
+                                          PIN, track data              records amount, method and terminal
+                                                                       reference only
+
+     Platform admin                       Admins see aggregates, not   Admin repositories return counts and
+     privacy                              guests                       sums; break-glass access logged and
+                                                                       time-boxed
+
+
+
+
+                                                                                                              Page 9 of 13
+Diyneco — Platform Foundation (Phase 1)
+
+
+
+
+  API contract outline
+  All routes live under /api/v1 , are documented by FastAPI's OpenAPI output, and never
+  accept hotel_id from the client for tenant scoping. Core endpoints for the first end-to-
+  end flow:
+
+
+     Method & path                        Caller       Purpose                  Idempotent
+
+      POST /devices/pairings              Merchant     Create pairing code +    Yes
+                                                       QR for a room
+
+      POST /devices/pair                  Guest        Redeem code, receive     Yes
+                                          tablet       device credential
+
+      GET /guest/session                  Guest        Hotel, room, active      n/a
+                                          tablet       stay (or welcome-only
+                                                       state)
+
+      GET /guest/menu                     Guest        Menu available now,      n/a
+                                          tablet       by schedule
+
+      POST /guest/orders                  Guest        Place order, charge to   Yes
+                                          tablet       room
+
+      GET /guest/folio                    Guest        Current stay bill by     n/a
+                                          tablet       category
+
+      POST                                Kitchen      NEW → ACCEPTED,          Yes
+     /kitchen/orders/{id}/accept                       locks financials
+
+      POST /kitchen/order-                Kitchen      Item-level               Yes
+     items/{id}/status                                 PREPARING / READY
+                                                       per station
+
+      POST /deliveries/{id}/claim         Room         Assign to self           Yes
+                                          service
+
+      POST /deliveries/{id}/status        Room         PICKED_UP /              Yes
+                                          service      DELIVERED
+
+      POST /payments/preview              Room         Returns due,             n/a
+                                          service      received, computed
+                                                       tip
+
+
+
+
+                                                                                      Page 10 of 13
+Diyneco — Platform Foundation (Phase 1)
+
+
+
+
+     Method & path                                      Caller      Purpose                   Idempotent
+
+      POST /payments                                    Room        Record payment (+         Yes
+                                                        service     confirmed tip)
+
+      POST /stays / POST                                Reception   Create stay, check in     Yes
+     /stays/{id}/check-in
+
+      GET /stays/{id}/checkout-                         Reception   Categories, tips,         n/a
+     summary                                                        payments, balance
+
+      POST /stays/{id}/checkout                         Reception   Close stay, issue bill,   Yes
+                                                        + PIN       reset tablet
+
+      POST /adjustments / POST                          Staff /     Request and approve       Yes
+     /adjustments/{id}/approve                          manager     financial change
+
+
+  Responses use one envelope for errors: {"error": {"code": "ROOM_CHARGE_LIMIT",
+  "message": "...", "request_id": "..."}} .
+
+
+
+  Realtime events
+  Clients subscribe to scoped channels after authenticating the WebSocket; every event
+  carries event_id , hotel_id , occurred_at and a monotonically increasing seq so a
+  reconnecting client asks for everything after its last seq and never misses or double-
+  applies an update.
+
+
+     Channel                              Subscribers               Events
+
+      hotel:{id}:kitchen:                 Kitchen devices           NEW_ORDER , MENU_UPDATED
+     {station}
+
+      hotel:{id}:room-                    Room-service staff        ORDER_READY , DELIVERY_ASSIGNED
+     service
+
+      hotel:{id}:room:                    That room's tablet only   ORDER_ACCEPTED ,
+     {room}                                                         ORDER_PREPARING , ORDER_READY ,
+                                                                    ORDER_DELIVERED ,
+                                                                    PAYMENT_UPDATED ,
+                                                                    RESET_ROOM_SESSION ,
+                                                                    DEVICE_LOCKED
+
+
+
+
+                                                                                                    Page 11 of 13
+Diyneco — Platform Foundation (Phase 1)
+
+
+
+
+     Channel                                 Subscribers                    Events
+
+      hotel:{id}:ops                         Merchant users with            All order, payment, stay and device
+                                              orders.read                   events incl. STAY_CHECKED_OUT
+
+
+  Fallback: if the socket drops, clients poll the relevant GET endpoint every 10 s with
+  exponential back-off on reconnect, then switch back to the socket.
+
+
+  Phases and exit criteria
+  Nine phases follow the spec's order; no phase starts until the previous one's exit tests
+  pass in CI. The clickable prototype that accompanies this doc is Phase 0: it validates flows
+  and screens and is thrown away, not promoted to production.
+
+
+     Phase                            Delivers                                 Exit criteria
+
+     0. Prototype                     Clickable 5-app simulation,              Profy signs off on flows and
+                                      branded                                  screens
+
+     1. Foundation                    Monorepo, schema + migrations,           Cross-tenant test suite passes;
+                                      auth, RBAC, tenancy, RLS,                login + MFA work; OpenAPI
+                                      idempotency, audit, outbox, CI           published
+
+     2. Onboarding                    Hotels, settings, room types,            A hotel goes from sign-up to
+                                      bulk/CSV rooms, staff invites,           rooms + staff without manual DB
+                                      device registry                          work
+
+     3. Guest ordering                Menu admin, pairing, guest app,          Paired tablet places an
+                                      room-charge rules, order create          idempotent order; limit rules
+                                                                               enforced
+
+     4. Kitchen                       KDS, stations, item-level status,        Order split across 3 stations
+                                      realtime                                 reaches READY only when all
+                                                                               items ready
+
+     5. Room service                  Staff app, claim, pick-up, deliver,      Spec test: R3,000 due, R4,000
+                                      payment + tip                            received, R1,000 tip, no
+                                                                               duplicates on retry
+
+     6. Billing &                     Folio, accommodation nights, VAT,        Spec test case 70 passes end to
+     checkout                         adjustments, checkout, PDF bill,         end
+                                      email, corporate billing, tablet reset
+
+
+
+
+                                                                                                               Page 12 of 13
+Diyneco — Platform Foundation (Phase 1)
+
+
+
+
+     Phase                            Delivers                               Exit criteria
+
+     7. Admin panel                   Tenants, plans, subscriptions,         Admin cannot read guest PII
+                                      feature flags, health                  through any endpoint
+
+     8. Reports & API                 Merchant reports, admin analytics,     Report totals reconcile to folio
+                                      API keys, webhooks, notifications      entries to the cent
+
+     9. Hardening &                   Pen-test, load test, backups +         Restore drill succeeds; security
+     launch                           restore drill, monitoring, staging →   tests in spec section 71 pass
+                                      prod
+
+
+
+
+  Open decisions
+       Confirm FastAPI as sole auth owner (no Supabase Auth)
+       Confirm WebSocket gateway over direct Supabase Realtime subscriptions
+       Tagline for the apps: "Smarter Hospitality. Greater Experiences." or "Hotel Operations.
+       Guest Services. One Platform."
+       Guest tablet lockdown for v1: screen pinning, or MDM from day one
+       Hosting provider and Supabase region
+       Clean SVG logo master and exact brand hex values
+       Scope reconciliation: earlier notes mention bookings, POS, housekeeping and
+       maintenance in v1; this spec covers housekeeping only as room status. Confirm
+       whether bookings/POS/maintenance are in v1 or a later phase
+
+
+
+
+                                                                                                           Page 13 of 13
+

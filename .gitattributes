@@ -1,0 +1,6 @@
+# Keep LF in the repo and working tree (code runs in Linux containers)
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ico binary
+*.ps1 text eol=crlf
