@@ -1,0 +1,13 @@
+title = "Diyneco gitleaks configuration"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Development-only fixtures that are not secrets"
+paths = [
+  '''backend/tests/''',
+  '''backend/scripts/seed_dev\.py''',
+  '''backend/app/core/data/common_passwords\.txt''',
+  '''\.github/workflows/ci\.yml''',
+]
