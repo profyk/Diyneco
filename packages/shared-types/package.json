@@ -1,0 +1,13 @@
+{
+  "name": "@diyneco/shared-types",
+  "version": "0.1.0",
+  "private": true,
+  "description": "TypeScript types generated from the Diyneco API's OpenAPI document. Do not edit src/api.d.ts by hand.",
+  "types": "src/api.d.ts",
+  "scripts": {
+    "generate": "node scripts/generate.mjs"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.4.0"
+  }
+}
