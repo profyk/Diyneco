@@ -20,8 +20,14 @@ import sys
 import psycopg
 
 FINANCIAL_TABLES = (
-    "folio_entries", "payments", "payment_allocations", "tips",
-    "invoices", "invoice_items", "audit_logs", "order_status_history",
+    "folio_entries",
+    "payments",
+    "payment_allocations",
+    "tips",
+    "invoices",
+    "invoice_items",
+    "audit_logs",
+    "order_status_history",
 )
 APP_ROLES = ("diyneco_api", "diyneco_worker")
 
@@ -30,7 +36,9 @@ def _dsn(argv: list[str]) -> str:
     url = argv[1] if len(argv) > 1 else os.environ.get("MIGRATIONS_DATABASE_URL", "")
     if not url:
         sys.exit("usage: check_migrations.py <postgres url>  (or set MIGRATIONS_DATABASE_URL)")
-    return url.replace("postgresql+psycopg://", "postgresql://").replace("postgresql+asyncpg://", "postgresql://")
+    return url.replace("postgresql+psycopg://", "postgresql://").replace(
+        "postgresql+asyncpg://", "postgresql://"
+    )
 
 
 def check(conn: psycopg.Connection) -> list[str]:

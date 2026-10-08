@@ -67,6 +67,8 @@ def upgrade() -> None:
           id              uuid PRIMARY KEY DEFAULT app.uuid_v7(),
           user_id         uuid NOT NULL REFERENCES app.users(id),
           family_id       uuid NOT NULL,
+          active_hotel_id uuid REFERENCES app.hotels(id),         -- hotel this session is signed in to (G11);
+                                                                  -- sessions are per user, not tenant rows
           refresh_hash    bytea NOT NULL UNIQUE,
           device_id       uuid,
           user_agent      text,
@@ -213,6 +215,18 @@ def upgrade() -> None:
         $$;
         REVOKE ALL ON FUNCTION app.user_memberships(uuid) FROM PUBLIC;
         GRANT EXECUTE ON FUNCTION app.user_memberships(uuid) TO diyneco_api;
+
+        -- Invitation acceptance arrives with only the emailed token, before any hotel is
+        -- known. Returns the hotel so the API can set its tenant context (G4).
+        CREATE FUNCTION app.invitation_lookup(p_token_hash bytea)
+        RETURNS TABLE (invitation_id uuid, hotel_id uuid)
+        LANGUAGE sql STABLE SECURITY DEFINER SET search_path = app, extensions, pg_temp AS $$
+          SELECT i.id, i.hotel_id FROM app.invitations i
+          WHERE i.token_hash = p_token_hash AND i.accepted_at IS NULL AND i.cancelled_at IS NULL
+            AND i.expires_at > now()
+        $$;
+        REVOKE ALL ON FUNCTION app.invitation_lookup(bytea) FROM PUBLIC;
+        GRANT EXECUTE ON FUNCTION app.invitation_lookup(bytea) TO diyneco_api;
         """
     )
 
@@ -220,6 +234,7 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.execute("SET LOCAL lock_timeout = '3s'")
     h.refuse_if_data("users")
+    op.execute("DROP FUNCTION IF EXISTS app.invitation_lookup(bytea)")
     op.execute("DROP FUNCTION IF EXISTS app.user_memberships(uuid)")
     h.drop_tables(
         "one_time_tokens", "invitations", "platform_user_roles", "user_roles", "hotel_users",
