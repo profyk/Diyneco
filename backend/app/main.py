@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.deps import reject_card_data, reject_unknown_query
 from app.api.v1 import (
     auth,
+    billing,
     dev_storage,
     devices,
     guest,
@@ -105,6 +106,7 @@ def create_app(settings: Settings | None = None, state: AppState | None = None) 
     api.include_router(guest.router)
     api.include_router(kitchen.router)
     api.include_router(room_service.router)
+    api.include_router(billing.router)
     if isinstance(app_state.storage, LocalStorage):
         api.include_router(dev_storage.router)  # development only (build_storage refuses elsewhere)
     app.include_router(api)
