@@ -12,6 +12,7 @@ from app.core.crypto import LocalKms, decrypt_field, encrypt_field, new_data_key
 from app.core.jwt import JwtKeys
 from app.core.ratelimit import RateLimiter
 from app.db.session import Database
+from app.integrations.storage import Storage
 from app.models.tenancy import DataKey
 from app.notifications.email import Mailer
 
@@ -60,6 +61,7 @@ class AppState:
     keyring: Keyring
     limiter: RateLimiter
     mailer: Mailer
+    storage: Storage
 
     async def ping_db(self) -> bool:
         try:

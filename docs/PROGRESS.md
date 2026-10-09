@@ -1,5 +1,42 @@
 # Progress
 
+## 2026-10-09: Phase 2 (Onboarding), backend
+
+### Done
+
+- CI fixed and green on `main` (migration check read `backend/.env`; Trivy action tag).
+- Room types and rooms: list (natural order, filters, cursor), create, ranges (max 2,000,
+  all or nothing), CSV import with a per-line dry-run report and `?commit=true`, patch with
+  `If-Match`, manual status changes (refused while a guest is in), soft delete with step-up.
+  Rate changes on a room type need step-up. Plan limits enforced.
+- Staff: list, invitations (create, list, cancel; emailed code, 7 days), accept (Phase 1),
+  patch, replace roles (bumps `perms_v`), deactivate (revokes sessions), PIN reset; custom
+  roles (create, patch). Cannot-grant and superior rules, one-owner rule (D19-D22).
+- Devices: pairing codes (guest room or kitchen stations), redeem with a credential shown
+  once, credential to 1-hour device token, heartbeat with `RESET`/`LOCK` commands, registry
+  with online/offline/needs-pairing, lock, unlock, reset, disable, reassign, unpair. Device
+  principal enforces the spec's checks in order. Migration 0011 (`app.device_lookup`).
+- Hotel logo upload through signed URLs (Supabase Storage, or local storage in development)
+  and `GET /hotel/onboarding` with the 11 steps.
+- Shared pagination, ETag and plan-limit helpers.
+- Tests: 198 passing, none skipped, including the exit-criterion test that takes a hotel from
+  sign-up to rooms and staff through the API only.
+
+### Next
+
+- Merchant web app (Next.js) onboarding screens on top of these endpoints.
+- Phase 3 (Guest ordering): menu admin, guest tablet endpoints, room-charge rules, orders,
+  the WebSocket gateway.
+
+### Known gaps
+
+- The API spec should gain `POST /devices/token`, the new device events and the
+  `completed_commands` heartbeat field (D23, D24).
+- Device `offline` is derived on read; the `DEVICE_OFFLINE` event needs the worker job that
+  arrives with the WebSocket gateway in Phase 3.
+- The `hotel-assets` bucket's size and type limits must be set in Supabase (D27).
+- Kitchen stations can be paired but not yet managed (Phase 4).
+
 ## 2026-10-08: Phase 1 (Foundation)
 
 ### Done

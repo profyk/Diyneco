@@ -1,12 +1,12 @@
-"""/signup, /hotel, /hotel/settings, /permissions, /roles. The hotel is always the caller's
-token hotel; none of these routes accept a hotel id."""
+"""/signup, /hotel, /hotel/logo, /hotel/onboarding, /hotel/settings, /permissions, /roles.
+The hotel is always the caller's token hotel; none of these routes accept a hotel id."""
 
 from __future__ import annotations
 
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Header, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 
 from app.api.deps import (
     IdemAnon,
@@ -24,6 +24,9 @@ from app.repositories.roles import RoleRepository
 from app.schemas.hotel import (
     HotelOut,
     HotelPatch,
+    LogoUploadOut,
+    LogoUploadRequest,
+    OnboardingOut,
     PermissionList,
     RoleList,
     SettingsOut,
@@ -48,7 +51,7 @@ NOT_NULL_HOTEL = {"name"}
 NOT_NULL_SETTINGS = set(hotel_service.SETTINGS_FIELDS) - {"vat_number", "wifi_name"}
 
 
-def _with_etag(body: dict[str, Any], version: int, model: type[Any]) -> JSONResponse:
+def _with_etag(body: dict[str, Any], version: int, model: type[Any]) -> Response:
     return JSONResponse(
         model.model_validate(body).model_dump(mode="json"), headers={"ETag": hotel_service.etag(version)}
     )
@@ -66,7 +69,7 @@ def _changes(patch: Any, not_null: set[str]) -> dict[str, Any]:
 
 
 @router.post("/signup", status_code=201, dependencies=[Depends(limit_auth_ip)], response_model=SignupResponse)
-async def signup(idem: IdemAnon, body: SignupRequest, request: Request, uow: Uow) -> JSONResponse:
+async def signup(idem: IdemAnon, body: SignupRequest, request: Request, uow: Uow) -> Response:
     client = ClientInfo(
         ip=client_ip(request),
         user_agent=request.headers.get("user-agent"),
@@ -86,24 +89,39 @@ async def signup(idem: IdemAnon, body: SignupRequest, request: Request, uow: Uow
 
 
 @router.get("/hotel", response_model=HotelOut)
-async def get_hotel(request: Request, uow: Uow, principal: HotelRead) -> JSONResponse:
-    body, version = await hotel_service.get_hotel(uow, principal.tenant(request))
+async def get_hotel(request: Request, uow: Uow, principal: HotelRead) -> Response:
+    body, version = await hotel_service.get_hotel(state_of(request), uow, principal.tenant(request))
     return _with_etag(body, version, HotelOut)
 
 
 @router.patch("/hotel", response_model=HotelOut)
 async def patch_hotel(
     body: HotelPatch, request: Request, uow: Uow, principal: HotelUpdate, if_match: IfMatch = None
-) -> JSONResponse:
+) -> Response:
     expected = hotel_service.parse_if_match(if_match)
     result, version = await hotel_service.patch_hotel(
-        uow, principal.tenant(request), expected, _changes(body, NOT_NULL_HOTEL)
+        state_of(request), uow, principal.tenant(request), expected, _changes(body, NOT_NULL_HOTEL)
     )
     return _with_etag(result, version, HotelOut)
 
 
+@router.post("/hotel/logo", response_model=LogoUploadOut)
+async def start_logo_upload(
+    body: LogoUploadRequest, request: Request, uow: Uow, principal: HotelUpdate
+) -> dict[str, Any]:
+    """Returns a signed URL; PUT the file there with the given headers within its lifetime."""
+    return await hotel_service.start_logo_upload(
+        state_of(request), uow, principal.tenant(request), body.content_type, body.size_bytes
+    )
+
+
+@router.get("/hotel/onboarding", response_model=OnboardingOut)
+async def get_onboarding(request: Request, uow: Uow, principal: HotelRead) -> dict[str, Any]:
+    return await hotel_service.onboarding(uow, principal.tenant(request))
+
+
 @router.get("/hotel/settings", response_model=SettingsOut)
-async def get_settings(request: Request, uow: Uow, principal: SettingsRead) -> JSONResponse:
+async def get_settings(request: Request, uow: Uow, principal: SettingsRead) -> Response:
     body, version = await hotel_service.get_settings(uow, principal.tenant(request))
     return _with_etag(body, version, SettingsOut)
 
@@ -116,7 +134,7 @@ async def patch_settings(
     principal: SettingsUpdate,
     _step_up: StepUp,
     if_match: IfMatch = None,
-) -> JSONResponse:
+) -> Response:
     expected = hotel_service.parse_if_match(if_match)
     result, version = await hotel_service.patch_settings(
         uow, principal.tenant(request), expected, _changes(body, NOT_NULL_SETTINGS)

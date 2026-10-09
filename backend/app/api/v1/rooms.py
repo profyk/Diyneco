@@ -6,7 +6,6 @@ import uuid
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Query, Request, Response
-from fastapi.responses import JSONResponse
 
 from app.api.deps import IdemUser, Principal, StepUp, Uow, has_step_up, require_permission
 from app.api.http import IfMatch, parse_if_match, patch_changes, with_etag
@@ -51,7 +50,7 @@ async def list_room_types(request: Request, uow: Uow, principal: RoomsRead) -> d
 @router.post("/room-types", status_code=201, response_model=RoomTypeOut)
 async def create_room_type(
     idem: IdemUser, body: RoomTypeCreate, request: Request, uow: Uow, principal: RoomsManage
-) -> JSONResponse:
+) -> Response:
     result = await svc.create_room_type(uow, principal.tenant(request), body.model_dump())
     return await idem.complete(uow, 201, RoomTypeOut.model_validate(result).model_dump(mode="json"))
 
@@ -64,7 +63,7 @@ async def patch_room_type(
     uow: Uow,
     principal: RoomsManage,
     if_match: IfMatch = None,
-) -> JSONResponse:
+) -> Response:
     expected = parse_if_match(if_match)
     result = await svc.patch_room_type(
         uow,
@@ -105,7 +104,7 @@ async def list_rooms(
 
 
 @router.get("/rooms/{room_id}", response_model=RoomOut)
-async def get_room(room_id: uuid.UUID, request: Request, uow: Uow, principal: RoomsRead) -> JSONResponse:
+async def get_room(room_id: uuid.UUID, request: Request, uow: Uow, principal: RoomsRead) -> Response:
     result = await svc.get_room(uow, principal.tenant(request), room_id)
     return with_etag(result, result["version"], RoomOut)
 
@@ -113,7 +112,7 @@ async def get_room(room_id: uuid.UUID, request: Request, uow: Uow, principal: Ro
 @router.post("/rooms", status_code=201, response_model=RoomOut)
 async def create_room(
     idem: IdemUser, body: RoomCreate, request: Request, uow: Uow, principal: RoomsManage
-) -> JSONResponse:
+) -> Response:
     result = await svc.create_room(uow, principal.tenant(request), body.model_dump())
     return await idem.complete(uow, 201, RoomOut.model_validate(result).model_dump(mode="json"))
 
@@ -121,7 +120,7 @@ async def create_room(
 @router.post("/rooms/bulk", status_code=201, response_model=BulkResult)
 async def bulk_create_rooms(
     idem: IdemUser, body: RoomBulkCreate, request: Request, uow: Uow, principal: RoomsManage
-) -> JSONResponse:
+) -> Response:
     created = await svc.bulk_create(uow, principal.tenant(request), [r.model_dump() for r in body.ranges])
     result = BulkResult.model_validate({"created": len(created), "data": created})
     return await idem.complete(uow, 201, result.model_dump(mode="json"))
@@ -140,7 +139,7 @@ async def import_rooms(
     uow: Uow,
     principal: RoomsManage,
     commit: Annotated[bool, Query()] = False,
-) -> JSONResponse:
+) -> Response:
     """Dry run by default: returns a per-line report. `?commit=true` writes all rows or none."""
     if not request.headers.get("content-type", "").startswith("text/csv"):
         raise AppError("VALIDATION_FAILED", "Send the file as text/csv.")
@@ -157,7 +156,7 @@ async def patch_room(
     uow: Uow,
     principal: RoomsManage,
     if_match: IfMatch = None,
-) -> JSONResponse:
+) -> Response:
     expected = parse_if_match(if_match)
     result = await svc.patch_room(
         uow, principal.tenant(request), room_id, expected, patch_changes(body, ROOM_NOT_NULL)
@@ -168,7 +167,7 @@ async def patch_room(
 @router.post("/rooms/{room_id}/status", response_model=RoomOut)
 async def set_room_status(
     room_id: uuid.UUID, body: RoomStatusChange, request: Request, uow: Uow, principal: RoomsStatus
-) -> JSONResponse:
+) -> Response:
     result = await svc.set_status(uow, principal.tenant(request), room_id, body.status)
     return with_etag(result, result["version"], RoomOut)
 

@@ -139,3 +139,29 @@ class RoleOut(BaseModel):
 class RoleList(BaseModel):
     data: list[RoleOut]
     next_cursor: str | None = None
+
+
+class LogoUploadRequest(StrictModel):
+    content_type: Literal["image/png", "image/jpeg", "image/svg+xml"]
+    size_bytes: Annotated[int, Field(ge=1, le=2 * 1024 * 1024, strict=True)]
+
+
+class LogoUploadOut(BaseModel):
+    upload_url: str
+    method: str
+    headers: dict[str, str]
+    expires_at: datetime
+    max_bytes: int
+
+
+class OnboardingStep(BaseModel):
+    key: str
+    title: str
+    done: bool
+
+
+class OnboardingOut(BaseModel):
+    steps: list[OnboardingStep]
+    next_step: str | None
+    completed: int
+    total: int

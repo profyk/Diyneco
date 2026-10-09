@@ -23,7 +23,7 @@ from typing import Any
 
 from fastapi import Request
 from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from sqlalchemy import delete, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -44,7 +44,9 @@ class IdempotentReplay(Exception):
         self.body = body
 
 
-def replay_response(exc: IdempotentReplay) -> JSONResponse:
+def replay_response(exc: IdempotentReplay) -> Response:
+    if exc.status_code == 204:
+        return Response(status_code=204, headers={REPLAY_HEADER: "true"})
     return JSONResponse(exc.body, status_code=exc.status_code, headers={REPLAY_HEADER: "true"})
 
 
@@ -78,14 +80,23 @@ class IdempotencyClaim:
     key: uuid.UUID
     sessionmaker: async_sessionmaker[AsyncSession]
 
-    async def complete(self, uow: UnitOfWork, status_code: int, body: Any) -> JSONResponse:
-        """Store the response in the request's transaction and return it."""
+    async def complete(
+        self, uow: UnitOfWork, status_code: int, body: Any, *, store: Any | None = None
+    ) -> Response:
+        """Store the response in the request's transaction and return it. `store` replaces
+        what is kept for replays, for responses that carry a secret shown once."""
         encoded = jsonable_encoder(body)
         await uow.session.execute(
             update(IdempotencyKey)
             .where(IdempotencyKey.principal_key == self.principal_key, IdempotencyKey.key == self.key)
-            .values(status="completed", response_code=status_code, response_body=encoded)
+            .values(
+                status="completed",
+                response_code=status_code,
+                response_body=encoded if store is None else jsonable_encoder(store),
+            )
         )
+        if status_code == 204:
+            return Response(status_code=204)
         return JSONResponse(encoded, status_code=status_code)
 
     async def fail(self, err: BaseException) -> None:

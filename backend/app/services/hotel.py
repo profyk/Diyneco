@@ -3,13 +3,18 @@ changes are audited one entry per field."""
 
 from __future__ import annotations
 
+import uuid
 import zoneinfo
 from datetime import time
 from typing import Any
 
+from sqlalchemy import text
+
 from app.audit.writer import write_audit
 from app.core.errors import AppError
+from app.core.state import AppState
 from app.db.session import TenantContext, UnitOfWork
+from app.integrations.storage import Storage, hotel_key
 from app.models.tenancy import Hotel, HotelSettings
 from app.realtime.outbox import emit, hotel_channel
 from app.repositories.hotels import HotelRepository
@@ -81,7 +86,7 @@ def settings_payload(st: HotelSettings) -> dict[str, Any]:
     }
 
 
-async def hotel_payload(repo: HotelRepository, hotel: Hotel) -> dict[str, Any]:
+async def hotel_payload(repo: HotelRepository, hotel: Hotel, storage: Storage, bucket: str) -> dict[str, Any]:
     plan = await repo.current_plan()
     return {
         "id": hotel.id,
@@ -92,7 +97,7 @@ async def hotel_payload(repo: HotelRepository, hotel: Hotel) -> dict[str, Any]:
         "address": hotel.address,
         "phone": hotel.phone,
         "email": hotel.email,
-        "logo_url": None,  # logo upload arrives in Phase 2
+        "logo_url": await storage.signed_download(bucket, hotel.logo_path) if hotel.logo_path else None,
         "country": hotel.country,
         "plan": {"code": plan[0].code, "name": plan[0].name, "subscription_status": plan[1].status}
         if plan
@@ -102,16 +107,16 @@ async def hotel_payload(repo: HotelRepository, hotel: Hotel) -> dict[str, Any]:
     }
 
 
-async def get_hotel(uow: UnitOfWork, ctx: TenantContext) -> tuple[dict[str, Any], int]:
+async def get_hotel(st: AppState, uow: UnitOfWork, ctx: TenantContext) -> tuple[dict[str, Any], int]:
     repo = HotelRepository(uow.session, ctx)
     hotel = await repo.get()
     if hotel is None:
         raise AppError("NOT_FOUND")
-    return await hotel_payload(repo, hotel), hotel.version
+    return await hotel_payload(repo, hotel, st.storage, st.settings.storage_bucket_assets), hotel.version
 
 
 async def patch_hotel(
-    uow: UnitOfWork, ctx: TenantContext, expected_version: int, changes: dict[str, Any]
+    st: AppState, uow: UnitOfWork, ctx: TenantContext, expected_version: int, changes: dict[str, Any]
 ) -> tuple[dict[str, Any], int]:
     repo = HotelRepository(uow.session, ctx)
     before = await repo.get()
@@ -132,7 +137,8 @@ async def patch_hotel(
             [hotel_channel(ctx.hotel_id, "ops")],
             {"hotel_id": str(ctx.hotel_id), "version": updated.version},
         )
-    return await hotel_payload(repo, updated), updated.version
+    payload = await hotel_payload(repo, updated, st.storage, st.settings.storage_bucket_assets)
+    return payload, updated.version
 
 
 async def get_settings(uow: UnitOfWork, ctx: TenantContext) -> tuple[dict[str, Any], int]:
@@ -200,6 +206,16 @@ async def patch_settings(
             old_value={f: before[f]},
             new_value={f: after[f]},
         )
+    if changes and not changed:
+        # Saved without changes: the defaults were reviewed and kept (onboarding, D25).
+        await write_audit(
+            uow.session,
+            ctx,
+            "settings.reviewed",
+            "hotel_settings",
+            ctx.hotel_id,
+            new_value={"fields": sorted(changes)},
+        )
     if changed:
         await emit(
             uow.session,
@@ -209,3 +225,111 @@ async def patch_settings(
             {"hotel_id": str(ctx.hotel_id), "fields": changed, "version": updated.version},
         )
     return after, updated.version
+
+
+# --- Logo ----------------------------------------------------------------------------------
+
+LOGO_TYPES = {"image/png": "png", "image/jpeg": "jpg", "image/svg+xml": "svg"}
+LOGO_MAX_BYTES = 2 * 1024 * 1024
+
+
+async def start_logo_upload(
+    st: AppState, uow: UnitOfWork, ctx: TenantContext, content_type: str, size_bytes: int
+) -> dict[str, Any]:
+    """Points the hotel at a new object key and returns a signed URL to upload it to. The
+    key is built from the tenant context, never from the request."""
+    if content_type not in LOGO_TYPES:
+        raise _field_error("content_type", "Upload a PNG, JPEG or SVG file.")
+    if size_bytes > LOGO_MAX_BYTES:
+        raise _field_error("size_bytes", "The logo must be 2 MB or smaller.")
+    repo = HotelRepository(uow.session, ctx)
+    hotel = await repo.get()
+    if hotel is None:
+        raise AppError("NOT_FOUND")
+    key = hotel_key(ctx.hotel_id, "logo", f"{uuid.uuid4()}.{LOGO_TYPES[content_type]}")
+    bucket = st.settings.storage_bucket_assets
+    upload = await st.storage.signed_upload(bucket, key, content_type, LOGO_MAX_BYTES)
+    updated = await repo.update(hotel.version, {"logo_path": key})
+    if updated is None:
+        raise AppError("PRECONDITION_FAILED")
+    await write_audit(
+        uow.session,
+        ctx,
+        "hotel.logo",
+        "hotel",
+        ctx.hotel_id,
+        old_value={"logo_path": hotel.logo_path},
+        new_value={"logo_path": key},
+    )
+    await emit(
+        uow.session,
+        ctx,
+        "HOTEL_UPDATED",
+        [hotel_channel(ctx.hotel_id, "ops")],
+        {"hotel_id": str(ctx.hotel_id), "version": updated.version},
+    )
+    return {
+        "upload_url": upload.url,
+        "method": upload.method,
+        "headers": upload.headers,
+        "expires_at": upload.expires_at,
+        "max_bytes": LOGO_MAX_BYTES,
+    }
+
+
+# --- Onboarding ----------------------------------------------------------------------------
+
+ONBOARDING_STEPS: list[tuple[str, str]] = [
+    ("account", "Verify your email"),
+    ("hotel_profile", "Hotel profile"),
+    ("settings", "Operational settings"),
+    ("room_types", "Room types"),
+    ("rooms", "Rooms"),
+    ("menu", "Menu"),
+    ("kitchen_stations", "Kitchen stations"),
+    ("devices", "Kitchen displays"),
+    ("staff_invites", "Invite staff"),
+    ("tablet_pairing", "Pair room tablets"),
+    ("room_charging", "Room charging"),
+]
+
+_ONBOARDING_SQL = """
+SELECT
+  EXISTS (SELECT 1 FROM app.hotel_users hu JOIN app.users u ON u.id = hu.user_id
+          JOIN app.user_roles ur ON ur.hotel_user_id = hu.id JOIN app.roles r ON r.id = ur.role_id
+          WHERE hu.hotel_id = :h AND r.hotel_id IS NULL AND r.code = 'hotel_owner'
+            AND u.email_verified_at IS NOT NULL) AS account,
+  EXISTS (SELECT 1 FROM app.hotels WHERE id = :h AND phone IS NOT NULL
+            AND address IS NOT NULL AND address <> '{}'::jsonb) AS hotel_profile,
+  EXISTS (SELECT 1 FROM app.audit_logs WHERE hotel_id = :h
+            AND action IN ('settings.update', 'settings.reviewed')) AS settings,
+  EXISTS (SELECT 1 FROM app.room_types WHERE hotel_id = :h AND deleted_at IS NULL) AS room_types,
+  EXISTS (SELECT 1 FROM app.rooms WHERE hotel_id = :h AND deleted_at IS NULL) AS rooms,
+  EXISTS (SELECT 1 FROM app.menu_items WHERE hotel_id = :h) AS menu,
+  EXISTS (SELECT 1 FROM app.kitchen_stations WHERE hotel_id = :h AND is_active) AS kitchen_stations,
+  EXISTS (SELECT 1 FROM app.devices WHERE hotel_id = :h AND kind = 'kitchen'
+            AND status <> 'revoked') AS devices,
+  (EXISTS (SELECT 1 FROM app.invitations WHERE hotel_id = :h)
+   OR (SELECT count(*) FROM app.hotel_users WHERE hotel_id = :h) > 1) AS staff_invites,
+  EXISTS (SELECT 1 FROM app.devices WHERE hotel_id = :h AND kind = 'guest'
+            AND status <> 'revoked') AS tablet_pairing,
+  EXISTS (SELECT 1 FROM app.audit_logs WHERE hotel_id = :h
+            AND action IN ('settings.update', 'settings.reviewed')
+            AND (new_value ?| ARRAY['room_charging_enabled', 'room_charge_auto_approve_limit']
+                 OR new_value->'fields' ?| ARRAY['room_charging_enabled', 'room_charge_auto_approve_limit'])
+         ) AS room_charging
+"""
+
+
+async def onboarding(uow: UnitOfWork, ctx: TenantContext) -> dict[str, Any]:
+    """The 11 setup steps (API spec). Settings and room charging count as done once someone
+    has reviewed and saved them, since their defaults are valid values (DECISIONS D25)."""
+    row = (await uow.session.execute(text(_ONBOARDING_SQL), {"h": ctx.hotel_id})).mappings().one()
+    steps = [{"key": key, "title": title, "done": bool(row[key])} for key, title in ONBOARDING_STEPS]
+    pending = [s["key"] for s in steps if not s["done"]]
+    return {
+        "steps": steps,
+        "next_step": pending[0] if pending else None,
+        "completed": len(steps) - len(pending),
+        "total": len(steps),
+    }

@@ -68,7 +68,7 @@ def _token_response(
     client: auth_service.ClientInfo,
     extra: dict[str, Any] | None = None,
     status_code: int = 200,
-) -> JSONResponse:
+) -> Response:
     t = result.tokens
     if t is None:
         raise AppError("INTERNAL_ERROR")
@@ -100,7 +100,7 @@ def _token_response(
 @router.post(
     "/login", dependencies=AuthLimited, responses={200: {"model": TokenResponse | MfaChallengeResponse}}
 )
-async def login(body: LoginRequest, request: Request, uow: Uow) -> JSONResponse:
+async def login(body: LoginRequest, request: Request, uow: Uow) -> Response:
     client = _client(request)
     result = await auth_service.login(
         state_of(request), uow, body.email, body.password, body.hotel_id, client
@@ -113,7 +113,7 @@ async def login(body: LoginRequest, request: Request, uow: Uow) -> JSONResponse:
 @router.post(
     "/mfa/verify", dependencies=AuthLimited, responses={200: {"model": TokenResponse | MfaConfirmResponse}}
 )
-async def mfa_verify(body: MfaVerifyRequest, request: Request, uow: Uow) -> JSONResponse:
+async def mfa_verify(body: MfaVerifyRequest, request: Request, uow: Uow) -> Response:
     """With `mfa_token`: complete a sign-in. Without it, with a bearer token: confirm a new
     TOTP factor from /auth/mfa/enroll (returns new tokens and the recovery codes, once)."""
     st, client = state_of(request), _client(request)
@@ -135,7 +135,7 @@ async def mfa_enroll(request: Request, uow: Uow, principal: PendingPrincipal) ->
 
 
 @router.post("/refresh", dependencies=AuthLimited, response_model=TokenResponse)
-async def refresh(body: RefreshRequest, request: Request, uow: Uow) -> JSONResponse:
+async def refresh(body: RefreshRequest, request: Request, uow: Uow) -> Response:
     client = _client(request)
     token = body.refresh_token
     if token is None and client.web:
@@ -224,7 +224,7 @@ async def accept_invitation(
     body: AcceptInvitationRequest,
     request: Request,
     uow: Uow,
-) -> JSONResponse:
+) -> Response:
     result = await invitations.accept_invitation(
         uow, token, name=body.name, password=body.password, pin=body.pin, client=_client(request)
     )

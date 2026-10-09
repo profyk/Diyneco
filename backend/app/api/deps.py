@@ -22,6 +22,7 @@ from app.core.logging import request_id_var, security_event
 from app.core.state import AppState
 from app.db.session import TenantContext, UnitOfWork, set_tenant
 from app.models.tenancy import Hotel, HotelUser, Role, RolePermission, Session, User, UserRole
+from app.services.devices import check_device
 from app.services.idempotency import IdempotencyClaim, claim, parse_key, request_fingerprint
 
 PrincipalKind = Literal["staff", "platform", "device", "kitchen_session", "api_key"]
@@ -187,9 +188,10 @@ class Principal:
     def tenant(self, request: Request) -> TenantContext:
         if self.hotel_id is None:
             raise AppError("PERMISSION_DENIED")
+        actor_type = {"platform": "platform", "device": "device"}.get(self.kind, "user")
         return TenantContext(
             hotel_id=self.hotel_id,
-            actor_type="platform" if self.kind == "platform" else "user",
+            actor_type=actor_type,
             actor_id=self.user_id,
             actor_label=self.label,
             device_id=self.device_id,
@@ -334,7 +336,55 @@ async def get_principal_allow_mfa_pending(request: Request, uow: Uow) -> Princip
     return await _resolve_principal(request, uow, allow_mfa_pending=True)
 
 
+async def _resolve_device(request: Request, uow: UnitOfWork, *, allow_locked: bool) -> Principal:
+    """Device token checks (API spec, Devices), in order: credential valid and not revoked,
+    device enabled, hotel active, still bound to the token's room, room still exists."""
+    claims = state_of(request).jwt.verify(bearer_token(request), "access", error_code="DEVICE_UNAUTHORISED")
+    if claims.get("kind") != "device":
+        raise AppError("DEVICE_UNAUTHORISED")
+    try:
+        device_id = uuid.UUID(str(claims["sub"]))
+        hotel_id = uuid.UUID(str(claims["hid"]))
+    except (KeyError, ValueError) as exc:
+        raise AppError("DEVICE_UNAUTHORISED") from exc
+    await set_tenant(uow.session, hotel_id, actor_device=device_id)
+    device = await check_device(
+        uow.session,
+        hotel_id,
+        device_id,
+        room_claim=claims.get("rid") if claims.get("dk") == "guest" else None,
+        allow_locked=allow_locked,
+    )
+    await _limit(request, "device", f"device:{device_id}")
+    principal = Principal(
+        kind="device",
+        user_id=None,
+        session_id=None,
+        hotel_id=hotel_id,
+        hotel_user_id=None,
+        permissions=frozenset(),
+        amr=(),
+        name=device.label,
+        role_names=(),
+        device_id=device_id,
+    )
+    request.state.principal = principal
+    request.state.device = device
+    return principal
+
+
+async def get_device_any_state(request: Request, uow: Uow) -> Principal:
+    """Heartbeat: a locked device must still reach the server to learn it was unlocked."""
+    return await _resolve_device(request, uow, allow_locked=True)
+
+
+async def get_device_active(request: Request, uow: Uow) -> Principal:
+    return await _resolve_device(request, uow, allow_locked=False)
+
+
 CurrentPrincipal = Annotated[Principal, Depends(get_principal)]
+DeviceAnyState = Annotated[Principal, Depends(get_device_any_state)]
+DevicePrincipal = Annotated[Principal, Depends(get_device_active)]
 PendingPrincipal = Annotated[Principal, Depends(get_principal_allow_mfa_pending)]
 
 

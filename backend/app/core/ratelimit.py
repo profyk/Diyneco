@@ -18,6 +18,8 @@ LIMITS: dict[str, tuple[int, int]] = {
     "auth_ip": (10, 60),
     "staff": (600, 60),
     "device": (120, 60),
+    # Failed pairing codes per IP: 5 in 15 minutes locks pairing from that IP (security spec).
+    "pair_fail": (5, 900),
 }
 
 
@@ -31,6 +33,7 @@ class RateDecision:
 
 class RateLimiter(Protocol):
     async def hit(self, bucket: str, key: str) -> RateDecision: ...
+    async def peek(self, bucket: str, key: str) -> int: ...
     async def reset(self) -> None: ...
 
 
@@ -52,6 +55,12 @@ class MemoryRateLimiter:
         reset = int((slot + 1) * window - now) + 1
         return RateDecision(count <= limit, limit, max(0, limit - count), reset)
 
+    async def peek(self, bucket: str, key: str) -> int:
+        """Current count in this window, without counting a hit."""
+        _, window = LIMITS[bucket]
+        async with self._lock:
+            return self._counts.get((bucket, key, int(time.time() // window)), 0)
+
     async def reset(self) -> None:
         async with self._lock:
             self._counts.clear()
@@ -72,6 +81,11 @@ class RedisRateLimiter:
             count, _ = await pipe.execute()
         reset = int((slot + 1) * window - now) + 1
         return RateDecision(int(count) <= limit, limit, max(0, limit - int(count)), reset)
+
+    async def peek(self, bucket: str, key: str) -> int:
+        _, window = LIMITS[bucket]
+        value = await self._redis.get(f"rl:{bucket}:{key}:{int(time.time() // window)}")
+        return int(value or 0)
 
     async def reset(self) -> None:  # used by tests only
         await self._redis.flushdb()

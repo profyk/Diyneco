@@ -318,17 +318,29 @@ async def test_staff_plan_limit_counts_pending_invitations(client, factory, owne
         await conn.execute(
             text("UPDATE app.subscriptions SET plan_id = :p WHERE hotel_id = :h"), {"p": plan, "h": hotel.id}
         )
-    gm = await _gm(factory, hotel)
-    role = await _role_id(owner_engine, "receptionist")
-    first = await client.post(
-        "/staff/invitations",
-        json={"name": "A", "email": "a1@example.com", "role_ids": [role]},
-        headers={**gm, **idem()},
-    )
-    assert first.status_code == 201, first.text
-    second = await client.post(
-        "/staff/invitations",
-        json={"name": "B", "email": "b1@example.com", "role_ids": [role]},
-        headers={**gm, **idem()},
-    )
-    assert second.json()["error"]["code"] == "PLAN_LIMIT_REACHED"
+    try:
+        gm = await _gm(factory, hotel)
+        role = await _role_id(owner_engine, "receptionist")
+        first = await client.post(
+            "/staff/invitations",
+            json={"name": "A", "email": "a1@example.com", "role_ids": [role]},
+            headers={**gm, **idem()},
+        )
+        assert first.status_code == 201, first.text
+        second = await client.post(
+            "/staff/invitations",
+            json={"name": "B", "email": "b1@example.com", "role_ids": [role]},
+            headers={**gm, **idem()},
+        )
+        assert second.json()["error"]["code"] == "PLAN_LIMIT_REACHED"
+    finally:
+        # Plans are a global catalogue (tests/seeds checks it): put the hotel back on starter.
+        async with owner_engine.begin() as conn:
+            await conn.execute(
+                text(
+                    "UPDATE app.subscriptions SET plan_id = (SELECT id FROM app.plans WHERE code = 'starter') "
+                    "WHERE hotel_id = :h"
+                ),
+                {"h": hotel.id},
+            )
+            await conn.execute(text("DELETE FROM app.plans WHERE id = :p"), {"p": plan})

@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.deps import reject_card_data, reject_unknown_query
-from app.api.v1 import auth, health, hotel, rooms, staff
+from app.api.v1 import auth, dev_storage, devices, health, hotel, rooms, staff
 from app.core.config import Settings, get_settings
 from app.core.crypto import LocalKms
 from app.core.errors import install_error_handlers
@@ -19,6 +19,7 @@ from app.core.middleware import RequestContextMiddleware
 from app.core.ratelimit import build_rate_limiter
 from app.core.state import AppState, Keyring
 from app.db.session import Database
+from app.integrations.storage import LocalStorage, build_storage
 from app.notifications.email import ConsoleEmailProvider, EmailProvider, Mailer
 from app.services.idempotency import IdempotentReplay, replay_response
 
@@ -34,15 +35,15 @@ def build_state(settings: Settings, email_provider: EmailProvider | None = None)
         if settings.email_provider != "console":
             raise RuntimeError(f"email provider {settings.email_provider!r} is not implemented yet")
         email_provider = ConsoleEmailProvider(echo=settings.is_development)
+    jwt = JwtKeys.from_config(settings.jwt_signing_keys_json, settings.jwt_active_kid, settings.api_base_url)
     return AppState(
         settings=settings,
         db=db,
-        jwt=JwtKeys.from_config(
-            settings.jwt_signing_keys_json, settings.jwt_active_kid, settings.api_base_url
-        ),
+        jwt=jwt,
         keyring=Keyring(kms=kms, db=db),
         limiter=build_rate_limiter(settings.redis_url),
         mailer=Mailer(provider=email_provider, sender=settings.email_from),
+        storage=build_storage(settings, jwt),
     )
 
 
@@ -79,6 +80,9 @@ def create_app(settings: Settings | None = None, state: AppState | None = None) 
     api.include_router(hotel.router)
     api.include_router(rooms.router)
     api.include_router(staff.router)
+    api.include_router(devices.router)
+    if isinstance(app_state.storage, LocalStorage):
+        api.include_router(dev_storage.router)  # development only (build_storage refuses elsewhere)
     app.include_router(api)
 
     app.add_middleware(

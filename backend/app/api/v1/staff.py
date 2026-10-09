@@ -11,7 +11,6 @@ import uuid
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Request, Response
-from fastapi.responses import JSONResponse
 
 from app.api.deps import IdemUser, Principal, StepUp, Uow, require_permission, state_of
 from app.api.http import patch_changes
@@ -83,7 +82,7 @@ async def invite_staff(
     uow: Uow,
     principal: StaffManage,
     _s: StepUp,
-) -> JSONResponse:
+) -> Response:
     result = await svc.invite(
         state_of(request), uow, principal.tenant(request), body.model_dump(), principal.permissions
     )
@@ -101,7 +100,7 @@ async def cancel_invitation(
 @router.post("/roles", status_code=201, response_model=RoleOut)
 async def create_role(
     idem: IdemUser, body: RoleCreate, request: Request, uow: Uow, principal: RolesManage, _s: StepUp
-) -> JSONResponse:
+) -> Response:
     result = await svc.create_role(uow, principal.tenant(request), body.model_dump(), principal.permissions)
     return await idem.complete(uow, 201, RoleOut.model_validate(result).model_dump(mode="json"))
 
