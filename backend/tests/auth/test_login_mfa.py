@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import time
 from datetime import UTC, datetime, timedelta
+from types import SimpleNamespace
 
 import pyotp
 from sqlalchemy import text
 
+from app.core import ratelimit
 from app.services import mfa
 
 
@@ -171,7 +174,11 @@ async def test_platform_accounts_require_mfa(client, factory):
     assert r.status_code == 401 and r.json()["error"]["code"] == "MFA_REQUIRED"
 
 
-async def test_eleven_logins_in_a_minute_from_one_ip_are_rate_limited(client, factory):
+async def test_eleven_logins_in_a_minute_from_one_ip_are_rate_limited(client, factory, monkeypatch):
+    # Freeze the limiter's clock mid-window: 11 Argon2 logins can take over a minute on a slow
+    # machine, and a fixed window must not roll over between them.
+    frozen = (time.time() // 60) * 60 + 30
+    monkeypatch.setattr(ratelimit, "time", SimpleNamespace(time=lambda: frozen))
     hotel = await factory.hotel(roles=("receptionist",))
     user = hotel.users["receptionist"]
     codes = [(await login(client, user)).status_code for _ in range(11)]
