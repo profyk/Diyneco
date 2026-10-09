@@ -158,6 +158,23 @@ async def change_state(
     return (await _payloads(repo, [device]))[0]
 
 
+async def reset_room_tablet(uow: UnitOfWork, ctx: TenantContext, room_id: uuid.UUID, reason: str) -> None:
+    """Called when a guest leaves a room (checkout, room move): the next guest must never see
+    this one's data. The tablet is told to clear its session and cache; guest endpoints
+    already answer only for the room's active stay. A locked tablet stays locked."""
+    repo = DeviceRepository(uow.session, ctx)
+    device = await repo.live_guest_device_for_room(room_id)
+    if device is not None and device.status == "active":
+        await repo.update(device.id, {"status": "reset_required"})
+    await emit(
+        uow.session,
+        ctx,
+        "RESET_ROOM_SESSION",
+        [hotel_channel(ctx.hotel_id, f"room:{room_id}")],
+        {"device_id": str(device.id) if device else None, "room_id": str(room_id), "reason": reason},
+    )
+
+
 async def reassign(
     uow: UnitOfWork, ctx: TenantContext, device_id: uuid.UUID, room_id: uuid.UUID
 ) -> dict[str, Any]:

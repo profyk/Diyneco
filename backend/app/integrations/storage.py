@@ -43,6 +43,8 @@ class Storage(Protocol):
     ) -> SignedUpload: ...
     async def signed_download(self, bucket: str, key: str) -> str: ...
     async def signed_downloads(self, bucket: str, keys: list[str]) -> dict[str, str]: ...
+    async def put(self, bucket: str, key: str, data: bytes, content_type: str) -> None: ...
+    async def get(self, bucket: str, key: str) -> bytes: ...
 
 
 def hotel_key(hotel_id: uuid.UUID, *parts: str) -> str:
@@ -93,6 +95,24 @@ class SupabaseStorage:
             raise AppError("SERVICE_UNAVAILABLE", "File storage is unavailable. Try again shortly.")
         return {row["path"]: f"{self.base}{row['signedURL']}" for row in r.json() if row.get("signedURL")}
 
+    async def put(self, bucket: str, key: str, data: bytes, content_type: str) -> None:
+        """Server-side upload of a document the API generated. Never overwrites."""
+        r = await self.client.post(
+            f"{self.base}/object/{bucket}/{quote(key)}",
+            headers={**self.headers, "Content-Type": content_type, "x-upsert": "false"},
+            content=data,
+        )
+        if r.status_code >= 300:
+            raise AppError("SERVICE_UNAVAILABLE", "File storage is unavailable. Try again shortly.")
+
+    async def get(self, bucket: str, key: str) -> bytes:
+        r = await self.client.get(
+            f"{self.base}/object/authenticated/{bucket}/{quote(key)}", headers=self.headers
+        )
+        if r.status_code >= 300:
+            raise AppError("SERVICE_UNAVAILABLE", "File storage is unavailable. Try again shortly.")
+        return r.content
+
 
 class LocalStorage:
     """Development only (refused elsewhere by build_storage)."""
@@ -122,6 +142,19 @@ class LocalStorage:
 
     async def signed_downloads(self, bucket: str, keys: list[str]) -> dict[str, str]:
         return {k: await self.signed_download(bucket, k) for k in keys}
+
+    async def put(self, bucket: str, key: str, data: bytes, content_type: str) -> None:
+        path = self.path_for(f"{bucket}/{key}")
+        if path.exists():
+            raise RuntimeError("storage object already exists")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(data)
+
+    async def get(self, bucket: str, key: str) -> bytes:
+        path = self.path_for(f"{bucket}/{key}")
+        if not path.is_file():
+            raise AppError("NOT_FOUND")
+        return path.read_bytes()
 
     def path_for(self, object_name: str) -> Path:
         path = (self.root / object_name).resolve()

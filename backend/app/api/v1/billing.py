@@ -1,5 +1,5 @@
-"""/folios and /adjustments: the bill for staff, other charges, discounts and two-person
-adjustments."""
+"""/folios, /adjustments, checkout and /invoices: the bill for staff, other charges, discounts,
+two-person adjustments, checkout, invoices and credit notes."""
 
 from __future__ import annotations
 
@@ -8,16 +8,26 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Request, Response
 
-from app.api.deps import IdemUser, Principal, StepUp, Uow, require_permission
+from app.api.deps import IdemUser, Principal, StepUp, Uow, require_permission, state_of
 from app.schemas.billing import (
     AdjustmentOut,
     AdjustmentRequest,
     ChargeRequest,
+    CheckoutOut,
+    CheckoutRequest,
+    CheckoutSummary,
+    CreditNoteRequest,
     DiscountRequest,
     FolioOut,
+    InvoiceEmailOut,
+    InvoiceEmailRequest,
+    InvoiceList,
+    InvoiceOut,
     RejectRequest,
+    SignedUrl,
 )
 from app.services import billing as svc
+from app.services import checkout
 
 router = APIRouter(tags=["billing"])
 
@@ -92,3 +102,89 @@ async def reject_adjustment(
 ) -> Response:
     result = await svc.reject_adjustment(uow, principal.tenant(request), adjustment_id, body.reason)
     return await idem.complete(uow, 200, AdjustmentOut.model_validate(result).model_dump(mode="json"))
+
+
+# --- Checkout and invoices -------------------------------------------------------------------
+
+CheckoutPerform = Annotated[Principal, Depends(require_permission("checkout.perform"))]
+InvoicesRead = Annotated[Principal, Depends(require_permission("invoices.read"))]
+InvoicesSend = Annotated[Principal, Depends(require_permission("invoices.send"))]
+InvoicesCredit = Annotated[Principal, Depends(require_permission("invoices.credit"))]
+
+
+@router.get("/stays/{stay_id}/checkout-summary", response_model=CheckoutSummary)
+async def checkout_summary(
+    stay_id: uuid.UUID, request: Request, uow: Uow, principal: CheckoutPerform
+) -> dict[str, Any]:
+    return await checkout.summary(uow, principal.tenant(request), stay_id)
+
+
+@router.post("/stays/{stay_id}/checkout", response_model=CheckoutOut)
+async def check_out(
+    idem: IdemUser,
+    stay_id: uuid.UUID,
+    body: CheckoutRequest,
+    request: Request,
+    uow: Uow,
+    principal: CheckoutPerform,
+    _s: StepUp,
+) -> Response:
+    result = await checkout.check_out(
+        state_of(request), uow, principal.tenant(request), stay_id, body.model_dump(), principal.permissions
+    )
+    return await idem.complete(uow, 200, CheckoutOut.model_validate(result).model_dump(mode="json"))
+
+
+@router.get("/stays/{stay_id}/invoices", response_model=InvoiceList)
+async def stay_invoices(
+    stay_id: uuid.UUID, request: Request, uow: Uow, principal: InvoicesRead
+) -> dict[str, Any]:
+    return {
+        "data": await checkout.list_invoices(uow, principal.tenant(request), stay_id),
+        "next_cursor": None,
+    }
+
+
+@router.get("/invoices/{invoice_id}", response_model=InvoiceOut)
+async def get_invoice(
+    invoice_id: uuid.UUID, request: Request, uow: Uow, principal: InvoicesRead
+) -> dict[str, Any]:
+    return await checkout.get_invoice(uow, principal.tenant(request), invoice_id)
+
+
+@router.get("/invoices/{invoice_id}/pdf", response_model=SignedUrl)
+async def invoice_pdf(
+    invoice_id: uuid.UUID, request: Request, uow: Uow, principal: InvoicesRead
+) -> dict[str, Any]:
+    return await checkout.pdf_url(state_of(request), uow, principal.tenant(request), invoice_id)
+
+
+@router.post("/invoices/{invoice_id}/email", response_model=InvoiceEmailOut)
+async def email_invoice(
+    idem: IdemUser,
+    invoice_id: uuid.UUID,
+    body: InvoiceEmailRequest,
+    request: Request,
+    uow: Uow,
+    principal: InvoicesSend,
+) -> Response:
+    result = await checkout.email_invoice(
+        state_of(request), uow, principal.tenant(request), invoice_id, [str(t) for t in body.to]
+    )
+    return await idem.complete(uow, 200, InvoiceEmailOut.model_validate(result).model_dump(mode="json"))
+
+
+@router.post("/invoices/{invoice_id}/credit-note", status_code=201, response_model=InvoiceOut)
+async def credit_note(
+    idem: IdemUser,
+    invoice_id: uuid.UUID,
+    body: CreditNoteRequest,
+    request: Request,
+    uow: Uow,
+    principal: InvoicesCredit,
+    _s: StepUp,
+) -> Response:
+    result = await checkout.credit_note(
+        state_of(request), uow, principal.tenant(request), invoice_id, body.reason
+    )
+    return await idem.complete(uow, 201, InvoiceOut.model_validate(result).model_dump(mode="json"))

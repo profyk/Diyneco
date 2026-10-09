@@ -111,7 +111,8 @@ async def view(uow: UnitOfWork, ctx: TenantContext, stay_id: uuid.UUID) -> dict[
 
 
 def _require_open(stay: Stay, folio: Folio) -> None:
-    if folio.status != "open" or stay.status not in OPEN_STAY:
+    # A checked-out stay's folio is open again only after its invoice was credited (D44).
+    if folio.status != "open" or stay.status not in (*OPEN_STAY, "checked_out"):
         raise AppError("INVALID_TRANSITION", "This bill is closed.")
 
 

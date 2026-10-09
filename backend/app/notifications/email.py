@@ -25,6 +25,7 @@ class EmailMessage:
     body: str
     template: str
     sender: str
+    attachments: tuple[tuple[str, bytes, str], ...] = ()  # (filename, content, media type)
 
 
 class EmailProvider(Protocol):
@@ -41,7 +42,9 @@ class ConsoleEmailProvider:
         if self.echo:
             print(
                 f"\n--- email ({message.template}) ---\nFrom: {message.sender}\nTo: {message.to}\n"
-                f"Subject: {message.subject}\n\n{message.body}\n--- end email ---\n",
+                f"Subject: {message.subject}\n\n{message.body}\n"
+                + "".join(f"[attachment {a[0]}, {len(a[1])} bytes]\n" for a in message.attachments)
+                + "--- end email ---\n",
                 file=sys.stderr,
             )
         return f"console-{uuid.uuid4()}"
@@ -62,6 +65,7 @@ class Mailer:
         subject: str,
         body: str,
         subject_ref: dict[str, Any] | None = None,
+        attachments: list[tuple[str, bytes, str]] | None = None,
     ) -> None:
         notification_id = (await uow.session.execute(text("SELECT app.uuid_v7()"))).scalar_one()
         await uow.session.execute(
@@ -74,7 +78,14 @@ class Mailer:
                 subject_ref=subject_ref or {},
             )
         )
-        message = EmailMessage(to=to, subject=subject, body=body, template=template, sender=self.sender)
+        message = EmailMessage(
+            to=to,
+            subject=subject,
+            body=body,
+            template=template,
+            sender=self.sender,
+            attachments=tuple(attachments or ()),
+        )
 
         async def _send() -> None:
             status, provider_id, error = "sent", None, None
