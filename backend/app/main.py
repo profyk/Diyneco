@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.deps import reject_card_data, reject_unknown_query
-from app.api.v1 import auth, dev_storage, devices, health, hotel, menu, rooms, staff
+from app.api.v1 import auth, dev_storage, devices, health, hotel, menu, rooms, staff, stays
 from app.core.config import Settings, get_settings
 from app.core.crypto import LocalKms
 from app.core.errors import install_error_handlers
@@ -82,6 +82,7 @@ def create_app(settings: Settings | None = None, state: AppState | None = None) 
     api.include_router(staff.router)
     api.include_router(devices.router)
     api.include_router(menu.router)
+    api.include_router(stays.router)
     if isinstance(app_state.storage, LocalStorage):
         api.include_router(dev_storage.router)  # development only (build_storage refuses elsewhere)
     app.include_router(api)
