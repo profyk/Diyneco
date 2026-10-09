@@ -42,6 +42,7 @@ class Storage(Protocol):
         self, bucket: str, key: str, content_type: str, max_bytes: int
     ) -> SignedUpload: ...
     async def signed_download(self, bucket: str, key: str) -> str: ...
+    async def signed_downloads(self, bucket: str, keys: list[str]) -> dict[str, str]: ...
 
 
 def hotel_key(hotel_id: uuid.UUID, *parts: str) -> str:
@@ -80,6 +81,18 @@ class SupabaseStorage:
             raise AppError("SERVICE_UNAVAILABLE", "File storage is unavailable. Try again shortly.")
         return f"{self.base}{r.json()['signedURL']}"
 
+    async def signed_downloads(self, bucket: str, keys: list[str]) -> dict[str, str]:
+        if not keys:
+            return {}
+        r = await self.client.post(
+            f"{self.base}/object/sign/{bucket}",
+            headers=self.headers,
+            json={"expiresIn": int(SIGNED_URL_TTL.total_seconds()), "paths": keys},
+        )
+        if r.status_code >= 300:
+            raise AppError("SERVICE_UNAVAILABLE", "File storage is unavailable. Try again shortly.")
+        return {row["path"]: f"{self.base}{row['signedURL']}" for row in r.json() if row.get("signedURL")}
+
 
 class LocalStorage:
     """Development only (refused elsewhere by build_storage)."""
@@ -106,6 +119,9 @@ class LocalStorage:
 
     async def signed_download(self, bucket: str, key: str) -> str:
         return f"{self.base}/{self._token('get', bucket, key)}"
+
+    async def signed_downloads(self, bucket: str, keys: list[str]) -> dict[str, str]:
+        return {k: await self.signed_download(bucket, k) for k in keys}
 
     def path_for(self, object_name: str) -> Path:
         path = (self.root / object_name).resolve()
