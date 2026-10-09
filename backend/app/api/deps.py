@@ -470,5 +470,18 @@ async def _idempotency_user(request: Request) -> AsyncIterator[IdempotencyClaim]
         raise
 
 
+async def _idempotency_device(request: Request) -> AsyncIterator[IdempotencyClaim]:
+    claims = state_of(request).jwt.verify(bearer_token(request), "access", error_code="DEVICE_UNAUTHORISED")
+    if claims.get("kind") != "device":
+        raise AppError("DEVICE_UNAUTHORISED")
+    claim_ = await _claim(request, f"device:{claims['sub']}")
+    try:
+        yield claim_
+    except BaseException as exc:
+        await claim_.fail(exc)
+        raise
+
+
 IdemAnon = Annotated[IdempotencyClaim, Depends(_idempotency_anon, scope="function")]
+IdemDevice = Annotated[IdempotencyClaim, Depends(_idempotency_device, scope="function")]
 IdemUser = Annotated[IdempotencyClaim, Depends(_idempotency_user, scope="function")]

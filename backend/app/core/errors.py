@@ -10,6 +10,7 @@ import logging
 from typing import Any
 
 from fastapi import FastAPI, Request
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import DBAPIError
@@ -101,7 +102,7 @@ def error_body(code: str, message: str, details: dict[str, Any] | None = None) -
             "code": code,
             "message": message,
             "request_id": request_id_var.get(),
-            "details": details or {},
+            "details": jsonable_encoder(details or {}),
         }
     }
 

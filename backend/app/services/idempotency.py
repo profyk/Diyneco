@@ -114,7 +114,7 @@ class IdempotencyClaim:
                     .values(
                         status="completed",
                         response_code=err.status,
-                        response_body=error_body(err.code, err.message, err.details),
+                        response_body=jsonable_encoder(error_body(err.code, err.message, err.details)),
                     )
                 )
             else:

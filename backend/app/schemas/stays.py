@@ -8,7 +8,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, EmailStr, Field, StringConstraints, model_validator
 
-from app.schemas.common import Money, Name, StrictModel
+from app.schemas.common import Money, Name, SignedMoney, StrictModel
 
 Phone = Annotated[str, StringConstraints(max_length=40, pattern=r"^[0-9+() -]{6,40}$")]
 Country = Annotated[str, StringConstraints(pattern=r"^[A-Z]{2}$")]
@@ -120,12 +120,12 @@ class GuestRef(BaseModel):
 class FolioSummary(BaseModel):
     folio_id: uuid.UUID
     status: str
-    accommodation: Money
-    fnb: Money
-    other: Money
-    tips: Money
-    paid: Money
-    balance: Money
+    accommodation: SignedMoney
+    fnb: SignedMoney
+    other: SignedMoney
+    tips: SignedMoney
+    paid: SignedMoney
+    balance: SignedMoney
 
 
 class StayOut(BaseModel):

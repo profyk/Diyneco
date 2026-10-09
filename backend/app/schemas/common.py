@@ -17,6 +17,13 @@ class Money(StrictModel):
     currency: Annotated[str, StringConstraints(pattern=r"^[A-Z]{3}$")]
 
 
+class SignedMoney(BaseModel):
+    """Output only: ledger amounts and balances, which may be negative (reversals, credit)."""
+
+    amount_minor: int
+    currency: str
+
+
 class ErrorDetail(BaseModel):
     code: str
     message: str
