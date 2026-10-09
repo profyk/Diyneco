@@ -6,6 +6,7 @@ from the token, never from the request; X-Hotel-Id, if sent, must equal the toke
 
 from __future__ import annotations
 
+import ipaddress
 import re
 import uuid
 from collections.abc import AsyncIterator, Callable, Coroutine
@@ -35,7 +36,12 @@ def state_of(request: Request) -> AppState:
 
 
 def client_ip(request: Request) -> str | None:
-    return request.client.host if request.client else None
+    """The peer address, or None when it is not an IP (audit and session columns are inet)."""
+    host = request.client.host if request.client else None
+    try:
+        return str(ipaddress.ip_address(host)) if host else None
+    except ValueError:
+        return None
 
 
 # --- Transaction ---------------------------------------------------------------------------
@@ -214,9 +220,8 @@ async def _resolve_principal(request: Request, uow: UnitOfWork, *, allow_mfa_pen
     st = state_of(request)
     claims = st.jwt.verify(bearer_token(request), "access")
     kind = claims.get("kind")
-    if kind not in ("staff", "platform"):
-        # Device and kitchen-session principals have their own endpoints (Phases 3-4).
-        raise AppError("UNAUTHENTICATED")
+    if kind not in ("staff", "platform", "kitchen_session"):
+        raise AppError("UNAUTHENTICATED")  # device tokens use the device dependencies
     try:
         user_id = uuid.UUID(str(claims["sub"]))
         session_id = uuid.UUID(str(claims["sid"]))
@@ -228,7 +233,7 @@ async def _resolve_principal(request: Request, uow: UnitOfWork, *, allow_mfa_pen
     if mfa_pending and not allow_mfa_pending:
         raise AppError("MFA_REQUIRED", "Set up two-step sign-in to continue.", details={"next": "mfa_enroll"})
 
-    if kind == "staff" and hotel_id is None:
+    if kind in ("staff", "kitchen_session") and hotel_id is None:
         raise AppError("UNAUTHENTICATED")
     header_hotel = request.headers.get("x-hotel-id")
     if header_hotel and (hotel_id is None or header_hotel.lower() != str(hotel_id)):
@@ -253,32 +258,7 @@ async def _resolve_principal(request: Request, uow: UnitOfWork, *, allow_mfa_pen
         raise AppError("UNAUTHENTICATED")
 
     if kind == "platform":
-        if not user.is_platform:
-            raise AppError("UNAUTHENTICATED")
-        if "mfa" not in amr and not mfa_pending:
-            raise AppError("MFA_REQUIRED")
-        rows = (
-            await s.execute(
-                text(
-                    "SELECT r.name, rp.permission_code FROM app.platform_user_roles pur "
-                    "JOIN app.roles r ON r.id = pur.role_id "
-                    "JOIN app.role_permissions rp ON rp.role_id = r.id WHERE pur.user_id = :u"
-                ),
-                {"u": user_id},
-            )
-        ).all()
-        principal = Principal(
-            kind="platform",
-            user_id=user_id,
-            session_id=session_id,
-            hotel_id=None,
-            hotel_user_id=None,
-            permissions=frozenset(r[1] for r in rows),
-            amr=amr,
-            name=user.name,
-            role_names=tuple(sorted({r[0] for r in rows})),
-            mfa_pending=mfa_pending,
-        )
+        principal = await _platform_principal(s, user, session_id, amr, mfa_pending)
     else:
         membership = (
             await s.execute(
@@ -309,22 +289,76 @@ async def _resolve_principal(request: Request, uow: UnitOfWork, *, allow_mfa_pen
                 .where(UserRole.hotel_user_id == membership.id)
             )
         ).all()
+        permissions = frozenset(r[1] for r in rows if r[1] is not None)
+        device_id = None
+        if kind == "kitchen_session":
+            device_id, permissions = await _kitchen_scope(s, claims, hotel_id, session_id, permissions)
         principal = Principal(
-            kind="staff",
+            kind="kitchen_session" if kind == "kitchen_session" else "staff",
             user_id=user_id,
             session_id=session_id,
             hotel_id=hotel_id,
             hotel_user_id=membership.id,
-            permissions=frozenset(r[1] for r in rows if r[1] is not None),
+            permissions=permissions,
             amr=amr,
             name=user.name,
             role_names=tuple(sorted({r[0] for r in rows})),
+            device_id=device_id,
             mfa_pending=mfa_pending,
         )
 
     await _limit(request, "staff", f"user:{user_id}")
     request.state.principal = principal
     return principal
+
+
+async def _platform_principal(
+    s: Any, user: User, session_id: uuid.UUID, amr: tuple[str, ...], mfa_pending: bool
+) -> Principal:
+    if not user.is_platform:
+        raise AppError("UNAUTHENTICATED")
+    if "mfa" not in amr and not mfa_pending:
+        raise AppError("MFA_REQUIRED")
+    rows = (
+        await s.execute(
+            text(
+                "SELECT r.name, rp.permission_code FROM app.platform_user_roles pur "
+                "JOIN app.roles r ON r.id = pur.role_id "
+                "JOIN app.role_permissions rp ON rp.role_id = r.id WHERE pur.user_id = :u"
+            ),
+            {"u": user.id},
+        )
+    ).all()
+    return Principal(
+        kind="platform",
+        user_id=user.id,
+        session_id=session_id,
+        hotel_id=None,
+        hotel_user_id=None,
+        permissions=frozenset(r[1] for r in rows),
+        amr=amr,
+        name=user.name,
+        role_names=tuple(sorted({r[0] for r in rows})),
+        mfa_pending=mfa_pending,
+    )
+
+
+async def _kitchen_scope(
+    s: Any, claims: dict[str, Any], hotel_id: uuid.UUID, session_id: uuid.UUID, permissions: frozenset[str]
+) -> tuple[uuid.UUID, frozenset[str]]:
+    """A PIN sign-in on a kitchen display: kitchen permissions only, and only while that
+    display stays paired and the session is bound to it (security spec, Kitchen display)."""
+    try:
+        device_id = uuid.UUID(str(claims["did"]))
+    except (KeyError, ValueError) as exc:
+        raise AppError("UNAUTHENTICATED") from exc
+    bound = (await s.execute(select(Session.device_id).where(Session.id == session_id))).scalar_one()
+    if bound != device_id:
+        raise AppError("UNAUTHENTICATED")
+    device = await check_device(s, hotel_id, device_id, room_claim=None, allow_locked=False)
+    if device.kind != "kitchen":
+        raise AppError("UNAUTHENTICATED")
+    return device_id, frozenset(p for p in permissions if p.startswith("kitchen."))
 
 
 async def get_principal(request: Request, uow: Uow) -> Principal:

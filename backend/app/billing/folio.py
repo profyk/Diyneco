@@ -32,6 +32,8 @@ class Line:
     vat_minor: int  # VAT contained in the whole line
     business_date: date
     order_id: uuid.UUID | None = None
+    payment_id: uuid.UUID | None = None
+    adjustment_id: uuid.UUID | None = None
 
 
 class FolioLedger:
@@ -87,6 +89,8 @@ class FolioLedger:
                     "currency": folio.currency,
                     "business_date": ln.business_date,
                     "order_id": ln.order_id,
+                    "payment_id": ln.payment_id,
+                    "adjustment_id": ln.adjustment_id,
                     "created_by": self.ctx.actor_id if self.ctx.actor_type == "user" else None,
                     "created_by_device": self.ctx.device_id,
                 }

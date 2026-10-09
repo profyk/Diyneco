@@ -1,5 +1,43 @@
 # Progress
 
+## 2026-10-09: Phases 3 (Guest ordering), 4 (Kitchen) and 5 (Room service), backend
+
+### Done
+
+- Menu administration: kitchen stations, schedules (hotel time zone, past-midnight windows),
+  categories, items (allergens, dietary tags, halaal/kosher gated by `menu.certify`),
+  price changes gated by `menu.price.update` + step-up and audited, availability, modifier
+  groups and options, item images through signed uploads, `MENU_UPDATED` events.
+- Guests, billing profiles, reservations, check-in and walk-ins: check-in opens the folio,
+  posts every night with VAT, occupies the room and notifies the tablet.
+- Server-side pricing and room-charge rules; guest tablet endpoints (session, menu, quote,
+  orders, folio, info) limited to the active stay; staff phone orders; approval with
+  step-up, decline, cancel with reversing folio entries.
+- WebSocket gateway at `/api/v1/ws` fed by the outbox: auth, per-principal channels,
+  24-hour replay since a seq, live fan-out, revalidation, connection limit.
+- Kitchen display: PIN sign-in on a paired display, price-free board, accept, start, item
+  ready, undo within 2 minutes; an order spanning stations is READY only when all items are.
+- Room service: ready and mine lists, claim (first wins), release, manager assign, pick-up,
+  delivered, leave on room; payment preview and recording with tips, partial payments, late
+  entries, card terminal references; payments list.
+- Exit criteria covered by tests: a paired tablet places an idempotent order with limit
+  rules enforced (Phase 3); an order split across 3 stations reaches READY only when every
+  item is ready (Phase 4); R3,000 due, R4,000 received, R1,000 tip, no duplicates on retry
+  (Phase 5).
+
+### Next
+
+- Phase 6 (Billing and checkout): folio view, other charges, discounts, adjustments with two
+  people, checkout with tablet reset, invoices (numbering, PDF, email), corporate billing.
+- The five front-end apps (Merchant, Kitchen, Admin on Next.js; Guest and Room service on
+  Expo) have not been started.
+
+### Known gaps
+
+- Menu images are stored as uploaded; resized versions need an image job (D32).
+- The `platform` realtime channel and `DEVICE_OFFLINE` events need the worker/admin work.
+- Guest ID numbers, stay extension and room moves are not built yet (Phase 6 with billing).
+
 ## 2026-10-09: Phase 2 (Onboarding), backend
 
 ### Done

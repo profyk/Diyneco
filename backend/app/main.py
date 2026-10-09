@@ -5,11 +5,25 @@ from __future__ import annotations
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import APIRouter, Depends, FastAPI
+from fastapi import APIRouter, Depends, FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.deps import reject_card_data, reject_unknown_query
-from app.api.v1 import auth, dev_storage, devices, guest, health, hotel, menu, orders, rooms, staff, stays
+from app.api.v1 import (
+    auth,
+    dev_storage,
+    devices,
+    guest,
+    health,
+    hotel,
+    kitchen,
+    menu,
+    orders,
+    room_service,
+    rooms,
+    staff,
+    stays,
+)
 from app.core.config import Settings, get_settings
 from app.core.crypto import LocalKms
 from app.core.errors import install_error_handlers
@@ -21,6 +35,7 @@ from app.core.state import AppState, Keyring
 from app.db.session import Database
 from app.integrations.storage import LocalStorage, build_storage
 from app.notifications.email import ConsoleEmailProvider, EmailProvider, Mailer
+from app.realtime.gateway import Hub, serve
 from app.services.idempotency import IdempotentReplay, replay_response
 
 API_PREFIX = "/api/v1"
@@ -52,9 +67,12 @@ def create_app(settings: Settings | None = None, state: AppState | None = None) 
     configure_logging(settings.log_level)
     app_state = state or build_state(settings)
 
+    hub = Hub(app_state)
+
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         yield
+        await hub.stop()
         await app_state.db.dispose()
 
     app = FastAPI(
@@ -85,9 +103,17 @@ def create_app(settings: Settings | None = None, state: AppState | None = None) 
     api.include_router(stays.router)
     api.include_router(orders.router)
     api.include_router(guest.router)
+    api.include_router(kitchen.router)
+    api.include_router(room_service.router)
     if isinstance(app_state.storage, LocalStorage):
         api.include_router(dev_storage.router)  # development only (build_storage refuses elsewhere)
     app.include_router(api)
+
+    async def websocket(ws: WebSocket) -> None:
+        await serve(ws, app_state, hub)
+
+    app.add_api_websocket_route(f"{API_PREFIX}/ws", websocket)
+    app.state.realtime_hub = hub
 
     app.add_middleware(
         CORSMiddleware,

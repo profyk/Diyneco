@@ -580,6 +580,24 @@ async def _record_pin_failure(
         return max(0, LOCKOUT_THRESHOLD - hu.pin_failed)
 
 
+async def check_member_pin(st: AppState, hotel_id: uuid.UUID, hu: HotelUser, pin: str) -> None:
+    """Verify a member's PIN: 5 failures in 15 minutes lock it for 15 minutes. Failures are
+    recorded in their own transaction so a rolled-back request still counts them."""
+    now = _now()
+    if hu.pin_locked_until and hu.pin_locked_until > now:
+        raise AppError(
+            "PIN_INVALID",
+            "Your PIN is locked for 15 minutes.",
+            details={"attempts_left": 0, "locked_until": hu.pin_locked_until.isoformat()},
+        )
+    if hu.pin_hash is None:
+        raise AppError("PIN_INVALID", "Set a PIN first.", details={"reason": "pin_not_set"})
+    if not crypto.verify_secret(hu.pin_hash, pin):
+        left = await _record_pin_failure(st, hotel_id, hu.id, hu.user_id)
+        raise AppError("PIN_INVALID", "That PIN is not correct.", details={"attempts_left": left})
+    hu.pin_failed, hu.pin_failed_window_start, hu.pin_locked_until = 0, None, None
+
+
 async def step_up(
     st: AppState,
     uow: UnitOfWork,
@@ -598,18 +616,7 @@ async def step_up(
         if hotel_user_id is None or hotel_id is None:
             raise AppError("PIN_INVALID", "Use your password to confirm.", details={"attempts_left": 0})
         hu = (await s.execute(select(HotelUser).where(HotelUser.id == hotel_user_id))).scalar_one()
-        if hu.pin_locked_until and hu.pin_locked_until > now:
-            raise AppError(
-                "PIN_INVALID",
-                "Your PIN is locked for 15 minutes.",
-                details={"attempts_left": 0, "locked_until": hu.pin_locked_until.isoformat()},
-            )
-        if hu.pin_hash is None:
-            raise AppError("PIN_INVALID", "Set a PIN first.", details={"reason": "pin_not_set"})
-        if not crypto.verify_secret(hu.pin_hash, pin):
-            left = await _record_pin_failure(st, hotel_id, hotel_user_id, user_id)
-            raise AppError("PIN_INVALID", "That PIN is not correct.", details={"attempts_left": left})
-        hu.pin_failed, hu.pin_failed_window_start, hu.pin_locked_until = 0, None, None
+        await check_member_pin(st, hotel_id, hu, pin)
     elif password is not None:
         user = (await s.execute(select(User).where(User.id == user_id))).scalar_one()
         if user.locked_until and user.locked_until > now:
