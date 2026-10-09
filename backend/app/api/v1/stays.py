@@ -8,8 +8,8 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Query, Request, Response
 
-from app.api.deps import IdemUser, Principal, Uow, require_permission
-from app.api.http import patch_changes
+from app.api.deps import IdemUser, Principal, StepUp, Uow, require_permission
+from app.api.http import IfMatch, parse_if_match, patch_changes, with_etag
 from app.api.pagination import DEFAULT_LIMIT, Cursor, Limit, decode_cursor, page
 from app.schemas.stays import (
     BillingProfileCreate,
@@ -20,7 +20,9 @@ from app.schemas.stays import (
     GuestOut,
     GuestPatch,
     StayCreate,
+    StayDatesPatch,
     StayList,
+    StayMove,
     StayOut,
     StayStatus,
     WalkIn,
@@ -119,8 +121,38 @@ async def create_stay(
 
 
 @router.get("/stays/{stay_id}", response_model=StayOut)
-async def get_stay(stay_id: uuid.UUID, request: Request, uow: Uow, principal: StaysRead) -> dict[str, Any]:
-    return await svc.get_stay(uow, principal.tenant(request), stay_id)
+async def get_stay(stay_id: uuid.UUID, request: Request, uow: Uow, principal: StaysRead) -> Response:
+    result = await svc.get_stay(uow, principal.tenant(request), stay_id)
+    return with_etag(result, result["version"], StayOut)
+
+
+@router.patch("/stays/{stay_id}", response_model=StayOut)
+async def change_dates(
+    stay_id: uuid.UUID,
+    body: StayDatesPatch,
+    request: Request,
+    uow: Uow,
+    principal: StaysManage,
+    if_match: IfMatch = None,
+) -> Response:
+    expected = parse_if_match(if_match)
+    changes = patch_changes(body, {"arrival_date", "departure_date"})
+    result = await svc.change_dates(uow, principal.tenant(request), stay_id, expected, changes)
+    return with_etag(result, result["version"], StayOut)
+
+
+@router.post("/stays/{stay_id}/move", response_model=StayOut)
+async def move_stay(
+    idem: IdemUser,
+    stay_id: uuid.UUID,
+    body: StayMove,
+    request: Request,
+    uow: Uow,
+    principal: StaysManage,
+    _s: StepUp,
+) -> Response:
+    result = await svc.move(uow, principal.tenant(request), stay_id, body.room_id, body.reason)
+    return await idem.complete(uow, 200, StayOut.model_validate(result).model_dump(mode="json"))
 
 
 @router.post("/stays/{stay_id}/check-in", response_model=StayOut)

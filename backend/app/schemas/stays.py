@@ -152,3 +152,13 @@ class StayOut(BaseModel):
 class StayList(BaseModel):
     data: list[StayOut]
     next_cursor: str | None = None
+
+
+class StayDatesPatch(StrictModel):
+    arrival_date: date | None = None
+    departure_date: date | None = None
+
+
+class StayMove(StrictModel):
+    room_id: uuid.UUID
+    reason: Reason | None = None

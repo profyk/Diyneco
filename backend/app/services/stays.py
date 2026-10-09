@@ -12,16 +12,19 @@ import uuid
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
+from sqlalchemy import select
+
 from app.audit.writer import write_audit
 from app.billing.folio import FolioLedger, Line, business_date
 from app.billing.vat import gross_and_vat
 from app.core.errors import AppError
 from app.db.session import TenantContext, UnitOfWork
-from app.models.domain import Guest, Room, Stay
+from app.models.domain import Adjustment, Folio, Guest, Order, Room, Stay
 from app.realtime.outbox import emit, hotel_channel
 from app.repositories.hotels import HotelRepository
 from app.repositories.rooms import RoomRepository, RoomTypeRepository
 from app.repositories.stays import LIVE, StayRepository
+from app.services import devices
 
 CHECK_IN_ROOM_STATUSES = ("available", "reserved")
 
@@ -432,5 +435,206 @@ async def set_charges_blocked(
             stay_id,
             old_value={"charges_blocked": not blocked},
             new_value={"charges_blocked": blocked},
+        )
+    return (await stay_payload(uow, ctx, [stay]))[0]
+
+
+# --- Changing dates and moving rooms --------------------------------------------------------
+
+
+async def _locked(uow: UnitOfWork, ctx: TenantContext, stay_id: uuid.UUID) -> Stay:
+    stay = await StayRepository(uow.session, ctx).stay(stay_id, for_update=True)
+    if stay is None:
+        raise AppError("NOT_FOUND")
+    return stay
+
+
+async def _open_folio(uow: UnitOfWork, ctx: TenantContext, stay: Stay) -> Folio:
+    folio = await FolioLedger(uow.session, ctx).folio_for_stay(stay.id)
+    if folio is None or folio.status != "open":
+        raise AppError("INVALID_TRANSITION", "This bill is closed.")
+    return folio
+
+
+async def _post_nights(
+    uow: UnitOfWork, ctx: TenantContext, folio: Folio, stay: Stay, room_number: str, first: date, end: date
+) -> None:
+    settings = await _settings(uow, ctx)
+    gross, vat = gross_and_vat(
+        stay.nightly_rate_minor,
+        settings.vat_rate_bp,
+        includes_vat=settings.accommodation_rates_include_vat,
+        registered=settings.vat_registered,
+    )
+    await FolioLedger(uow.session, ctx).post(
+        folio,
+        [
+            Line(
+                category="accommodation",
+                description=f"Room {room_number}, night of {first + timedelta(days=i)}",
+                unit_amount_minor=gross,
+                quantity=1,
+                vat_rate_bp=settings.vat_rate_bp if settings.vat_registered else 0,
+                vat_minor=vat,
+                business_date=first + timedelta(days=i),
+            )
+            for i in range((end - first).days)
+        ],
+    )
+
+
+async def _shorten(uow: UnitOfWork, ctx: TenantContext, folio: Folio, departure: date, today: date) -> None:
+    ledger = FolioLedger(uow.session, ctx)
+    nights = [e for e in await ledger.live_charges(folio, "accommodation") if e.business_date >= departure]
+    adjusted = (
+        await uow.session.execute(
+            select(Adjustment.id).where(
+                Adjustment.hotel_id == ctx.hotel_id,
+                Adjustment.target_entry_id.in_([e.id for e in nights]),
+                Adjustment.status.in_(("pending", "approved")),
+            )
+        )
+    ).first()
+    if adjusted is not None:
+        raise AppError(
+            "INVALID_TRANSITION", "A night being removed has an adjustment; settle the adjustment first."
+        )
+    await ledger.reverse(folio, nights, "Stay shortened", today)
+
+
+async def change_dates(
+    uow: UnitOfWork, ctx: TenantContext, stay_id: uuid.UUID, expected_version: int, body: dict[str, Any]
+) -> dict[str, Any]:
+    """Extend or shorten a stay. A reservation just moves its dates; a checked-in stay keeps
+    its arrival and posts the added nights or reverses the removed ones (D47)."""
+    repo = StayRepository(uow.session, ctx)
+    stay = await _locked(uow, ctx, stay_id)
+    if stay.version != expected_version:
+        raise AppError("PRECONDITION_FAILED")
+    if stay.status not in ("reserved", "active"):
+        raise AppError("INVALID_TRANSITION", f"A {stay.status.replace('_', ' ')} stay cannot change dates.")
+    arrival = body.get("arrival_date") or stay.arrival_date
+    departure = body.get("departure_date") or stay.departure_date
+    if stay.status == "active" and arrival != stay.arrival_date:
+        raise _field_error("arrival_date", "A checked-in stay keeps its arrival date.")
+    if departure <= arrival:
+        raise _field_error("departure_date", "Departure must be after arrival.")
+    if (departure - arrival).days > 90:
+        raise _field_error("departure_date", "A stay is at most 90 nights.")
+    if (arrival, departure) == (stay.arrival_date, stay.departure_date):
+        return (await stay_payload(uow, ctx, [stay]))[0]
+    if await repo.overlapping(stay.room_id, arrival, departure, stay.id):
+        raise AppError("ROOM_NOT_AVAILABLE", "This room is already booked for some of these nights.")
+    if stay.status == "active":
+        today = business_date((await _settings(uow, ctx)).timezone)
+        if departure < today:
+            raise _field_error("departure_date", "Departure cannot be before today.")
+        folio = await _open_folio(uow, ctx, stay)
+        if departure > stay.departure_date:
+            room = (await repo.rooms([stay.room_id]))[stay.room_id]
+            await _post_nights(uow, ctx, folio, stay, room.number, stay.departure_date, departure)
+        else:
+            await _shorten(uow, ctx, folio, departure, today)
+        await emit(
+            uow.session,
+            ctx,
+            "FOLIO_UPDATED",
+            [hotel_channel(ctx.hotel_id, f"room:{stay.room_id}"), hotel_channel(ctx.hotel_id, "ops")],
+            {"stay_id": str(stay.id)},
+        )
+    before = {"arrival": str(stay.arrival_date), "departure": str(stay.departure_date)}
+    stay = await repo.update_stay(stay.id, {"arrival_date": arrival, "departure_date": departure})
+    await write_audit(
+        uow.session,
+        ctx,
+        "stay.change_dates",
+        "stay",
+        stay.id,
+        old_value=before,
+        new_value={"arrival": str(arrival), "departure": str(departure)},
+    )
+    return (await stay_payload(uow, ctx, [stay]))[0]
+
+
+async def _require_no_open_orders(uow: UnitOfWork, ctx: TenantContext, stay: Stay) -> None:
+    unfinished = (
+        (
+            await uow.session.execute(
+                select(Order.number).where(
+                    Order.hotel_id == ctx.hotel_id,
+                    Order.stay_id == stay.id,
+                    Order.status.not_in(("CLOSED", "CANCELLED", "DECLINED")),
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+    if unfinished:
+        raise AppError(
+            "OPEN_ORDERS",
+            "Finish or cancel this guest's orders before moving rooms; they are addressed to the old room.",
+            details={"orders": list(unfinished)},
+        )
+
+
+async def move(
+    uow: UnitOfWork, ctx: TenantContext, stay_id: uuid.UUID, room_id: uuid.UUID, reason: str | None
+) -> dict[str, Any]:
+    """Move a stay to another room. A checked-in guest's tablet session follows them: the old
+    room's tablet resets and the new room's tablet is told a guest arrived. The nightly rate
+    does not change (D47)."""
+    repo = StayRepository(uow.session, ctx)
+    rooms = RoomRepository(uow.session, ctx)
+    stay = await _locked(uow, ctx, stay_id)
+    if stay.status not in ("reserved", "active"):
+        raise AppError("INVALID_TRANSITION", f"A {stay.status.replace('_', ' ')} stay cannot be moved.")
+    if stay.room_id == room_id:
+        raise AppError("INVALID_TRANSITION", "The stay is already in that room.")
+    target = await rooms.get(room_id, for_update=True)
+    if target is None:
+        raise AppError("NOT_FOUND")
+    settings = await _settings(uow, ctx)
+    active = stay.status == "active"
+    start = max(stay.arrival_date, business_date(settings.timezone)) if active else stay.arrival_date
+    if await repo.overlapping(target.id, start, stay.departure_date, stay.id):
+        raise AppError("ROOM_NOT_AVAILABLE", "That room is booked for some of these nights.")
+    old_room = (await repo.rooms([stay.room_id]))[stay.room_id]
+    if active:
+        if target.status not in CHECK_IN_ROOM_STATUSES or await repo.live_stay_for_room(target.id):
+            raise AppError("ROOM_NOT_AVAILABLE", "That room is not ready for a guest.")
+        await _require_no_open_orders(uow, ctx, stay)
+        now = datetime.now(UTC)
+        await rooms.update(
+            old_room.id, None, {"status": settings.room_status_after_checkout, "status_changed_at": now}
+        )
+        await rooms.update(target.id, None, {"status": "occupied", "status_changed_at": now})
+    stay = await repo.update_stay(stay.id, {"room_id": target.id})
+    await write_audit(
+        uow.session,
+        ctx,
+        "stay.move",
+        "stay",
+        stay.id,
+        old_value={"room": old_room.number},
+        new_value={"room": target.number},
+        reason=(reason or "").strip() or None,
+    )
+    if active:
+        await devices.reset_room_tablet(uow, ctx, old_room.id, "moved")
+        payload = {"stay_id": str(stay.id), "room_id": str(target.id), "room": target.number}
+        await emit(
+            uow.session,
+            ctx,
+            "STAY_CHECKED_IN",
+            [hotel_channel(ctx.hotel_id, f"room:{target.id}"), hotel_channel(ctx.hotel_id, "ops")],
+            payload,
+        )
+        await emit(
+            uow.session,
+            ctx,
+            "STAY_MOVED",
+            [hotel_channel(ctx.hotel_id, "ops")],
+            {**payload, "from_room_id": str(old_room.id), "from_room": old_room.number},
         )
     return (await stay_payload(uow, ctx, [stay]))[0]

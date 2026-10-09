@@ -200,11 +200,12 @@ async def test_guest_search_and_history(client, factory):
     assert [
         x["name"] for x in (await client.get("/guests", params={"q": "thabo"}, headers=rec)).json()["data"]
     ] == ["Thabo Nkosi"]
-    await client.post(
+    walked = await client.post(
         f"/rooms/{hotel.room_ids[0]}/walk-in",
         json={"guest_id": g.json()["id"], "nights": 1},
         headers={**rec, **idem()},
     )
+    assert walked.status_code == 201, walked.text
     profile = (await client.get(f"/guests/{g.json()['id']}", headers=rec)).json()
     assert [s["room"] for s in profile["stays"]] == ["101"]
 

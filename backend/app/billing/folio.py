@@ -97,6 +97,14 @@ class FolioLedger:
             )
         return list((await self.s.execute(insert(FolioEntry).returning(FolioEntry), rows)).scalars())
 
+    def _not_reversed(self) -> Any:
+        return ~FolioEntry.id.in_(
+            select(FolioEntry.reverses_entry_id).where(
+                FolioEntry.hotel_id == self.ctx.hotel_id,
+                FolioEntry.reverses_entry_id.is_not(None),
+            )
+        )
+
     async def reverse_order(self, folio: Folio, order_id: uuid.UUID, description: str, on: date) -> int:
         """Reverses every charge of one order that is not reversed yet. Returns the count."""
         entries = (
@@ -106,15 +114,32 @@ class FolioLedger:
                     FolioEntry.folio_id == folio.id,
                     FolioEntry.order_id == order_id,
                     FolioEntry.entry_type == "charge",
-                    ~FolioEntry.id.in_(
-                        select(FolioEntry.reverses_entry_id).where(
-                            FolioEntry.hotel_id == self.ctx.hotel_id,
-                            FolioEntry.reverses_entry_id.is_not(None),
-                        )
-                    ),
+                    self._not_reversed(),
                 )
             )
         ).scalars()
+        return await self.reverse(folio, list(entries), description, on)
+
+    async def live_charges(self, folio: Folio, category: str) -> list[FolioEntry]:
+        """Charges of one category on the folio that are not reversed."""
+        return list(
+            (
+                await self.s.execute(
+                    select(FolioEntry)
+                    .where(
+                        FolioEntry.hotel_id == self.ctx.hotel_id,
+                        FolioEntry.folio_id == folio.id,
+                        FolioEntry.entry_type == "charge",
+                        FolioEntry.category_id == await self.category_id(category),
+                        self._not_reversed(),
+                    )
+                    .order_by(FolioEntry.business_date, FolioEntry.id)
+                )
+            ).scalars()
+        )
+
+    async def reverse(self, folio: Folio, entries: list[FolioEntry], description: str, on: date) -> int:
+        """Posts a reversal for each entry, carrying its negated amounts. Returns the count."""
         rows = [
             {
                 "hotel_id": self.ctx.hotel_id,
@@ -129,7 +154,7 @@ class FolioLedger:
                 "vat_minor": -e.vat_minor,
                 "currency": e.currency,
                 "business_date": on,
-                "order_id": order_id,
+                "order_id": e.order_id,
                 "reverses_entry_id": e.id,
                 "created_by": self.ctx.actor_id if self.ctx.actor_type == "user" else None,
                 "created_by_device": self.ctx.device_id,
