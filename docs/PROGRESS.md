@@ -1,5 +1,37 @@
 # Progress
 
+## 2026-10-10: Phase 6 (Billing and checkout), backend
+
+### Done
+
+- Recovered the work lost when the previous session crashed (NUL-filled files rebuilt from
+  the session transcript) and committed Phases 4 and 5.
+- Folio for staff: view with totals by group and category, other charges, discounts
+  (step-up, reason, audited), two-person adjustments (request, approve with step-up, reject;
+  never by the requester; refused when the amount changed after the request).
+- Checkout: summary, open-order and balance gates, override policy, gap-free invoice
+  numbering, invoice kind by VAT status and the abridged limit, supplier and recipient
+  snapshots (corporate billing with PO and traveller), long-stay VAT confirmation, folio
+  closed, room to cleaning, tablet reset with `RESET_ROOM_SESSION`.
+- Invoices: JSON, PDF (stored, hashed, signed URL), email with the PDF attached, list per
+  stay, credit notes that re-open the folio for a re-issued bill.
+- Stay changes: extend or shorten (posting or reversing nights) and room moves where the
+  tablet session follows the guest.
+- Exit criterion covered by a test: build spec test case 70 end to end.
+
+### Next
+
+- Phase 7 (Admin panel) once Phase 6 is signed off.
+- The five front-end apps have not been started.
+
+### Known gaps
+
+- A balance left by a checkout override cannot be paid against the closed bill; the
+  accounts-receivable list arrives with reports (Phase 8, D45).
+- Email uses the console provider only; a real provider is still to be chosen.
+- PDF text is Latin-1; names outside it print with replacement characters.
+
+
 ## 2026-10-09: Phases 3 (Guest ordering), 4 (Kitchen) and 5 (Room service), backend
 
 ### Done
