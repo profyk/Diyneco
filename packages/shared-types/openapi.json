@@ -5026,6 +5026,16 @@
             "title": "Dietary Tags",
             "type": "array"
           },
+          "ingredients": {
+            "items": {
+              "maxLength": 60,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 40,
+            "title": "Ingredients",
+            "type": "array"
+          },
           "name": {
             "maxLength": 120,
             "minLength": 1,
@@ -5223,6 +5233,13 @@
             ],
             "title": "Image Url"
           },
+          "ingredients": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Ingredients",
+            "type": "array"
+          },
           "is_available": {
             "title": "Is Available",
             "type": "boolean"
@@ -5309,6 +5326,7 @@
           "available_now",
           "dietary_tags",
           "allergens",
+          "ingredients",
           "image_url",
           "sort_order",
           "modifier_groups",
@@ -5412,6 +5430,23 @@
               }
             ],
             "title": "Dietary Tags"
+          },
+          "ingredients": {
+            "anyOf": [
+              {
+                "items": {
+                  "maxLength": 60,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "maxItems": 40,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ingredients"
           },
           "name": {
             "anyOf": [
@@ -6030,6 +6065,73 @@
           "mfa_pending"
         ],
         "title": "MeOut",
+        "type": "object"
+      },
+      "MenuImportProblem": {
+        "properties": {
+          "field": {
+            "title": "Field",
+            "type": "string"
+          },
+          "line": {
+            "title": "Line",
+            "type": "integer"
+          },
+          "problem": {
+            "title": "Problem",
+            "type": "string"
+          }
+        },
+        "required": [
+          "line",
+          "field",
+          "problem"
+        ],
+        "title": "MenuImportProblem",
+        "type": "object"
+      },
+      "MenuImportReport": {
+        "properties": {
+          "committed": {
+            "title": "Committed",
+            "type": "boolean"
+          },
+          "created": {
+            "title": "Created",
+            "type": "integer"
+          },
+          "errors": {
+            "items": {
+              "$ref": "#/components/schemas/MenuImportProblem"
+            },
+            "title": "Errors",
+            "type": "array"
+          },
+          "new_categories": {
+            "items": {
+              "type": "string"
+            },
+            "title": "New Categories",
+            "type": "array"
+          },
+          "rows": {
+            "title": "Rows",
+            "type": "integer"
+          },
+          "valid": {
+            "title": "Valid",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "committed",
+          "valid",
+          "rows",
+          "errors",
+          "created",
+          "new_categories"
+        ],
+        "title": "MenuImportReport",
         "type": "object"
       },
       "Metrics": {
@@ -15832,6 +15934,7 @@
     },
     "/api/v1/menu/categories/{category_id}": {
       "delete": {
+        "description": "`?with_items=true` removes the category and all its items, and needs step-up.",
         "operationId": "delete_category_api_v1_menu_categories__category_id__delete",
         "parameters": [
           {
@@ -15842,6 +15945,16 @@
               "format": "uuid",
               "title": "Category Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "with_items",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "With Items",
+              "type": "boolean"
             }
           }
         ],
@@ -16034,6 +16147,60 @@
           }
         },
         "summary": "Create Item",
+        "tags": [
+          "menu"
+        ]
+      }
+    },
+    "/api/v1/menu/items/import": {
+      "post": {
+        "description": "Dry run by default: a per-line report. `?commit=true` imports every row or none.",
+        "operationId": "import_items_api_v1_menu_items_import_post",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "commit",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Commit",
+              "type": "boolean"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "text/csv": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MenuImportReport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Import Items",
         "tags": [
           "menu"
         ]

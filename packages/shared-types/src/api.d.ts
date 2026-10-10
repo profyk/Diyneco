@@ -1572,7 +1572,10 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Delete Category */
+        /**
+         * Delete Category
+         * @description `?with_items=true` removes the category and all its items, and needs step-up.
+         */
         delete: operations["delete_category_api_v1_menu_categories__category_id__delete"];
         options?: never;
         head?: never;
@@ -1592,6 +1595,26 @@ export interface paths {
         put?: never;
         /** Create Item */
         post: operations["create_item_api_v1_menu_items_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/menu/items/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import Items
+         * @description Dry run by default: a per-line report. `?commit=true` imports every row or none.
+         */
+        post: operations["import_items_api_v1_menu_items_import_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4334,6 +4357,8 @@ export interface components {
             description?: string | null;
             /** Dietary Tags */
             dietary_tags?: ("vegetarian" | "vegan" | "halaal" | "kosher" | "gluten_free")[];
+            /** Ingredients */
+            ingredients?: string[];
             /** Name */
             name: string;
             price: components["schemas"]["Money"];
@@ -4401,6 +4426,8 @@ export interface components {
             id: string;
             /** Image Url */
             image_url: string | null;
+            /** Ingredients */
+            ingredients: string[];
             /** Is Available */
             is_available: boolean;
             /** Modifier Groups */
@@ -4441,6 +4468,8 @@ export interface components {
             description?: string | null;
             /** Dietary Tags */
             dietary_tags?: ("vegetarian" | "vegan" | "halaal" | "kosher" | "gluten_free")[] | null;
+            /** Ingredients */
+            ingredients?: string[] | null;
             /** Name */
             name?: string | null;
             price?: components["schemas"]["Money"] | null;
@@ -4661,6 +4690,30 @@ export interface components {
             /** Roles */
             roles: string[];
             user: components["schemas"]["UserOut"] | null;
+        };
+        /** MenuImportProblem */
+        MenuImportProblem: {
+            /** Field */
+            field: string;
+            /** Line */
+            line: number;
+            /** Problem */
+            problem: string;
+        };
+        /** MenuImportReport */
+        MenuImportReport: {
+            /** Committed */
+            committed: boolean;
+            /** Created */
+            created: number;
+            /** Errors */
+            errors: components["schemas"]["MenuImportProblem"][];
+            /** New Categories */
+            new_categories: string[];
+            /** Rows */
+            rows: number;
+            /** Valid */
+            valid: boolean;
         };
         /** Metrics */
         Metrics: {
@@ -9604,7 +9657,9 @@ export interface operations {
     };
     delete_category_api_v1_menu_categories__category_id__delete: {
         parameters: {
-            query?: never;
+            query?: {
+                with_items?: boolean;
+            };
             header?: never;
             path: {
                 category_id: string;
@@ -9719,6 +9774,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ItemOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_items_api_v1_menu_items_import_post: {
+        parameters: {
+            query?: {
+                commit?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "text/csv": string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MenuImportReport"];
                 };
             };
             /** @description Validation Error */
