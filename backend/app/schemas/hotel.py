@@ -115,6 +115,7 @@ class SettingsOut(BaseModel):
     invoice_prefix: str
     abridged_invoice_max: Money
     guest_data_retention_days: int
+    guest_id_number_enabled: bool
 
 
 class SettingsPatch(StrictModel):
@@ -136,6 +137,7 @@ class SettingsPatch(StrictModel):
     invoice_prefix: Annotated[str, StringConstraints(pattern=r"^[A-Z0-9]{2,8}$")] | None = None
     abridged_invoice_max: Money | None = None
     guest_data_retention_days: Annotated[int, Field(ge=365, le=3650)] | None = None
+    guest_id_number_enabled: bool | None = None
 
 
 class PermissionOut(BaseModel):

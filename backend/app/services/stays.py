@@ -18,6 +18,7 @@ from app.audit.writer import write_audit
 from app.billing.folio import FolioLedger, Line, business_date
 from app.billing.vat import gross_and_vat
 from app.core.errors import AppError
+from app.core.state import Keyring
 from app.db.session import TenantContext, UnitOfWork
 from app.models.domain import Adjustment, Folio, Guest, Order, Room, Stay
 from app.realtime.outbox import emit, hotel_channel
@@ -56,6 +57,7 @@ def guest_payload(g: Guest) -> dict[str, Any]:
         "email": g.email,
         "phone": g.phone,
         "nationality": g.nationality,
+        "has_id_number": g.id_number_enc is not None,
         "anonymised": g.anonymised_at is not None,
         "created_at": g.created_at,
     }
@@ -67,8 +69,28 @@ async def search_guests(
     return [guest_payload(g) for g in await StayRepository(uow.session, ctx).search_guests(q, limit)]
 
 
-async def create_guest(uow: UnitOfWork, ctx: TenantContext, body: dict[str, Any]) -> Guest:
-    guest = await StayRepository(uow.session, ctx).create_guest(
+def id_number_context(guest_id: uuid.UUID) -> str:
+    return f"guest-id:{guest_id}"
+
+
+async def _seal_id_number(
+    uow: UnitOfWork, ctx: TenantContext, keyring: Keyring | None, guest_id: uuid.UUID, number: str
+) -> bytes:
+    settings = await HotelRepository(uow.session, ctx).get_settings()
+    if settings is None or not settings.guest_id_number_enabled:
+        raise _field_error(
+            "id_number", "This hotel does not record ID numbers. A manager can turn it on in settings."
+        )
+    if keyring is None:  # pragma: no cover - every caller that accepts an ID number passes one
+        raise AppError("SERVICE_UNAVAILABLE")
+    return await keyring.encrypt(str(ctx.hotel_id), number.upper().encode(), id_number_context(guest_id))
+
+
+async def create_guest(
+    uow: UnitOfWork, ctx: TenantContext, body: dict[str, Any], keyring: Keyring | None = None
+) -> Guest:
+    repo = StayRepository(uow.session, ctx)
+    guest = await repo.create_guest(
         {
             "full_name": body["name"],
             "email": str(body["email"]).lower() if body.get("email") else None,
@@ -76,8 +98,18 @@ async def create_guest(uow: UnitOfWork, ctx: TenantContext, body: dict[str, Any]
             "nationality": body.get("nationality"),
         }
     )
+    if body.get("id_number"):
+        sealed = await _seal_id_number(uow, ctx, keyring, guest.id, body["id_number"])
+        guest = await repo.update_guest(guest.id, {"id_number_enc": sealed})
     # Personal data stays out of the audit log; the entry records that it happened.
-    await write_audit(uow.session, ctx, "guest.create", "guest", guest.id)
+    await write_audit(
+        uow.session,
+        ctx,
+        "guest.create",
+        "guest",
+        guest.id,
+        new_value={"id_number": bool(body.get("id_number"))},
+    )
     return guest
 
 
@@ -104,7 +136,11 @@ async def get_guest(uow: UnitOfWork, ctx: TenantContext, guest_id: uuid.UUID) ->
 
 
 async def patch_guest(
-    uow: UnitOfWork, ctx: TenantContext, guest_id: uuid.UUID, changes: dict[str, Any]
+    uow: UnitOfWork,
+    ctx: TenantContext,
+    guest_id: uuid.UUID,
+    changes: dict[str, Any],
+    keyring: Keyring | None = None,
 ) -> dict[str, Any]:
     repo = StayRepository(uow.session, ctx)
     guest = await repo.guest(guest_id, for_update=True)
@@ -113,7 +149,14 @@ async def patch_guest(
     if guest.anonymised_at is not None:
         raise AppError("INVALID_TRANSITION", "This guest's personal data was removed.")
     columns = {"name": "full_name", "email": "email", "phone": "phone", "nationality": "nationality"}
-    values = {columns[k]: (str(v).lower() if k == "email" and v else v) for k, v in changes.items()}
+    values: dict[str, Any] = {
+        columns[k]: (str(v).lower() if k == "email" and v else v) for k, v in changes.items() if k in columns
+    }
+    if "id_number" in changes:
+        number = changes["id_number"]
+        values["id_number_enc"] = (
+            await _seal_id_number(uow, ctx, keyring, guest_id, number) if number else None
+        )
     if values:
         guest = await repo.update_guest(guest_id, values)
         await write_audit(

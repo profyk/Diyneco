@@ -40,6 +40,7 @@ SETTINGS_FIELDS: dict[str, tuple[str, str]] = {
     "invoice_prefix": ("invoice_prefix", "plain"),
     "abridged_invoice_max": ("abridged_invoice_max_minor", "money"),
     "guest_data_retention_days": ("guest_data_retention_days", "plain"),
+    "guest_id_number_enabled": ("guest_id_number_enabled", "plain"),
 }
 
 HOTEL_FIELDS = ("name", "legal_name", "address", "phone", "email")
@@ -86,6 +87,7 @@ def settings_payload(st: HotelSettings) -> dict[str, Any]:
         "invoice_prefix": st.invoice_prefix,
         "abridged_invoice_max": money(st.abridged_invoice_max_minor, st.currency),
         "guest_data_retention_days": st.guest_data_retention_days,
+        "guest_id_number_enabled": st.guest_id_number_enabled,
     }
 
 

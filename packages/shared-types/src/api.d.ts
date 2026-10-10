@@ -3732,6 +3732,8 @@ export interface components {
             created_at: string;
             /** Email */
             email: string | null;
+            /** Has Id Number */
+            has_id_number: boolean;
             /**
              * Id
              * Format: uuid
@@ -3748,8 +3750,26 @@ export interface components {
         GuestPatch: {
             /** Email */
             email?: string | null;
+            /** Id Number */
+            id_number?: string | null;
             /** Name */
             name?: string | null;
+            /** Nationality */
+            nationality?: string | null;
+            /** Phone */
+            phone?: string | null;
+        };
+        /**
+         * GuestRecordCreate
+         * @description `POST /guests`: a guest record may also carry an ID number.
+         */
+        GuestRecordCreate: {
+            /** Email */
+            email?: string | null;
+            /** Id Number */
+            id_number?: string | null;
+            /** Name */
+            name: string;
             /** Nationality */
             nationality?: string | null;
             /** Phone */
@@ -5660,6 +5680,8 @@ export interface components {
             currency: string;
             /** Guest Data Retention Days */
             guest_data_retention_days: number;
+            /** Guest Id Number Enabled */
+            guest_id_number_enabled: boolean;
             /** Info Pages */
             info_pages: components["schemas"]["InfoPage"][];
             /** Invoice Prefix */
@@ -5699,6 +5721,8 @@ export interface components {
             currency?: string | null;
             /** Guest Data Retention Days */
             guest_data_retention_days?: number | null;
+            /** Guest Id Number Enabled */
+            guest_id_number_enabled?: boolean | null;
             /** Info Pages */
             info_pages?: components["schemas"]["InfoPage"][] | null;
             /** Invoice Prefix */
@@ -8588,7 +8612,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GuestCreate"];
+                "application/json": components["schemas"]["GuestRecordCreate"];
             };
         };
         responses: {

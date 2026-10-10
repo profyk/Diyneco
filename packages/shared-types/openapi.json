@@ -3368,6 +3368,10 @@
             ],
             "title": "Email"
           },
+          "has_id_number": {
+            "title": "Has Id Number",
+            "type": "boolean"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -3406,6 +3410,7 @@
           "email",
           "phone",
           "nationality",
+          "has_id_number",
           "anonymised",
           "created_at"
         ],
@@ -3426,6 +3431,20 @@
               }
             ],
             "title": "Email"
+          },
+          "id_number": {
+            "anyOf": [
+              {
+                "maxLength": 30,
+                "minLength": 4,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9 -]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id Number"
           },
           "name": {
             "anyOf": [
@@ -3467,6 +3486,74 @@
           }
         },
         "title": "GuestPatch",
+        "type": "object"
+      },
+      "GuestRecordCreate": {
+        "additionalProperties": false,
+        "description": "`POST /guests`: a guest record may also carry an ID number.",
+        "properties": {
+          "email": {
+            "anyOf": [
+              {
+                "format": "email",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "id_number": {
+            "anyOf": [
+              {
+                "maxLength": 30,
+                "minLength": 4,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9 -]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id Number"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "nationality": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Z]{2}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nationality"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "maxLength": 40,
+                "pattern": "^[0-9+() -]{6,40}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "GuestRecordCreate",
         "type": "object"
       },
       "GuestRef": {
@@ -8936,6 +9023,10 @@
             "title": "Guest Data Retention Days",
             "type": "integer"
           },
+          "guest_id_number_enabled": {
+            "title": "Guest Id Number Enabled",
+            "type": "boolean"
+          },
           "info_pages": {
             "items": {
               "$ref": "#/components/schemas/InfoPage"
@@ -9022,7 +9113,8 @@
           "info_pages",
           "invoice_prefix",
           "abridged_invoice_max",
-          "guest_data_retention_days"
+          "guest_data_retention_days",
+          "guest_id_number_enabled"
         ],
         "title": "SettingsOut",
         "type": "object"
@@ -9098,6 +9190,17 @@
               }
             ],
             "title": "Guest Data Retention Days"
+          },
+          "guest_id_number_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Guest Id Number Enabled"
           },
           "info_pages": {
             "anyOf": [
@@ -14310,7 +14413,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GuestCreate"
+                "$ref": "#/components/schemas/GuestRecordCreate"
               }
             }
           },

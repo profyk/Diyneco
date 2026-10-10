@@ -192,3 +192,40 @@ async def test_retention_job_anonymises_guests_whose_last_stay_is_old(factory, o
         )
     assert states[old["guest_id"]] is True
     assert states[recent["guest_id"]] is False
+
+
+async def test_id_numbers_are_refused_unless_enabled_and_stored_encrypted(client, factory, owner_engine):
+    hotel = await factory.hotel(rooms=1)
+    gm = await factory.auth(hotel, "general_manager")
+    body = {"name": "Sipho Dlamini", "id_number": "a1234567"}
+    off = await client.post("/guests", json=body, headers={**gm, **idem()})
+    assert off.json()["error"]["code"] == "VALIDATION_FAILED", off.text
+    assert off.json()["error"]["details"]["fields"][0]["field"] == "id_number"
+
+    async with owner_engine.begin() as conn:
+        await conn.execute(
+            text("UPDATE app.hotel_settings SET guest_id_number_enabled = true WHERE hotel_id = :h"),
+            {"h": hotel.id},
+        )
+    created = await client.post("/guests", json=body, headers={**gm, **idem()})
+    assert created.status_code == 201, created.text
+    guest = created.json()
+    assert guest["has_id_number"] is True and "id_number" not in guest
+    async with owner_engine.connect() as conn:
+        sealed = (
+            await conn.execute(text("SELECT id_number_enc FROM app.guests WHERE id = :g"), {"g": guest["id"]})
+        ).scalar_one()
+    assert b"A1234567" not in bytes(sealed) and b"a1234567" not in bytes(sealed)
+
+    # Only a step-up export shows it; a plain read never does.
+    read = await client.get(f"/guests/{guest['id']}", headers=gm)
+    assert "id_number" not in read.json() and read.json()["has_id_number"] is True
+    gm_s = await factory.step_up(hotel, "general_manager", gm)
+    export = (await client.get(f"/guests/{guest['id']}/export", headers=gm_s)).json()
+    assert export["guest"]["id_number"] == "A1234567"
+
+    bad = await client.patch(f"/guests/{guest['id']}", json={"id_number": "<script>"}, headers=gm)
+    assert bad.status_code in (400, 422)
+    cleared = await client.patch(f"/guests/{guest['id']}", json={"id_number": None}, headers=gm)
+    assert cleared.status_code == 200, cleared.text
+    assert cleared.json()["has_id_number"] is False

@@ -270,6 +270,7 @@ function BillingSettings() {
           {toggle("menu_prices_include_vat", "Menu prices include VAT")}
           {toggle("room_charging_enabled", "Guests may charge orders to their room")}
           {toggle("checkout_override_allowed", "Managers may check out a guest who still owes money")}
+          {toggle("guest_id_number_enabled", "Record guests' ID or passport numbers (encrypted; only shown in a privacy export)")}
         </div>
         <Field
           label="Currency"

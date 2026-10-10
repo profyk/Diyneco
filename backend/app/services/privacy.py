@@ -21,6 +21,7 @@ from sqlalchemy import text
 
 from app.audit.writer import write_audit
 from app.core.errors import AppError
+from app.core.state import Keyring
 from app.db.session import TenantContext, UnitOfWork, set_tenant
 
 REDACTED = "[redacted]"
@@ -44,10 +45,19 @@ async def _guest(s: Any, ctx: TenantContext, guest_id: uuid.UUID) -> dict[str, A
     return rows[0]
 
 
-async def export_guest(uow: UnitOfWork, ctx: TenantContext, guest_id: uuid.UUID) -> dict[str, Any]:
+async def export_guest(
+    uow: UnitOfWork, ctx: TenantContext, guest_id: uuid.UUID, keyring: Keyring | None = None
+) -> dict[str, Any]:
     s = uow.session
     p = {"h": ctx.hotel_id, "g": guest_id}
     guest = await _guest(s, ctx, guest_id)
+    if guest.pop("has_id_number") and keyring is not None:
+        sealed = (
+            await s.execute(text("SELECT id_number_enc FROM app.guests WHERE hotel_id = :h AND id = :g"), p)
+        ).scalar_one()
+        guest["id_number"] = (
+            await keyring.decrypt(str(ctx.hotel_id), sealed, f"guest-id:{guest_id}")
+        ).decode()
     stays = await _rows(
         s,
         "SELECT s.id, r.number AS room, s.status, s.arrival_date, s.departure_date, s.billing_type, "

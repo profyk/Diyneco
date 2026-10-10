@@ -8,7 +8,7 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Query, Request, Response
 
-from app.api.deps import IdemUser, Principal, StepUp, Uow, require_permission
+from app.api.deps import IdemUser, Principal, StepUp, Uow, require_permission, state_of
 from app.api.http import IfMatch, parse_if_match, patch_changes, with_etag
 from app.api.pagination import DEFAULT_LIMIT, Cursor, Limit, decode_cursor, page
 from app.schemas.stays import (
@@ -17,10 +17,10 @@ from app.schemas.stays import (
     BillingProfileCreate,
     BillingProfileList,
     BillingProfileOut,
-    GuestCreate,
     GuestList,
     GuestOut,
     GuestPatch,
+    GuestRecordCreate,
     StayCreate,
     StayDatesPatch,
     StayList,
@@ -52,9 +52,11 @@ async def search_guests(
 
 @router.post("/guests", status_code=201, response_model=GuestOut)
 async def create_guest(
-    idem: IdemUser, body: GuestCreate, request: Request, uow: Uow, principal: GuestsManage
+    idem: IdemUser, body: GuestRecordCreate, request: Request, uow: Uow, principal: GuestsManage
 ) -> Response:
-    guest = await svc.create_guest(uow, principal.tenant(request), body.model_dump())
+    guest = await svc.create_guest(
+        uow, principal.tenant(request), body.model_dump(), state_of(request).keyring
+    )
     return await idem.complete(
         uow, 201, GuestOut.model_validate(svc.guest_payload(guest)).model_dump(mode="json")
     )
@@ -71,7 +73,7 @@ async def export_guest(
     guest_id: uuid.UUID, request: Request, uow: Uow, principal: PrivacyManage, _s: StepUp
 ) -> dict[str, Any]:
     """POPIA access request: everything held about this guest."""
-    return await privacy.export_guest(uow, principal.tenant(request), guest_id)
+    return await privacy.export_guest(uow, principal.tenant(request), guest_id, state_of(request).keyring)
 
 
 @router.post("/guests/{guest_id}/anonymise", response_model=AnonymiseOut)
@@ -92,7 +94,9 @@ async def anonymise_guest(
 async def patch_guest(
     guest_id: uuid.UUID, body: GuestPatch, request: Request, uow: Uow, principal: GuestsManage
 ) -> dict[str, Any]:
-    return await svc.patch_guest(uow, principal.tenant(request), guest_id, patch_changes(body, {"name"}))
+    return await svc.patch_guest(
+        uow, principal.tenant(request), guest_id, patch_changes(body, {"name"}), state_of(request).keyring
+    )
 
 
 @router.get("/billing-profiles", response_model=BillingProfileList)

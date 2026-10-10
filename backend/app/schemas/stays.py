@@ -16,6 +16,16 @@ Reason = Annotated[str, StringConstraints(max_length=300)]
 StayStatus = Literal["reserved", "checked_in", "active", "checkout_pending", "checked_out", "cancelled"]
 
 
+# An ID or passport number: letters, digits, spaces and hyphens. Kept only if the hotel
+# turns it on, encrypted with the hotel's data key, never returned (security spec, POPIA).
+IdNumber = Annotated[
+    str,
+    StringConstraints(
+        min_length=4, max_length=30, pattern=r"^[A-Za-z0-9][A-Za-z0-9 -]*$", strip_whitespace=True
+    ),
+]
+
+
 class GuestCreate(StrictModel):
     name: Name
     email: EmailStr | None = None
@@ -23,11 +33,18 @@ class GuestCreate(StrictModel):
     nationality: Country | None = None
 
 
+class GuestRecordCreate(GuestCreate):
+    """`POST /guests`: a guest record may also carry an ID number."""
+
+    id_number: IdNumber | None = None
+
+
 class GuestPatch(StrictModel):
     name: Name | None = None
     email: EmailStr | None = None
     phone: Phone | None = None
     nationality: Country | None = None
+    id_number: IdNumber | None = None  # null removes it
 
 
 class GuestOut(BaseModel):
@@ -36,6 +53,7 @@ class GuestOut(BaseModel):
     email: str | None
     phone: str | None
     nationality: str | None
+    has_id_number: bool
     anonymised: bool
     created_at: datetime
 

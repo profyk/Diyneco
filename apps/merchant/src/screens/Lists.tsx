@@ -30,6 +30,13 @@ export function Guests() {
   const privacy = can("privacy.manage");
   const [q, setQ] = useState("");
   const [forgetting, setForgetting] = useState<{ id: string; name: string } | null>(null);
+  const [idFor, setIdFor] = useState<{ id: string; name: string; has: boolean } | null>(null);
+  const settings = useQuery({
+    queryKey: ["settings", "id-numbers"],
+    queryFn: () => ok(api.GET("/api/v1/hotel/settings")),
+    enabled: can("settings.read"),
+  });
+  const idNumbers = Boolean(settings.data?.guest_id_number_enabled) && can("guests.manage");
   const query = useDeferredValue(q.trim());
   const guests = useQuery({
     queryKey: ["guests", query],
@@ -69,12 +76,18 @@ export function Guests() {
                 <tr key={g.id}>
                   <Td className="font-medium">
                     {g.anonymised ? <Badge>Anonymised</Badge> : g.name}
+                    {g.has_id_number ? <Badge className="ml-2">ID on file</Badge> : null}
                   </Td>
                   <Td className="text-muted">{g.email ?? "–"}</Td>
                   <Td className="text-muted">{g.phone ?? "–"}</Td>
                   <Td className="text-muted">{formatDate(g.created_at)}</Td>
                   {privacy ? (
                     <Td className="text-right whitespace-nowrap">
+                      {idNumbers && !g.anonymised ? (
+                        <Button variant="ghost" size="sm" onClick={() => setIdFor({ id: g.id, name: g.name, has: g.has_id_number })}>
+                          ID number
+                        </Button>
+                      ) : null}
                       <ExportButton guestId={g.id} />
                       {g.anonymised ? null : (
                         <Button variant="ghost" size="sm" onClick={() => setForgetting({ id: g.id, name: g.name })}>
@@ -90,6 +103,7 @@ export function Guests() {
         )}
       </Card>
       {forgetting ? <AnonymiseDialog guest={forgetting} onClose={() => setForgetting(null)} /> : null}
+      {idFor ? <IdNumberDialog guest={idFor} onClose={() => setIdFor(null)} /> : null}
     </>
   );
 }
@@ -218,5 +232,46 @@ export function Payments() {
         )}
       </Card>
     </>
+  );
+}
+
+/** Records or removes a guest's ID or passport number. It is stored encrypted and never shown again. */
+function IdNumberDialog({ guest, onClose }: { guest: { id: string; name: string; has: boolean }; onClose: () => void }) {
+  const { api } = useSession();
+  const [value, setValue] = useState("");
+  const valid = /^[A-Za-z0-9][A-Za-z0-9 -]{3,29}$/.test(value.trim());
+  const save = useAction(
+    (id_number: string | null) =>
+      ok(api.PATCH("/api/v1/guests/{guest_id}", { params: { path: { guest_id: guest.id } }, body: { id_number } })),
+    { success: (g) => (g.has_id_number ? "ID number saved." : "ID number removed."), onDone: onClose },
+  );
+  return (
+    <Dialog
+      open
+      onClose={onClose}
+      title={`ID number for ${guest.name}`}
+      description={
+        guest.has
+          ? "A number is on file. It is encrypted and appears only in a privacy export. Enter a new one to replace it."
+          : "Stored encrypted. It is never shown on screen again and appears only in a privacy export."
+      }
+      footer={
+        <>
+          {guest.has ? (
+            <Button variant="secondary" loading={save.isPending} onClick={() => save.mutate(null)}>
+              Remove number
+            </Button>
+          ) : null}
+          <Button disabled={!valid} loading={save.isPending} onClick={() => save.mutate(value.trim())}>
+            Save
+          </Button>
+        </>
+      }
+    >
+      <Field label="ID or passport number" hint="Letters, digits, spaces and hyphens; 4 to 30 characters.">
+        {(p) => <Input {...p} autoComplete="off" spellCheck={false} value={value} onChange={(e) => setValue(e.target.value)} />}
+      </Field>
+      {save.error ? <ErrorNotice error={save.error} className="mt-4" /> : null}
+    </Dialog>
   );
 }
