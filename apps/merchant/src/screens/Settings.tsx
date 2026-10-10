@@ -87,10 +87,68 @@ async function withEtag<T>(r: Promise<{ data?: T; response: Response; error?: un
   return { data, etag: res.response.headers.get("ETag") ?? "" };
 }
 
+const ADDRESS = [
+  ["line1", "Street address"],
+  ["line2", "Suburb or building"],
+  ["city", "City or town"],
+  ["province", "Province or region"],
+  ["postal_code", "Postal code"],
+] as const;
+const LOGO_TYPES = ["image/png", "image/jpeg", "image/svg+xml"] as const;
+const LOGO_MAX_BYTES = 2 * 1024 * 1024;
+
+/** Upload through a signed address: the API issues it, the browser sends the file to storage. */
+function LogoField({ logoUrl }: { logoUrl: string | null }) {
+  const { api } = useSession();
+  const [problem, setProblem] = useState<string | null>(null);
+  const upload = useAction(
+    async (file: File) => {
+      const target = await ok(
+        api.POST("/api/v1/hotel/logo", {
+          body: { content_type: file.type as (typeof LOGO_TYPES)[number], size_bytes: file.size },
+        }),
+      );
+      const res = await fetch(target.upload_url, { method: target.method, headers: target.headers, body: file });
+      if (!res.ok) throw new Error("The logo could not be uploaded. Try again.");
+      return target;
+    },
+    { success: "Logo uploaded. It appears on guest tablets and invoices." },
+  );
+  return (
+    <div className="mt-6">
+      <h3 className="mb-3 font-display text-sm font-semibold">Logo</h3>
+      <div className="flex flex-wrap items-center gap-4">
+        {logoUrl ? <img src={logoUrl} alt="" className="h-14 max-w-40 rounded border border-line bg-white object-contain p-1" /> : null}
+        <input
+          type="file"
+          accept={LOGO_TYPES.join(",")}
+          aria-label="Choose a logo"
+          className="text-sm"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            e.target.value = "";
+            if (!file) return;
+            if (!(LOGO_TYPES as readonly string[]).includes(file.type) || file.size > LOGO_MAX_BYTES) {
+              setProblem("Choose a PNG, JPEG or SVG file of 2 MB or less.");
+              return;
+            }
+            setProblem(null);
+            upload.mutate(file);
+          }}
+        />
+        {upload.isPending ? <span className="text-sm text-muted">Uploading…</span> : null}
+      </div>
+      {problem ? <p className="mt-2 text-sm text-crit">{problem}</p> : null}
+      {upload.error ? <ErrorNotice error={upload.error} className="mt-2" /> : null}
+    </div>
+  );
+}
+
 function HotelProfile() {
   const { api, can } = useSession();
   const hotel = useQuery({ queryKey: ["hotel"], queryFn: () => withEtag(api.GET("/api/v1/hotel")) });
   const [form, setForm] = useState<Record<string, string>>({});
+  const h0 = () => hotel.data?.data;
   const save = useAction(
     () =>
       ok(
@@ -101,6 +159,14 @@ function HotelProfile() {
             ...(form.legal_name !== undefined ? { legal_name: form.legal_name || null } : {}),
             ...(form.phone !== undefined ? { phone: form.phone || null } : {}),
             ...(form.email !== undefined ? { email: form.email || null } : {}),
+            ...(ADDRESS.some(([k]) => form[k] !== undefined)
+              ? {
+                  address: {
+                    ...Object.fromEntries(ADDRESS.map(([k]) => [k, (form[k] ?? String(h0()?.address[k] ?? "")).trim() || null])),
+                    country: (h0()?.address.country as string | undefined) ?? null,
+                  },
+                }
+              : {}),
           },
         }),
       ),
@@ -125,6 +191,22 @@ function HotelProfile() {
           </Field>
         ))}
       </div>
+      <h3 className="mt-6 mb-3 font-display text-sm font-semibold">Address (printed on tax invoices)</h3>
+      <div className="grid gap-4 sm:grid-cols-2">
+        {ADDRESS.map(([k, l]) => (
+          <Field key={k} label={l} className={k === "line1" || k === "line2" ? "sm:col-span-2" : undefined}>
+            {(p) => (
+              <Input
+                {...p}
+                disabled={!can("hotel.update")}
+                value={form[k] ?? String(h.address[k] ?? "")}
+                onChange={(e) => setForm({ ...form, [k]: e.target.value })}
+              />
+            )}
+          </Field>
+        ))}
+      </div>
+      {can("hotel.update") ? <LogoField logoUrl={h.logo_url} /> : null}
       <p className="mt-4 text-sm text-muted">
         Status: <Badge tone={h.status === "active" ? "good" : "warn"}>{label(h.status)}</Badge>
       </p>
