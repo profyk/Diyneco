@@ -103,7 +103,8 @@ async def _target(
     if folio is None or folio.status != "open":
         raise AppError("INVALID_TRANSITION", "This bill is closed.")
     if order is not None:
-        due = order.total_minor
+        voided = (await OrderRepository(uow.session, ctx).voided_totals([order.id])).get(order.id, (0, 0))[0]
+        due = order.total_minor - voided
     else:
         if "folio.read" not in permissions:
             raise AppError("PERMISSION_DENIED", "You can only take payment for orders you are delivering.")

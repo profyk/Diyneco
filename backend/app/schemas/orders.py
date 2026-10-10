@@ -121,6 +121,15 @@ class HistoryOut(BaseModel):
     at: datetime
 
 
+class VoidedItemOut(BaseModel):
+    id: uuid.UUID
+    name: str
+    quantity: int
+    line_total: Money
+    reason: str
+    voided_at: datetime | None
+
+
 class OrderOut(BaseModel):
     id: uuid.UUID
     number: int
@@ -138,6 +147,7 @@ class OrderOut(BaseModel):
     decline_reason: str | None
     placed_by: Literal["guest", "staff"]
     items: list[OrderItemOut]
+    voided_items: list[VoidedItemOut] = []
     history: list[HistoryOut]
     created_at: datetime
 

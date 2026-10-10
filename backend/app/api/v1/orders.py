@@ -120,3 +120,19 @@ async def cancel(
 ) -> Response:
     result = await svc.cancel(uow, principal.tenant(request), order_id, body.reason)
     return await idem.complete(uow, 200, OrderOut.model_validate(result).model_dump(mode="json"))
+
+
+@router.post("/{order_id}/items/{item_id}/void", response_model=OrderOut)
+async def void_item(
+    idem: IdemUser,
+    order_id: uuid.UUID,
+    item_id: uuid.UUID,
+    body: ReasonBody,
+    request: Request,
+    uow: Uow,
+    principal: OrdersCancel,
+    _s: StepUp,
+) -> Response:
+    """Cancels one line of an order with a reason; its bill charge is reversed (D67)."""
+    result = await svc.void_item(uow, principal.tenant(request), order_id, item_id, body.reason)
+    return await idem.complete(uow, 200, OrderOut.model_validate(result).model_dump(mode="json"))

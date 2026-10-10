@@ -371,3 +371,60 @@ async def test_staff_quote_then_phone_order(client, factory, owner_engine):
         "/orders/quote", json={"room_id": str(hotel.room_ids[0]), "lines": lines}, headers=stranger
     )
     assert r.status_code in (404, 422)
+
+
+async def test_void_one_line_then_the_last_cancels_the_order(client, factory, owner_engine):
+    hotel, gm, tablet, items, _ = await setup(client, factory, owner_engine)
+    order = (
+        await client.post(
+            "/guest/orders",
+            json={"lines": cart(items), "quoted_total": zar(36000)},
+            headers={**tablet, **idem()},
+        )
+    ).json()
+    detail = (await client.get(f"/orders/{order['id']}", headers=gm)).json()
+    coke = next(i for i in detail["items"] if i["name"] == "Coke")
+    burger = next(i for i in detail["items"] if i["name"] == "Chicken Burger")
+    url = f"/orders/{order['id']}/items/{coke['id']}/void"
+    assert (await client.post(url, json={"reason": "Out of Coke"}, headers={**gm, **idem()})).json()["error"][
+        "code"
+    ] == "STEP_UP_REQUIRED"
+    s = await factory.step_up(hotel, "general_manager", gm)
+    no_reason = await client.post(url, json={"reason": " "}, headers={**s, **idem()})
+    assert no_reason.status_code in (400, 422)
+    voided = await client.post(url, json={"reason": "Out of Coke"}, headers={**s, **idem()})
+    assert voided.status_code == 200, voided.text
+    v = voided.json()
+    assert v["total"] == zar(34000) and [i["name"] for i in v["items"]] == ["Chicken Burger"]
+    assert v["voided_items"][0]["name"] == "Coke" and v["voided_items"][0]["reason"] == "Out of Coke"
+    folio = (await client.get("/guest/folio", headers=tablet)).json()
+    assert folio["totals"]["food_and_beverage"] == zar(34000)  # the Cokes' R20 reversed
+
+    last = await client.post(
+        f"/orders/{order['id']}/items/{burger['id']}/void",
+        json={"reason": "Guest left"},
+        headers={**s, **idem()},
+    )
+    assert last.json()["status"] == "CANCELLED"
+    assert (await client.get("/guest/folio", headers=tablet)).json()["totals"]["food_and_beverage"] == zar(0)
+
+
+async def test_cancel_is_allowed_while_preparing(client, factory, owner_engine):
+    hotel, gm, tablet, items, _ = await setup(client, factory, owner_engine)
+    order = (
+        await client.post(
+            "/guest/orders",
+            json={"lines": cart(items), "quoted_total": zar(36000)},
+            headers={**tablet, **idem()},
+        )
+    ).json()
+    async with owner_engine.begin() as conn:
+        for status in ("ACCEPTED", "PREPARING"):
+            await conn.execute(
+                text("UPDATE app.orders SET status = :s WHERE id = :o"), {"s": status, "o": order["id"]}
+            )
+    s = await factory.step_up(hotel, "general_manager", gm)
+    r = await client.post(
+        f"/orders/{order['id']}/cancel", json={"reason": "Kitchen fire"}, headers={**s, **idem()}
+    )
+    assert r.status_code == 200, r.text and r.json()["status"] == "CANCELLED"

@@ -5664,6 +5664,69 @@
         "title": "KitchenItem",
         "type": "object"
       },
+      "KitchenMenu": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/KitchenMenuItem"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "KitchenMenu",
+        "type": "object"
+      },
+      "KitchenMenuItem": {
+        "description": "A dish as the kitchen sees it: no prices (security spec).",
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "is_available": {
+            "title": "Is Available",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "station_id": {
+            "format": "uuid",
+            "title": "Station Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "category",
+          "station_id",
+          "is_available"
+        ],
+        "title": "KitchenMenuItem",
+        "type": "object"
+      },
       "KitchenOrder": {
         "properties": {
           "accepted_at": {
@@ -7113,6 +7176,14 @@
           },
           "vat_included": {
             "$ref": "#/components/schemas/Money"
+          },
+          "voided_items": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/VoidedItemOut"
+            },
+            "title": "Voided Items",
+            "type": "array"
           }
         },
         "required": [
@@ -9976,6 +10047,20 @@
         "title": "SignupResponse",
         "type": "object"
       },
+      "SoldOutChange": {
+        "additionalProperties": false,
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "available"
+        ],
+        "title": "SoldOutChange",
+        "type": "object"
+      },
       "StaffList": {
         "properties": {
           "data": {
@@ -11267,6 +11352,52 @@
           "token"
         ],
         "title": "VerifyEmailRequest",
+        "type": "object"
+      },
+      "VoidedItemOut": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "line_total": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "quantity": {
+            "title": "Quantity",
+            "type": "integer"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "voided_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Voided At"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "quantity",
+          "line_total",
+          "reason",
+          "voided_at"
+        ],
+        "title": "VoidedItemOut",
         "type": "object"
       },
       "WalkIn": {
@@ -15766,6 +15897,82 @@
         ]
       }
     },
+    "/api/v1/kitchen/menu": {
+      "get": {
+        "description": "Dishes of this display's stations, so a cook can mark one sold out (D67).",
+        "operationId": "kitchen_menu_api_v1_kitchen_menu_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KitchenMenu"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Kitchen Menu",
+        "tags": [
+          "kitchen"
+        ]
+      }
+    },
+    "/api/v1/kitchen/menu-items/{item_id}/availability": {
+      "post": {
+        "description": "Sold out or back in stock; tablets stop offering the dish at once.",
+        "operationId": "kitchen_sold_out_api_v1_kitchen_menu_items__item_id__availability_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Item Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SoldOutChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KitchenMenuItem"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Kitchen Sold Out",
+        "tags": [
+          "kitchen"
+        ]
+      }
+    },
     "/api/v1/kitchen/order-items/{item_id}/ready": {
       "post": {
         "operationId": "item_ready_api_v1_kitchen_order_items__item_id__ready_post",
@@ -17401,6 +17608,70 @@
           }
         },
         "summary": "Decline",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/api/v1/orders/{order_id}/items/{item_id}/void": {
+      "post": {
+        "description": "Cancels one line of an order with a reason; its bill charge is reversed (D67).",
+        "operationId": "void_item_api_v1_orders__order_id__items__item_id__void_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Order Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Item Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Void Item",
         "tags": [
           "orders"
         ]

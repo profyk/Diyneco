@@ -7,7 +7,7 @@ from collections import defaultdict
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import insert, select, text, update
+from sqlalchemy import func, insert, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import TenantContext
@@ -106,13 +106,20 @@ class OrderRepository:
             q = q.where(Order.number < int(after[0]))
         return list((await self.s.execute(q.order_by(Order.number.desc()).limit(limit + 1))).scalars())
 
-    async def items(self, order_ids: list[uuid.UUID]) -> dict[uuid.UUID, list[OrderItem]]:
+    async def items(
+        self, order_ids: list[uuid.UUID], *, voided: bool = False
+    ) -> dict[uuid.UUID, list[OrderItem]]:
+        """Live lines of each order; `voided=True` returns only the voided ones."""
         out: dict[uuid.UUID, list[OrderItem]] = defaultdict(list)
         if order_ids:
             for item in (
                 await self.s.execute(
                     select(OrderItem)
-                    .where(OrderItem.hotel_id == self.h, OrderItem.order_id.in_(order_ids))
+                    .where(
+                        OrderItem.hotel_id == self.h,
+                        OrderItem.order_id.in_(order_ids),
+                        OrderItem.voided_at.is_not(None) if voided else OrderItem.voided_at.is_(None),
+                    )
                     .order_by(OrderItem.id)
                 )
             ).scalars():
@@ -144,3 +151,19 @@ class OrderRepository:
             ).scalars():
                 out[h.order_id].append(h)
         return out
+
+    async def voided_totals(self, order_ids: list[uuid.UUID]) -> dict[uuid.UUID, tuple[int, int]]:
+        """(line totals, VAT) of voided lines per order. Order amounts are never rewritten (they
+        lock when the kitchen accepts), so effective amounts subtract these."""
+        if not order_ids:
+            return {}
+        rows = await self.s.execute(
+            select(OrderItem.order_id, func.sum(OrderItem.line_total_minor), func.sum(OrderItem.vat_minor))
+            .where(
+                OrderItem.hotel_id == self.h,
+                OrderItem.order_id.in_(order_ids),
+                OrderItem.voided_at.is_not(None),
+            )
+            .group_by(OrderItem.order_id)
+        )
+        return {r[0]: (int(r[1]), int(r[2])) for r in rows.all()}

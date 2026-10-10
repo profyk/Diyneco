@@ -20,10 +20,10 @@
 | `stays.read`             | ●   | ●   | ●   | ●   | ●   | ●   |     |     |     |     |
 | `stays.manage`           | ●   | ●   | ●   | ●   | ●   |     |     |     |     |     |
 | `stays.rate_override`    | ●   | ●   | ●   | ●   |     |     |     |     |     |     |
-| `menu.read`              | ●   | ●   | ●   | ●   | ●   |     | ●   |     | ●   |     |
+| `menu.read`              | ●   | ●   | ●   | ●   | ●   |     | ●   | ●   | ●   |     |
 | `menu.manage`            | ●   | ●   | ●   |     |     |     | ●   |     |     |     |
 | `menu.price.update` †    | ●   | ●   | ●   |     |     |     |     |     |     |     |
-| `menu.availability`      | ●   | ●   | ●   | ●   |     |     | ●   |     |     |     |
+| `menu.availability`      | ●   | ●   | ●   | ●   |     |     | ●   | ●   |     |     |
 | `menu.certify`           | ●   | ●   | ●   |     |     |     | ●   |     |     |     |
 | `kitchen.manage`         | ●   | ●   | ●   |     |     |     | ●   |     |     |     |
 | `kitchen.view`           | ●   | ●   | ●   |     |     |     | ●   | ●   |     |     |

@@ -24,6 +24,7 @@ from app.db.session import TenantContext, UnitOfWork
 from app.models.domain import DeviceStation, KitchenStation, Order, OrderItem
 from app.models.tenancy import HotelUser, RolePermission, Session, User, UserRole
 from app.realtime.outbox import emit, hotel_channel
+from app.repositories.menu import MenuRepository
 from app.repositories.orders import OrderRepository
 from app.services.auth import check_member_pin
 
@@ -371,3 +372,25 @@ async def item_unready(
     )
     await _notify(uow, ctx, order, "ORDER_ITEM_READY", [])
     return (await _payloads(uow, ctx, [order], stations))[0]
+
+
+async def menu_for_stations(
+    uow: UnitOfWork, ctx: TenantContext, stations: Any, *, item_id: uuid.UUID | None = None
+) -> list[dict[str, Any]]:
+    """Live menu items (name, category, availability; never prices) for the given stations."""
+    repo = MenuRepository(uow.session, ctx)
+    categories = {c.id: c for c in await repo.categories()}
+    items = await repo.items(ids=[item_id]) if item_id else await repo.items()
+    station_ids = None if stations is None else {getattr(s, "id", s) for s in stations}
+    out = [
+        {
+            "id": i.id,
+            "name": i.name,
+            "category": categories[i.category_id].name if i.category_id in categories else "",
+            "station_id": i.station_id,
+            "is_available": i.is_available,
+        }
+        for i in items
+        if station_ids is None or i.station_id in station_ids
+    ]
+    return sorted(out, key=lambda x: (x["category"], x["name"]))

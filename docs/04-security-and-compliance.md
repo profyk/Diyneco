@@ -36,7 +36,7 @@ The highest risks are a staff member quietly reducing a bill or pocketing a paym
 | Guest tablet   | Elevation of privilege  | Guest exits kiosk mode and installs tools           | Screen pinning (v1), device-owner mode via MDM (v1.1); credential in Android Keystore; staff can revoke remotely                                                             |
 | Room service   | Repudiation / tampering | Staff takes R4,000, records R3,000 and keeps R1,000 | Guest tablet shows the official amount; tip confirmation is explicit and logged with staff id; terminal reference required; end-of-day reconciliation against terminal batch |
 | Reception      | Tampering               | Receptionist removes a charge before checkout       | Folio is append-only; reversals need `folio.adjust.approve` by a second person; every change is audited                                                                      |
-| Kitchen        | Elevation of privilege  | Kitchen tablet used to view finances                | Kitchen sessions carry only `kitchen.*` permissions; kitchen API payloads contain no prices                                                                                  |
+| Kitchen        | Elevation of privilege  | Kitchen tablet used to view finances                | Kitchen sessions carry only `kitchen.*` permissions and `menu.availability` (sold out, D67); kitchen API payloads contain no prices                                                                                  |
 | Merchant app   | Spoofing                | Stolen staff password                               | Lockout, rate limits, MFA required for owners, admins and finance roles; step-up for sensitive actions                                                                       |
 | Merchant app   | Information disclosure  | Hotel A staff guesses Hotel B ids                   | Tenant from token only; RLS; cross-tenant ids return `404`; automated tests                                                                                                  |
 | API            | Tampering / replay      | Network retry or attacker replays a payment         | `Idempotency-Key` required; one payment per order; HMAC-signed webhooks with timestamp                                                                                       |
@@ -95,10 +95,10 @@ Columns: **Own** Hotel Owner · **Adm** Hotel Admin · **GM** General Manager ·
 | `stays.read`             | ●   | ●   | ●   | ●   | ●   | ●   |     |     |     |     |
 | `stays.manage`           | ●   | ●   | ●   | ●   | ●   |     |     |     |     |     |
 | `stays.rate_override`    | ●   | ●   | ●   | ●   |     |     |     |     |     |     |
-| `menu.read`              | ●   | ●   | ●   | ●   | ●   |     | ●   |     | ●   |     |
+| `menu.read`              | ●   | ●   | ●   | ●   | ●   |     | ●   | ●   | ●   |     |
 | `menu.manage`            | ●   | ●   | ●   |     |     |     | ●   |     |     |     |
 | `menu.price.update` †    | ●   | ●   | ●   |     |     |     |     |     |     |     |
-| `menu.availability`      | ●   | ●   | ●   | ●   |     |     | ●   |     |     |     |
+| `menu.availability`      | ●   | ●   | ●   | ●   |     |     | ●   | ●   |     |     |
 | `menu.certify`           | ●   | ●   | ●   |     |     |     | ●   |     |     |     |
 | `kitchen.manage`         | ●   | ●   | ●   |     |     |     | ●   |     |     |     |
 | `kitchen.view`           | ●   | ●   | ●   |     |     |     | ●   | ●   |     |     |

@@ -513,7 +513,9 @@ async def _kitchen_scope(
     device = await check_device(s, hotel_id, device_id, room_claim=None, allow_locked=False)
     if device.kind != "kitchen":
         raise AppError("UNAUTHENTICATED")
-    return device_id, frozenset(p for p in permissions if p.startswith("kitchen."))
+    # Kitchen work plus marking dishes sold out (D67); never prices or anything else.
+    kept = frozenset(p for p in permissions if p.startswith("kitchen.") or p == "menu.availability")
+    return device_id, kept
 
 
 async def get_principal(request: Request, uow: Uow) -> Principal:

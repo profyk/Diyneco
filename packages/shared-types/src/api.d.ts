@@ -1442,6 +1442,46 @@ export interface paths {
         patch: operations["patch_station_api_v1_kitchen_stations__station_id__patch"];
         trace?: never;
     };
+    "/api/v1/kitchen/menu": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Kitchen Menu
+         * @description Dishes of this display's stations, so a cook can mark one sold out (D67).
+         */
+        get: operations["kitchen_menu_api_v1_kitchen_menu_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kitchen/menu-items/{item_id}/availability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Kitchen Sold Out
+         * @description Sold out or back in stock; tablets stop offering the dish at once.
+         */
+        post: operations["kitchen_sold_out_api_v1_kitchen_menu_items__item_id__availability_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/kitchen/order-items/{item_id}/ready": {
         parameters: {
             query?: never;
@@ -1889,6 +1929,26 @@ export interface paths {
         put?: never;
         /** Decline */
         post: operations["decline_api_v1_orders__order_id__decline_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orders/{order_id}/items/{item_id}/void": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Void Item
+         * @description Cancels one line of an order with a reason; its bill charge is reversed (D67).
+         */
+        post: operations["void_item_api_v1_orders__order_id__items__item_id__void_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4576,6 +4636,35 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /** KitchenMenu */
+        KitchenMenu: {
+            /** Data */
+            data: components["schemas"]["KitchenMenuItem"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+        };
+        /**
+         * KitchenMenuItem
+         * @description A dish as the kitchen sees it: no prices (security spec).
+         */
+        KitchenMenuItem: {
+            /** Category */
+            category: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Is Available */
+            is_available: boolean;
+            /** Name */
+            name: string;
+            /**
+             * Station Id
+             * Format: uuid
+             */
+            station_id: string;
+        };
         /** KitchenOrder */
         KitchenOrder: {
             /** Accepted At */
@@ -5128,6 +5217,11 @@ export interface components {
             subtotal: components["schemas"]["Money"];
             total: components["schemas"]["Money"];
             vat_included: components["schemas"]["Money"];
+            /**
+             * Voided Items
+             * @default []
+             */
+            voided_items: components["schemas"]["VoidedItemOut"][];
         };
         /** OrderPlaced */
         OrderPlaced: {
@@ -6036,6 +6130,11 @@ export interface components {
             /** Status */
             status: string;
         };
+        /** SoldOutChange */
+        SoldOutChange: {
+            /** Available */
+            available: boolean;
+        };
         /** StaffList */
         StaffList: {
             /** Data */
@@ -6492,6 +6591,23 @@ export interface components {
         VerifyEmailRequest: {
             /** Token */
             token: string;
+        };
+        /** VoidedItemOut */
+        VoidedItemOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            line_total: components["schemas"]["Money"];
+            /** Name */
+            name: string;
+            /** Quantity */
+            quantity: number;
+            /** Reason */
+            reason: string;
+            /** Voided At */
+            voided_at: string | null;
         };
         /** WalkIn */
         WalkIn: {
@@ -9501,6 +9617,61 @@ export interface operations {
             };
         };
     };
+    kitchen_menu_api_v1_kitchen_menu_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KitchenMenu"];
+                };
+            };
+        };
+    };
+    kitchen_sold_out_api_v1_kitchen_menu_items__item_id__availability_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SoldOutChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KitchenMenuItem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     item_ready_api_v1_kitchen_order_items__item_id__ready_post: {
         parameters: {
             query?: never;
@@ -10564,6 +10735,42 @@ export interface operations {
             header?: never;
             path: {
                 order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    void_item_api_v1_orders__order_id__items__item_id__void_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+                item_id: string;
             };
             cookie?: never;
         };

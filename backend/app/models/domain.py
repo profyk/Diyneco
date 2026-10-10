@@ -215,6 +215,7 @@ class FolioEntry(Base):
     currency: Mapped[str] = _currency()
     business_date: Mapped[date]
     order_id: Mapped[uuid.UUID | None]
+    order_item_id: Mapped[uuid.UUID | None]
     payment_id: Mapped[uuid.UUID | None]
     reverses_entry_id: Mapped[uuid.UUID | None]
     adjustment_id: Mapped[uuid.UUID | None]
@@ -398,6 +399,9 @@ class OrderItem(Base):
     prep_status: Mapped[str] = mapped_column(server_default=text("'PENDING'"))
     ready_at: Mapped[datetime | None]
     ready_by: Mapped[uuid.UUID | None]
+    voided_at: Mapped[datetime | None]
+    voided_by: Mapped[uuid.UUID | None]
+    void_reason: Mapped[str | None]
 
 
 class OrderItemModifier(Base):

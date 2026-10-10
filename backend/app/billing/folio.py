@@ -32,6 +32,7 @@ class Line:
     vat_minor: int  # VAT contained in the whole line
     business_date: date
     order_id: uuid.UUID | None = None
+    order_item_id: uuid.UUID | None = None
     payment_id: uuid.UUID | None = None
     adjustment_id: uuid.UUID | None = None
 
@@ -89,6 +90,7 @@ class FolioLedger:
                     "currency": folio.currency,
                     "business_date": ln.business_date,
                     "order_id": ln.order_id,
+                    "order_item_id": ln.order_item_id,
                     "payment_id": ln.payment_id,
                     "adjustment_id": ln.adjustment_id,
                     "created_by": self.ctx.actor_id if self.ctx.actor_type == "user" else None,
@@ -183,3 +185,25 @@ class FolioLedger:
             .one()
         )
         return {k: int(v) for k, v in row.items()}
+
+    async def reverse_order_item(
+        self, folio: Folio, order_id: uuid.UUID, item_id: uuid.UUID, match: str, description: str, on: date
+    ) -> int:
+        """Reverses the charge of one order line. Lines posted before order_item_id existed are
+        found by their description, which names the order and the line."""
+        entries = list(
+            (
+                await self.s.execute(
+                    select(FolioEntry).where(
+                        FolioEntry.hotel_id == self.ctx.hotel_id,
+                        FolioEntry.folio_id == folio.id,
+                        FolioEntry.order_id == order_id,
+                        FolioEntry.entry_type == "charge",
+                        (FolioEntry.order_item_id == item_id)
+                        | (FolioEntry.order_item_id.is_(None) & (FolioEntry.description == match)),
+                        self._not_reversed(),
+                    )
+                )
+            ).scalars()
+        )
+        return await self.reverse(folio, entries[:1], description, on)

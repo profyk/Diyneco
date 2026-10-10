@@ -14,11 +14,13 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
+from sqlalchemy import select, update
+
 from app.audit.writer import write_audit
 from app.billing.folio import FolioLedger, Line, business_date
 from app.core.errors import AppError
 from app.db.session import TenantContext, UnitOfWork
-from app.models.domain import Order, Room, Stay
+from app.models.domain import Order, OrderItem, Payment, Room, Stay
 from app.models.tenancy import Hotel
 from app.realtime.outbox import emit, hotel_channel
 from app.repositories.hotels import HotelRepository
@@ -27,7 +29,8 @@ from app.repositories.rooms import RoomRepository
 from app.repositories.stays import StayRepository
 from app.services.pricing import PricedCart, money, price_cart, quote_payload
 
-CANCELLABLE = ("NEW", "ACCEPTED")
+# Until it is delivered (user decision, D67); paid orders are corrected with an adjustment.
+CANCELLABLE = ("NEW", "ACCEPTED", "PREPARING", "READY", "ASSIGNED", "PICKED_UP")
 ACTIVE_ORDER_STATUSES = (
     "PENDING_APPROVAL",
     "NEW",
@@ -106,6 +109,7 @@ async def _post_charges(uow: UnitOfWork, ctx: TenantContext, order: Order, setti
             vat_minor=i.vat_minor,
             business_date=on,
             order_id=order.id,
+            order_item_id=i.id,
         )
         for i in items
     ]
@@ -302,6 +306,7 @@ async def cancel(uow: UnitOfWork, ctx: TenantContext, order_id: uuid.UUID, reaso
     order = await _locked(repo, order_id)
     if order.status not in CANCELLABLE:
         raise _transition_error(order)
+    await _refuse_if_paid(uow, ctx, order)
     settings = await _settings(uow, ctx)
     stations = {i.station_id for i in (await repo.items([order_id])).get(order_id, [])}
     order = await repo.update(order_id, {"status": "CANCELLED"})
@@ -344,6 +349,8 @@ async def order_payloads(uow: UnitOfWork, ctx: TenantContext, orders: list[Order
     repo = OrderRepository(uow.session, ctx)
     ids = [o.id for o in orders]
     items = await repo.items(ids)
+    voided = await repo.items(ids, voided=True)
+    less = await repo.voided_totals(ids)
     mods = await repo.modifiers([i.id for its in items.values() for i in its])
     history = await repo.history(ids)
     out = []
@@ -359,10 +366,10 @@ async def order_payloads(uow: UnitOfWork, ctx: TenantContext, orders: list[Order
                 "stay_id": o.stay_id,
                 "payment_method": o.payment_method,
                 "special_instructions": o.special_instructions,
-                "subtotal": money(o.subtotal_minor, c),
+                "subtotal": money(o.subtotal_minor - less.get(o.id, (0, 0))[0], c),
                 "fee": money(o.fee_minor, c),
-                "total": money(o.total_minor, c),
-                "vat_included": money(o.vat_minor, c),
+                "total": money(o.total_minor - less.get(o.id, (0, 0))[0], c),
+                "vat_included": money(o.vat_minor - less.get(o.id, (0, 0))[1], c),
                 "needs_approval": o.needs_approval,
                 "decline_reason": o.decline_reason,
                 "placed_by": "staff" if o.placed_by_user else "guest",
@@ -386,6 +393,17 @@ async def order_payloads(uow: UnitOfWork, ctx: TenantContext, orders: list[Order
                         ],
                     }
                     for i in items.get(o.id, [])
+                ],
+                "voided_items": [
+                    {
+                        "id": i.id,
+                        "name": i.name,
+                        "quantity": i.quantity,
+                        "line_total": money(i.line_total_minor, c),
+                        "reason": i.void_reason or "",
+                        "voided_at": i.voided_at,
+                    }
+                    for i in voided.get(o.id, [])
                 ],
                 "history": [
                     {"from_status": h.from_status, "to_status": h.to_status, "at": h.created_at}
@@ -418,3 +436,85 @@ async def hotel_of(uow: UnitOfWork, ctx: TenantContext) -> Hotel:
     if hotel is None:
         raise AppError("NOT_FOUND")
     return hotel
+
+
+async def _refuse_if_paid(uow: UnitOfWork, ctx: TenantContext, order: Order) -> None:
+    paid = (
+        await uow.session.execute(
+            select(Payment.id).where(
+                Payment.hotel_id == ctx.hotel_id,
+                Payment.order_id == order.id,
+                Payment.status.in_(("paid", "partial")),
+            )
+        )
+    ).first()
+    if paid is not None:
+        raise AppError(
+            "ALREADY_PAID", "This order has a payment. Correct the bill with an adjustment instead."
+        )
+
+
+async def void_item(
+    uow: UnitOfWork, ctx: TenantContext, order_id: uuid.UUID, item_id: uuid.UUID, reason: str
+) -> dict[str, Any]:
+    """Cancels one line: it leaves the kitchen ticket and the total, and its charge is reversed.
+    Voiding the last line cancels the whole order (with its room-service fee)."""
+    if not reason.strip():
+        raise AppError("REASON_REQUIRED")
+    repo = OrderRepository(uow.session, ctx)
+    order = await _locked(repo, order_id)
+    if order.status not in CANCELLABLE:
+        raise _transition_error(order)
+    await _refuse_if_paid(uow, ctx, order)
+    live = (await repo.items([order_id])).get(order_id, [])
+    item = next((i for i in live if i.id == item_id), None)
+    if item is None:
+        raise AppError("NOT_FOUND")
+    if len(live) == 1:
+        return await cancel(uow, ctx, order_id, reason)
+    settings = await _settings(uow, ctx)
+    await uow.session.execute(
+        update(OrderItem)
+        .where(OrderItem.hotel_id == ctx.hotel_id, OrderItem.id == item_id)
+        .values(voided_at=datetime.now(UTC), voided_by=ctx.actor_id, void_reason=reason.strip())
+    )
+    reversed_count = 0
+    if order.posted_to_folio:
+        ledger = FolioLedger(uow.session, ctx)
+        folio = await ledger.folio_for_stay(order.stay_id)
+        if folio is not None and folio.status == "open":
+            reversed_count = await ledger.reverse_order_item(
+                folio,
+                order.id,
+                item.id,
+                f"Order #{order.number}: {item.name}",
+                f"Order #{order.number}: {item.name} voided",
+                business_date(settings.timezone),
+            )
+    await write_audit(
+        uow.session,
+        ctx,
+        "order.item_void",
+        "order",
+        order_id,
+        old_value={"item": item.name, "quantity": item.quantity, "line_total_minor": item.line_total_minor},
+        new_value={"reversed_entries": reversed_count},
+        reason=reason.strip(),
+    )
+    await emit(
+        uow.session,
+        ctx,
+        "ORDER_UPDATED",
+        [
+            hotel_channel(ctx.hotel_id, f"kitchen:{item.station_id}"),
+            hotel_channel(ctx.hotel_id, f"room:{order.room_id}"),
+            hotel_channel(ctx.hotel_id, "ops"),
+        ],
+        {
+            "order_id": str(order.id),
+            "order_number": order.number,
+            "room": order.room_number,
+            "voided": item.name,
+        },
+    )
+    return await get_order(uow, ctx, order_id)

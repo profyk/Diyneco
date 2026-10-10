@@ -72,6 +72,7 @@ async def payloads(uow: UnitOfWork, ctx: TenantContext, orders: list[Order]) -> 
         if user_ids
         else {}
     )
+    less = await OrderRepository(uow.session, ctx).voided_totals(ids)
     out = []
     for o in orders:
         d = deliveries.get(o.id)
@@ -85,7 +86,7 @@ async def payloads(uow: UnitOfWork, ctx: TenantContext, orders: list[Order]) -> 
                 "items": [
                     {"name": i.name, "quantity": i.quantity, "note": i.note} for i in items.get(o.id, [])
                 ],
-                "amount_due": money(o.total_minor, o.currency),
+                "amount_due": money(o.total_minor - less.get(o.id, (0, 0))[0], o.currency),
                 "paid": o.id in paid,
                 "assigned_to": {"id": d.assigned_to, "name": names.get(d.assigned_to, "")}
                 if d and d.assigned_to

@@ -42,6 +42,11 @@ ALLOWED = {
     ("ASSIGNED", "PICKED_UP"),
     ("PICKED_UP", "DELIVERED"),
     ("DELIVERED", "CLOSED"),
+    # Management may cancel until delivery (user decision, D67).
+    ("PREPARING", "CANCELLED"),
+    ("READY", "CANCELLED"),
+    ("ASSIGNED", "CANCELLED"),
+    ("PICKED_UP", "CANCELLED"),
 }
 
 

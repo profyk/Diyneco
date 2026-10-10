@@ -11,6 +11,7 @@ import { API_URL } from "./config";
 import { appVersion, cookSession, credential, DeviceRevoked, getDeviceToken } from "./device";
 import { PairScreen } from "./PairScreen";
 import { SignInPanel } from "./SignInPanel";
+import { SoldOutPanel } from "./SoldOut";
 
 type Mode = "loading" | "unpaired" | "board" | "locked" | "disabled" | "suspended";
 
@@ -124,6 +125,7 @@ function Kitchen({ onStatus }: { onStatus: (m: Mode) => void }) {
   const [live, setLive] = useState<RealtimeStatus>("connecting");
   const [cook, setCook] = useState(() => cookSession.get());
   const [signInOpen, setSignInOpen] = useState(false);
+  const [soldOutOpen, setSoldOutOpen] = useState(false);
   const pending = useRef<(() => void) | null>(null);
   const [highVis, setHighVis] = useState(false);
   const [sound, setSound] = useState(true);
@@ -209,6 +211,9 @@ function Kitchen({ onStatus }: { onStatus: (m: Mode) => void }) {
               Sign in with PIN
             </Button>
           )}
+          <Button variant="secondary" size="lg" onClick={() => setSoldOutOpen(true)}>
+            Sold out
+          </Button>
           <Button variant="secondary" size="lg" aria-pressed={sound} onClick={() => setSound(!sound)}>
             {sound ? "Sound on" : "Sound off"}
           </Button>
@@ -232,6 +237,7 @@ function Kitchen({ onStatus }: { onStatus: (m: Mode) => void }) {
       ) : (
         <Board orders={orders} needCook={needCook} />
       )}
+      <SoldOutPanel open={soldOutOpen} onClose={() => setSoldOutOpen(false)} needCook={needCook} />
       <SignInPanel
         open={signInOpen}
         onClose={() => {

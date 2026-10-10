@@ -131,7 +131,7 @@ function OrderDialog({ id, onClose }: { id: string; onClose: () => void }) {
     queryFn: () => ok(api.GET("/api/v1/orders/{order_id}", { params: { path: { order_id: id } } })),
   });
   const [reason, setReason] = useState("");
-  const [mode, setMode] = useState<null | "decline" | "cancel" | "adjust">(null);
+  const [mode, setMode] = useState<null | "decline" | "cancel" | "adjust" | { void: string; name: string }>(null);
   const [newAmount, setNewAmount] = useState("");
 
   const approve = useAction(
@@ -155,9 +155,27 @@ function OrderDialog({ id, onClose }: { id: string; onClose: () => void }) {
       ),
     { success: "Adjustment requested. Another manager must approve it.", onDone: () => setMode(null) },
   );
+  const voidLine = useAction(
+    (itemId: string) =>
+      ok(
+        api.POST("/api/v1/orders/{order_id}/items/{item_id}/void", {
+          params: { path: { order_id: id, item_id: itemId } },
+          body: { reason },
+        }),
+      ),
+    {
+      success: (r) => (r.status === "CANCELLED" ? "Last item voided: the order was cancelled." : "Item voided; its charge was reversed."),
+      onDone: () => {
+        setMode(null);
+        setReason("");
+      },
+    },
+  );
   const o = order.data;
-  const error = approve.error ?? decline.error ?? cancel.error ?? adjust.error;
-  const canCancel = o && ["NEW", "ACCEPTED"].includes(o.status) && can("orders.cancel");
+  const error = approve.error ?? decline.error ?? cancel.error ?? adjust.error ?? voidLine.error;
+  // Until delivery (D67); the API refuses paid orders, which are corrected with an adjustment.
+  const canCancel =
+    o && ["NEW", "ACCEPTED", "PREPARING", "READY", "ASSIGNED", "PICKED_UP"].includes(o.status) && can("orders.cancel");
   const canAdjust = o && !["PENDING_APPROVAL", "DECLINED", "CANCELLED"].includes(o.status) && can("folio.adjust.request");
 
   return (
@@ -190,6 +208,23 @@ function OrderDialog({ id, onClose }: { id: string; onClose: () => void }) {
                     {i.note ? <span className="block text-xs text-warn">{i.note}</span> : null}
                   </td>
                   <td className="py-2 text-right tabular-nums">{formatMoney(i.line_total)}</td>
+                  {canCancel ? (
+                    <td className="py-2 pl-2 text-right">
+                      <Button size="sm" variant="ghost" onClick={() => setMode({ void: i.id, name: i.name })}>
+                        Void
+                      </Button>
+                    </td>
+                  ) : null}
+                </tr>
+              ))}
+              {o.voided_items.map((v) => (
+                <tr key={v.id} className="border-b border-line text-muted">
+                  <td className="py-2 pr-2 tabular-nums line-through">{v.quantity}×</td>
+                  <td className="py-2">
+                    <span className="line-through">{v.name}</span>
+                    <span className="block text-xs">Voided: {v.reason}</span>
+                  </td>
+                  <td className="py-2 text-right tabular-nums line-through">{formatMoney(v.line_total)}</td>
                 </tr>
               ))}
               {o.fee.amount_minor ? (
@@ -220,6 +255,9 @@ function OrderDialog({ id, onClose }: { id: string; onClose: () => void }) {
           </details>
           {mode ? (
             <div className="flex flex-col gap-3 rounded-lg border border-line p-3">
+              {typeof mode === "object" ? (
+                <p className="font-medium text-ink">Void {mode.name}: it leaves the kitchen ticket and its charge is reversed. Asks for your PIN.</p>
+              ) : null}
               {mode === "adjust" ? (
                 <Field label="New amount for this order" hint={`Currently ${formatMoney(o.total)}`}>
                   {(p) => <Input {...p} inputMode="decimal" placeholder="0.00" value={newAmount} onChange={(e) => setNewAmount(e.target.value)} />}
@@ -232,7 +270,11 @@ function OrderDialog({ id, onClose }: { id: string; onClose: () => void }) {
                 <Button variant="secondary" onClick={() => setMode(null)}>
                   Back
                 </Button>
-                {mode === "decline" ? (
+                {typeof mode === "object" ? (
+                  <Button variant="danger" disabled={!reason.trim()} loading={voidLine.isPending} onClick={() => voidLine.mutate(mode.void)}>
+                    Void item
+                  </Button>
+                ) : mode === "decline" ? (
                   <Button variant="danger" disabled={!reason.trim()} loading={decline.isPending} onClick={() => decline.mutate(undefined)}>
                     Decline order
                   </Button>

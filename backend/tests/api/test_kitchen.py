@@ -255,7 +255,8 @@ async def test_kitchen_cannot_change_amounts_and_order_locks(client, factory, ow
     late_cancel = await client.post(
         f"/orders/{placed['id']}/cancel", json={"reason": "late"}, headers={**s, **idem()}
     )
-    assert late_cancel.json()["error"]["code"] == "INVALID_TRANSITION"  # only before preparation
+    # Management may cancel while it is being prepared (D67); the charge is reversed.
+    assert late_cancel.json()["status"] == "CANCELLED", late_cancel.text
 
 
 async def test_kitchen_cross_tenant(client, factory):
@@ -267,3 +268,21 @@ async def test_kitchen_cross_tenant(client, factory):
     assert (await client.get("/kitchen/orders", headers=ks_b)).json()["data"] == []
     r = await client.post(f"/kitchen/orders/{placed['id']}/accept", headers={**ks_b, **idem()})
     assert r.status_code == 404
+
+
+async def test_kitchen_staff_mark_dishes_sold_out_from_the_display(client, factory):
+    hotel, gm, stations, _order = await kitchen_setup(client, factory)
+    display = await _display(client, gm, [stations["Main Kitchen"]])
+    cook = await _sign_in(client, display, hotel.users["kitchen_staff"])
+    menu = (await client.get("/kitchen/menu", headers=cook)).json()["data"]
+    assert menu and all("price" not in m for m in menu)
+    burger = next(m for m in menu if m["name"] == "Burger")
+    r = await client.post(
+        f"/kitchen/menu-items/{burger['id']}/availability", json={"available": False}, headers=cook
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["is_available"] is False and "price" not in r.json()
+    item = (await client.get(f"/menu/items/{burger['id']}", headers=gm)).json()
+    assert item["is_available"] is False and item["available_now"] is False
+    # The session still cannot read prices or orders.
+    assert (await client.get("/menu/items", headers=cook)).json()["error"]["code"] == "PERMISSION_DENIED"
