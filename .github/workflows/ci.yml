@@ -148,8 +148,7 @@ jobs:
             [ -f "$app/package.json" ] || continue
             if ! (cd "$app" && pnpm build > "/tmp/build-$name.log" 2>&1); then
               status=1
-              msg=$(grep -iE "error|failed|cannot|unexpected" "/tmp/build-$name.log" | head -15 | tr '
-' ' ' | cut -c1-1800)
+              msg=$(grep -iE "error|failed|cannot|unexpected" "/tmp/build-$name.log" | head -15 | tr '\n' ' ' | cut -c1-1800)
               echo "::error title=Build failed: $name::$msg"
               tail -40 "/tmp/build-$name.log"
             else
