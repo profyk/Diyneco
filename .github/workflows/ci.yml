@@ -138,7 +138,15 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Type-check shared packages and apps
-        run: pnpm -r --filter "./packages/*" --filter "./apps/*" --if-present typecheck
+        run: |
+          checked=0
+          for dir in packages/api-client packages/shared-ui apps/*/; do
+            [ -f "$dir/package.json" ] && grep -q '"typecheck"' "$dir/package.json" || continue
+            (cd "$dir" && pnpm typecheck)
+            checked=$((checked + 1))
+          done
+          echo "::notice title=Type-checked::$checked packages and apps"
+          [ "$checked" -ge 7 ]
       - name: Build every app
         # One app at a time; a failure is reported as an annotation with the build's error lines.
         run: |
@@ -152,7 +160,8 @@ jobs:
               echo "::error title=Build failed: $name::$msg"
               tail -40 "/tmp/build-$name.log"
             else
-              echo "built $name"
+              echo "::notice title=Built $name::$(grep -cE '^[├└┌]' "/tmp/build-$name.log") routes"
             fi
           done
+          [ "$(ls -d apps/*/.next 2>/dev/null | wc -l)" -ge 5 ] || { echo "::error::not every app produced a build"; exit 1; }
           exit $status
