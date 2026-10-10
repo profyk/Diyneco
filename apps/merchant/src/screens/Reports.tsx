@@ -1,6 +1,6 @@
 "use client";
 
-import { currencySymbol, formatDate, formatMoney, type Money, ok, parseAmount } from "@diyneco/api-client";
+import { currencySymbol, formatDate, formatMoney, formatTime, type Money, ok, parseAmount } from "@diyneco/api-client";
 import {
   Badge,
   Button,
@@ -339,9 +339,8 @@ function DailyClose() {
   const { api } = useSession();
   const currency = useCurrency();
   const [day, setDay] = useState(isoDay(-1));
-  const [batch, setBatch] = useState("");
-  const [cash, setCash] = useState("");
-  const [notes, setNotes] = useState("");
+  // Unset until edited: the form shows what was saved, and only edited fields are sent.
+  const [edits, setEdits] = useState<{ batch?: string; cash?: string; notes?: string }>({});
   const r = useQuery({
     queryKey: ["reports", "close", day],
     queryFn: () => ok(api.GET("/api/v1/reports/daily-close", { params: { query: { date: day } } })),
@@ -350,21 +349,33 @@ function DailyClose() {
     const m = parseAmount(t);
     return m === null ? null : { amount_minor: m, currency };
   };
+  const d = r.data;
+  const shown = (m: Money | null | undefined) => (m ? (m.amount_minor / 100).toFixed(2) : "");
+  const batch = edits.batch ?? shown(d?.card.terminal_batch_total);
+  const cash = edits.cash ?? shown(d?.cash.counted);
+  const notes = edits.notes ?? d?.notes ?? "";
   const save = useAction(
     (review: boolean) =>
       ok(
         api.PUT("/api/v1/reports/daily-close/{day}", {
           params: { path: { day } },
-          body: { terminal_batch_total: money(batch), cash_counted: money(cash), notes: notes.trim() || null, mark_reviewed: review },
+          body: {
+            ...(edits.batch !== undefined ? { terminal_batch_total: money(edits.batch) } : {}),
+            ...(edits.cash !== undefined ? { cash_counted: money(edits.cash) } : {}),
+            ...(edits.notes !== undefined ? { notes: edits.notes.trim() || null } : {}),
+            mark_reviewed: review,
+          },
         }),
       ),
-    { success: (d) => (d.reviewed_at ? "Day reviewed." : "Saved.") },
+    { success: (res) => (res.reviewed_at ? "Day reviewed." : "Saved."), onDone: () => setEdits({}) },
   );
-  const d = r.data;
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-end gap-3">
-        <Field label="Day">{(p) => <Input {...p} type="date" value={day} onChange={(e) => setDay(e.target.value)} className="w-44" />}</Field>
+        <Field label="Day">{(p) => <Input {...p} type="date" value={day} onChange={(e) => {
+                setDay(e.target.value);
+                setEdits({});
+              }} className="w-44" />}</Field>
         {d?.reviewed_at ? <Badge tone="good">Reviewed {formatDate(d.reviewed_at)}</Badge> : null}
         {d?.flags.map((f) => (
           <Badge key={f} tone="warn">
@@ -381,21 +392,21 @@ function DailyClose() {
             <StatTile label="Tips" value={formatMoney(d.revenue.tips)} />
             <StatTile
               label="Card recorded"
-              value={formatMoney(d.card.recorded as Money)}
-              hint={d.card.terminal_batch_total ? `Machine batch ${formatMoney(d.card.terminal_batch_total as Money)}` : "Enter the machine's batch total"}
+              value={formatMoney(d.card.recorded)}
+              hint={d.card.terminal_batch_total ? `Machine batch ${formatMoney(d.card.terminal_batch_total)}` : "Enter the machine's batch total"}
             />
             <StatTile
               label="Cash recorded"
-              value={formatMoney(d.cash.recorded as Money)}
-              hint={d.cash.counted ? `Counted ${formatMoney(d.cash.counted as Money)}` : undefined}
+              value={formatMoney(d.cash.recorded)}
+              hint={d.cash.counted ? `Counted ${formatMoney(d.cash.counted)}` : undefined}
             />
           </div>
           <Card className="p-5">
             <h2 className="font-display text-base font-semibold">Finance check</h2>
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <Field label={`Card machine batch total (${currencySymbol(currency)})`}>{(p) => <Input {...p} inputMode="decimal" value={batch} onChange={(e) => setBatch(e.target.value)} />}</Field>
-              <Field label={`Cash counted (${currencySymbol(currency)})`}>{(p) => <Input {...p} inputMode="decimal" value={cash} onChange={(e) => setCash(e.target.value)} />}</Field>
-              <Field label="Notes" className="sm:col-span-2">{(p) => <Textarea {...p} value={notes} onChange={(e) => setNotes(e.target.value)} />}</Field>
+              <Field label={`Card machine batch total (${currencySymbol(currency)})`}>{(p) => <Input {...p} inputMode="decimal" value={batch} onChange={(e) => setEdits({ ...edits, batch: e.target.value })} />}</Field>
+              <Field label={`Cash counted (${currencySymbol(currency)})`}>{(p) => <Input {...p} inputMode="decimal" value={cash} onChange={(e) => setEdits({ ...edits, cash: e.target.value })} />}</Field>
+              <Field label="Notes" className="sm:col-span-2">{(p) => <Textarea {...p} value={notes} onChange={(e) => setEdits({ ...edits, notes: e.target.value })} />}</Field>
             </div>
             {save.error ? <ErrorNotice error={save.error} className="mt-3" /> : null}
             <div className="mt-4 flex justify-end gap-2">
@@ -413,8 +424,8 @@ function DailyClose() {
               {d.adjustments.length ? (
                 <ul className="divide-y divide-line text-sm">
                   {d.adjustments.map((a) => (
-                    <li key={String(a.id)} className="px-5 py-2">
-                      {formatMoney(a.original as Money)} → {formatMoney(a.new_amount as Money)} · {String(a.reason)} ({label(String(a.status))})
+                    <li key={a.id} className="px-5 py-2">
+                      {formatMoney(a.original)} → {formatMoney(a.new_amount)} · {a.reason} ({label(a.status)})
                     </li>
                   ))}
                 </ul>
@@ -427,9 +438,40 @@ function DailyClose() {
               {d.discounts.length ? (
                 <ul className="divide-y divide-line text-sm">
                   {d.discounts.map((x) => (
-                    <li key={String(x.id)} className="px-5 py-2">
-                      {x.percent_bp ? `${Number(x.percent_bp) / 100}%` : formatMoney(x.amount as Money)} on {label(String(x.applies_to))} by{" "}
-                      {String(x.given_by)}: {String(x.reason)}
+                    <li key={x.id} className="px-5 py-2">
+                      {x.percent_bp ? `${x.percent_bp / 100}%` : x.amount ? formatMoney(x.amount) : ""} on {label(x.applies_to)} by{" "}
+                      {x.given_by ?? "unknown"}: {x.reason}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <EmptyState title="None" />
+              )}
+            </Card>
+            <Card>
+              <CardHeader title="Checkouts with a balance" description="Guests allowed to leave owing money." />
+              {d.overrides.length ? (
+                <ul className="divide-y divide-line text-sm">
+                  {d.overrides.map((o) => (
+                    <li key={o.stay_id} className="px-5 py-2">
+                      <Link className="text-blue hover:underline" href={`/stays/${o.stay_id}`}>
+                        Room {o.room}
+                      </Link>
+                      : {o.reason}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <EmptyState title="None" />
+              )}
+            </Card>
+            <Card>
+              <CardHeader title="Late entries" description="Payments and orders recorded after the fact." />
+              {d.late_entries.length ? (
+                <ul className="divide-y divide-line text-sm">
+                  {d.late_entries.map((x) => (
+                    <li key={x.id} className="px-5 py-2">
+                      {label(x.kind)} at {formatTime(x.occurred_at)}, entered {formatDate(x.created_at)} {formatTime(x.created_at)}: {x.reason}
                     </li>
                   ))}
                 </ul>

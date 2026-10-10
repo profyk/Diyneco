@@ -546,13 +546,18 @@ async def put_daily_close(
             .with_for_update()
         )
     ).scalar_one_or_none()
+    # Only the fields sent are changed (an explicit null clears one), so marking a day
+    # reviewed never wipes a batch total or cash count entered earlier.
     values: dict[str, Any] = {
-        "terminal_batch_total_minor": _minor(body.get("terminal_batch_total"), settings.currency),
-        "cash_counted_minor": _minor(body.get("cash_counted"), settings.currency),
-        "notes": body.get("notes"),
         "card_recorded_minor": recorded["card"],
         "cash_recorded_minor": recorded["cash"],
     }
+    if "terminal_batch_total" in body:
+        values["terminal_batch_total_minor"] = _minor(body["terminal_batch_total"], settings.currency)
+    if "cash_counted" in body:
+        values["cash_counted_minor"] = _minor(body["cash_counted"], settings.currency)
+    if "notes" in body:
+        values["notes"] = body["notes"]
     if body.get("mark_reviewed"):
         values |= {"reviewed_by": ctx.actor_id, "reviewed_at": datetime.now(UTC)}
     if existing is None:
@@ -578,8 +583,7 @@ async def put_daily_close(
         old_value={"terminal_batch_total_minor": existing.terminal_batch_total_minor} if existing else None,
         new_value={
             "date": str(day),
-            "terminal_batch_total_minor": values["terminal_batch_total_minor"],
-            "cash_counted_minor": values["cash_counted_minor"],
+            **{k: values[k] for k in ("terminal_batch_total_minor", "cash_counted_minor") if k in values},
             "flags": report["flags"],
         },
     )

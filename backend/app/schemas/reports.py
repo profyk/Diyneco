@@ -169,17 +169,73 @@ class DailyClosePut(StrictModel):
     mark_reviewed: bool = False
 
 
+class CloseTips(BaseModel):
+    staff_id: uuid.UUID | None
+    name: str
+    tips: SignedMoney
+
+
+class ClosePayments(BaseModel):
+    by_method: list[PaymentByMethod]
+    by_staff: list[PaymentByStaff]
+    total: PaymentLine
+
+
+class CloseCard(BaseModel):
+    recorded: SignedMoney
+    terminal_batch_total: SignedMoney | None
+
+
+class CloseCash(BaseModel):
+    recorded: SignedMoney
+    counted: SignedMoney | None
+
+
+class CloseAdjustment(BaseModel):
+    id: uuid.UUID
+    original: SignedMoney
+    new_amount: SignedMoney
+    reason: str
+    status: str
+    requested_by: str | None
+    decided_by: str | None
+
+
+class CloseDiscount(BaseModel):
+    id: uuid.UUID
+    kind: str
+    percent_bp: int | None
+    amount: SignedMoney | None
+    applies_to: str
+    reason: str | None
+    given_by: str | None
+
+
+class CloseOverride(BaseModel):
+    stay_id: uuid.UUID
+    room: str
+    reason: str
+
+
+class CloseLateEntry(BaseModel):
+    kind: Literal["payment", "order"]
+    id: uuid.UUID
+    reason: str
+    occurred_at: datetime
+    created_at: datetime
+
+
 class DailyCloseReport(BaseModel):
     date: Day
     revenue: RevenueRow
-    payments: dict[str, Any]
-    tips_by_staff: list[dict[str, Any]]
-    card: dict[str, Any]
-    cash: dict[str, Any]
-    adjustments: list[dict[str, Any]]
-    discounts: list[dict[str, Any]]
-    overrides: list[dict[str, Any]]
-    late_entries: list[dict[str, Any]]
+    payments: ClosePayments
+    tips_by_staff: list[CloseTips]
+    card: CloseCard
+    cash: CloseCash
+    adjustments: list[CloseAdjustment]
+    discounts: list[CloseDiscount]
+    overrides: list[CloseOverride]
+    late_entries: list[CloseLateEntry]
     flags: list[str]
     notes: str | None
     reviewed_at: datetime | None

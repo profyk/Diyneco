@@ -1811,6 +1811,301 @@
         "title": "CheckoutSummary",
         "type": "object"
       },
+      "CloseAdjustment": {
+        "properties": {
+          "decided_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided By"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "new_amount": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "original": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "requested_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requested By"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "original",
+          "new_amount",
+          "reason",
+          "status",
+          "requested_by",
+          "decided_by"
+        ],
+        "title": "CloseAdjustment",
+        "type": "object"
+      },
+      "CloseCard": {
+        "properties": {
+          "recorded": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "terminal_batch_total": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SignedMoney"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "recorded",
+          "terminal_batch_total"
+        ],
+        "title": "CloseCard",
+        "type": "object"
+      },
+      "CloseCash": {
+        "properties": {
+          "counted": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SignedMoney"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "recorded": {
+            "$ref": "#/components/schemas/SignedMoney"
+          }
+        },
+        "required": [
+          "recorded",
+          "counted"
+        ],
+        "title": "CloseCash",
+        "type": "object"
+      },
+      "CloseDiscount": {
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SignedMoney"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "applies_to": {
+            "title": "Applies To",
+            "type": "string"
+          },
+          "given_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Given By"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "percent_bp": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Percent Bp"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "percent_bp",
+          "amount",
+          "applies_to",
+          "reason",
+          "given_by"
+        ],
+        "title": "CloseDiscount",
+        "type": "object"
+      },
+      "CloseLateEntry": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "payment",
+              "order"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "occurred_at": {
+            "format": "date-time",
+            "title": "Occurred At",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "reason",
+          "occurred_at",
+          "created_at"
+        ],
+        "title": "CloseLateEntry",
+        "type": "object"
+      },
+      "CloseOverride": {
+        "properties": {
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "room": {
+            "title": "Room",
+            "type": "string"
+          },
+          "stay_id": {
+            "format": "uuid",
+            "title": "Stay Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "stay_id",
+          "room",
+          "reason"
+        ],
+        "title": "CloseOverride",
+        "type": "object"
+      },
+      "ClosePayments": {
+        "properties": {
+          "by_method": {
+            "items": {
+              "$ref": "#/components/schemas/PaymentByMethod"
+            },
+            "title": "By Method",
+            "type": "array"
+          },
+          "by_staff": {
+            "items": {
+              "$ref": "#/components/schemas/PaymentByStaff"
+            },
+            "title": "By Staff",
+            "type": "array"
+          },
+          "total": {
+            "$ref": "#/components/schemas/PaymentLine"
+          }
+        },
+        "required": [
+          "by_method",
+          "by_staff",
+          "total"
+        ],
+        "title": "ClosePayments",
+        "type": "object"
+      },
+      "CloseTips": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "staff_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Staff Id"
+          },
+          "tips": {
+            "$ref": "#/components/schemas/SignedMoney"
+          }
+        },
+        "required": [
+          "staff_id",
+          "name",
+          "tips"
+        ],
+        "title": "CloseTips",
+        "type": "object"
+      },
       "CreditNoteRequest": {
         "additionalProperties": false,
         "properties": {
@@ -1914,21 +2209,16 @@
         "properties": {
           "adjustments": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/CloseAdjustment"
             },
             "title": "Adjustments",
             "type": "array"
           },
           "card": {
-            "additionalProperties": true,
-            "title": "Card",
-            "type": "object"
+            "$ref": "#/components/schemas/CloseCard"
           },
           "cash": {
-            "additionalProperties": true,
-            "title": "Cash",
-            "type": "object"
+            "$ref": "#/components/schemas/CloseCash"
           },
           "date": {
             "format": "date",
@@ -1937,8 +2227,7 @@
           },
           "discounts": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/CloseDiscount"
             },
             "title": "Discounts",
             "type": "array"
@@ -1952,8 +2241,7 @@
           },
           "late_entries": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/CloseLateEntry"
             },
             "title": "Late Entries",
             "type": "array"
@@ -1971,16 +2259,13 @@
           },
           "overrides": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/CloseOverride"
             },
             "title": "Overrides",
             "type": "array"
           },
           "payments": {
-            "additionalProperties": true,
-            "title": "Payments",
-            "type": "object"
+            "$ref": "#/components/schemas/ClosePayments"
           },
           "revenue": {
             "$ref": "#/components/schemas/RevenueRow"
@@ -2011,8 +2296,7 @@
           },
           "tips_by_staff": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/CloseTips"
             },
             "title": "Tips By Staff",
             "type": "array"

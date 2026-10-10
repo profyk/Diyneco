@@ -249,6 +249,11 @@ async def test_daily_close_review_flags_and_email(
     )
     assert put.status_code == 200, put.text
     assert put.json()["flags"] == ["card_total_mismatch"] and put.json()["reviewed_at"]
+    # Saving notes alone keeps the batch total and cash count entered before.
+    notes = await client.put(f"/reports/daily-close/{today}", json={"notes": "Checked"}, headers=fin)
+    assert notes.json()["card"]["terminal_batch_total"] == zar(card - 100)
+    assert notes.json()["cash"]["counted"] == report["cash"]["recorded"]
+    assert notes.json()["notes"] == "Checked" and notes.json()["flags"] == ["card_total_mismatch"]
     future = await client.put(f"/reports/daily-close/{today + timedelta(days=2)}", json={}, headers=fin)
     assert future.json()["error"]["code"] == "VALIDATION_FAILED"
 

@@ -37,7 +37,7 @@ jobs:
       run:
         working-directory: backend
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
@@ -96,7 +96,7 @@ jobs:
             --docker "${{ job.services.postgres.id }}"
       - name: Upload test report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: pytest-report
           path: backend/pytest-report.xml
@@ -106,14 +106,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
       - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 24
           cache: pnpm
       - run: uv sync --frozen
         working-directory: backend
@@ -130,9 +130,9 @@ jobs:
       NEXT_TELEMETRY_DISABLED: "1"
       NEXT_PUBLIC_API_URL: https://api.example.invalid
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: pnpm

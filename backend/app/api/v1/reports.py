@@ -121,7 +121,9 @@ async def daily_close(
 async def put_daily_close(
     day: date, body: DailyClosePut, request: Request, uow: Uow, principal: ReportsFinance
 ) -> dict[str, Any]:
-    return await reports.put_daily_close(uow, principal.tenant(request), day, body.model_dump())
+    return await reports.put_daily_close(
+        uow, principal.tenant(request), day, body.model_dump(exclude_unset=True)
+    )
 
 
 @router.get("/audit-logs", response_model=AuditList)

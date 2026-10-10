@@ -3227,6 +3227,106 @@ export interface components {
             stay_status: string;
             totals: components["schemas"]["FolioTotals"];
         };
+        /** CloseAdjustment */
+        CloseAdjustment: {
+            /** Decided By */
+            decided_by: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            new_amount: components["schemas"]["SignedMoney"];
+            original: components["schemas"]["SignedMoney"];
+            /** Reason */
+            reason: string;
+            /** Requested By */
+            requested_by: string | null;
+            /** Status */
+            status: string;
+        };
+        /** CloseCard */
+        CloseCard: {
+            recorded: components["schemas"]["SignedMoney"];
+            terminal_batch_total: components["schemas"]["SignedMoney"] | null;
+        };
+        /** CloseCash */
+        CloseCash: {
+            counted: components["schemas"]["SignedMoney"] | null;
+            recorded: components["schemas"]["SignedMoney"];
+        };
+        /** CloseDiscount */
+        CloseDiscount: {
+            amount: components["schemas"]["SignedMoney"] | null;
+            /** Applies To */
+            applies_to: string;
+            /** Given By */
+            given_by: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Percent Bp */
+            percent_bp: number | null;
+            /** Reason */
+            reason: string | null;
+        };
+        /** CloseLateEntry */
+        CloseLateEntry: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "payment" | "order";
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            /** Reason */
+            reason: string;
+        };
+        /** CloseOverride */
+        CloseOverride: {
+            /** Reason */
+            reason: string;
+            /** Room */
+            room: string;
+            /**
+             * Stay Id
+             * Format: uuid
+             */
+            stay_id: string;
+        };
+        /** ClosePayments */
+        ClosePayments: {
+            /** By Method */
+            by_method: components["schemas"]["PaymentByMethod"][];
+            /** By Staff */
+            by_staff: components["schemas"]["PaymentByStaff"][];
+            total: components["schemas"]["PaymentLine"];
+        };
+        /** CloseTips */
+        CloseTips: {
+            /** Name */
+            name: string;
+            /** Staff Id */
+            staff_id: string | null;
+            tips: components["schemas"]["SignedMoney"];
+        };
         /** CreditNoteRequest */
         CreditNoteRequest: {
             /** Reason */
@@ -3261,51 +3361,32 @@ export interface components {
         /** DailyCloseReport */
         DailyCloseReport: {
             /** Adjustments */
-            adjustments: {
-                [key: string]: unknown;
-            }[];
-            /** Card */
-            card: {
-                [key: string]: unknown;
-            };
-            /** Cash */
-            cash: {
-                [key: string]: unknown;
-            };
+            adjustments: components["schemas"]["CloseAdjustment"][];
+            card: components["schemas"]["CloseCard"];
+            cash: components["schemas"]["CloseCash"];
             /**
              * Date
              * Format: date
              */
             date: string;
             /** Discounts */
-            discounts: {
-                [key: string]: unknown;
-            }[];
+            discounts: components["schemas"]["CloseDiscount"][];
             /** Flags */
             flags: string[];
             /** Late Entries */
-            late_entries: {
-                [key: string]: unknown;
-            }[];
+            late_entries: components["schemas"]["CloseLateEntry"][];
             /** Notes */
             notes: string | null;
             /** Overrides */
-            overrides: {
-                [key: string]: unknown;
-            }[];
-            /** Payments */
-            payments: {
-                [key: string]: unknown;
-            };
+            overrides: components["schemas"]["CloseOverride"][];
+            payments: components["schemas"]["ClosePayments"];
             revenue: components["schemas"]["RevenueRow"];
             /** Reviewed At */
             reviewed_at: string | null;
             /** Reviewed By */
             reviewed_by: string | null;
             /** Tips By Staff */
-            tips_by_staff: {
-                [key: string]: unknown;
-            }[];
+            tips_by_staff: components["schemas"]["CloseTips"][];
         };
         /** DeviceInfo */
         DeviceInfo: {
