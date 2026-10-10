@@ -8,7 +8,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** List Adjustments */
+        get: operations["list_adjustments_api_v1_adjustments_get"];
         put?: never;
         /** Request Adjustment */
         post: operations["request_adjustment_api_v1_adjustments_post"];
@@ -564,6 +565,23 @@ export interface paths {
         put?: never;
         /** Create Profile */
         post: operations["create_profile_api_v1_billing_profiles_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/charge-categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Charge Categories */
+        get: operations["charge_categories_api_v1_charge_categories_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1610,6 +1628,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/orders/quote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Staff Quote
+         * @description Prices a cart for a room so the phone order can be confirmed with the exact total.
+         */
+        post: operations["staff_quote_api_v1_orders_quote_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/orders/{order_id}": {
         parameters: {
             query?: never;
@@ -2557,6 +2595,61 @@ export interface components {
             /** Province */
             province?: string | null;
         };
+        /** AdjustmentList */
+        AdjustmentList: {
+            /** Data */
+            data: components["schemas"]["AdjustmentListItem"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+        };
+        /** AdjustmentListItem */
+        AdjustmentListItem: {
+            /** Decided At */
+            decided_at: string | null;
+            /** Decided By */
+            decided_by: string | null;
+            /** Decision Note */
+            decision_note: string | null;
+            /**
+             * Folio Id
+             * Format: uuid
+             */
+            folio_id: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            new_amount: components["schemas"]["SignedMoney"];
+            /** Order Id */
+            order_id: string | null;
+            original: components["schemas"]["SignedMoney"];
+            /** Reason */
+            reason: string;
+            /**
+             * Requested At
+             * Format: date-time
+             */
+            requested_at: string;
+            /**
+             * Requested By
+             * Format: uuid
+             */
+            requested_by: string;
+            /** Requested By Name */
+            requested_by_name: string | null;
+            /** Room */
+            room: string;
+            /** Status */
+            status: string;
+            /**
+             * Stay Id
+             * Format: uuid
+             */
+            stay_id: string;
+            /** Target Entry Id */
+            target_entry_id: string | null;
+        };
         /** AdjustmentOut */
         AdjustmentOut: {
             /** Decided At */
@@ -2943,6 +3036,29 @@ export interface components {
              * @constant
              */
             status: "received";
+        };
+        /** ChargeCategoryList */
+        ChargeCategoryList: {
+            /** Data */
+            data: components["schemas"]["ChargeCategoryOut"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+        };
+        /** ChargeCategoryOut */
+        ChargeCategoryOut: {
+            /** Code */
+            code: string;
+            /** Group */
+            group: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Vat Rate Bp */
+            vat_rate_bp: number | null;
         };
         /** ChargeRequest */
         ChargeRequest: {
@@ -5511,6 +5627,19 @@ export interface components {
             /** Name */
             name?: string | null;
         };
+        /**
+         * StaffQuote
+         * @description Price a cart for a room before a staff phone order (same server pricing as the tablet).
+         */
+        StaffQuote: {
+            /** Lines */
+            lines: components["schemas"]["CartLine"][];
+            /**
+             * Room Id
+             * Format: uuid
+             */
+            room_id: string;
+        };
         /** StaffRoles */
         StaffRoles: {
             /** Role Ids */
@@ -6110,6 +6239,37 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    list_adjustments_api_v1_adjustments_get: {
+        parameters: {
+            query?: {
+                status?: ("pending" | "approved" | "rejected") | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdjustmentList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     request_adjustment_api_v1_adjustments_post: {
         parameters: {
             query?: never;
@@ -7186,6 +7346,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    charge_categories_api_v1_charge_categories_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChargeCategoryList"];
                 };
             };
         };
@@ -9407,6 +9587,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OrderPlaced"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    staff_quote_api_v1_orders_quote_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StaffQuote"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Quote"];
                 };
             };
             /** @description Validation Error */

@@ -13,7 +13,7 @@ from collections import defaultdict
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import func, insert, select, update
+from sqlalchemy import func, insert, select, text, update
 
 from app.audit.writer import write_audit
 from app.billing.folio import FolioLedger, Line, business_date
@@ -530,3 +530,61 @@ async def reject_adjustment(
     adj = (await s.execute(select(Adjustment).where(Adjustment.id == adj.id))).scalar_one()
     currency = (await s.execute(select(Folio.currency).where(Folio.id == adj.folio_id))).scalar_one()
     return adjustment_payload(adj, currency)
+
+
+async def list_adjustments(uow: UnitOfWork, ctx: TenantContext, status: str | None) -> list[dict[str, Any]]:
+    """Adjustments with where they belong and who asked, newest first (approval queue)."""
+    rows = (
+        (
+            await uow.session.execute(
+                text(
+                    "SELECT a.id, f.currency, s.id AS stay_id, r.number AS room, u.name AS requested_by_name "
+                    "FROM app.adjustments a JOIN app.folios f ON f.id = a.folio_id "
+                    "JOIN app.stays s ON s.id = f.stay_id JOIN app.rooms r ON r.id = s.room_id "
+                    "LEFT JOIN app.users u ON u.id = a.requested_by "
+                    "WHERE a.hotel_id = :h AND (CAST(:st AS text) IS NULL OR a.status = :st) "
+                    "ORDER BY a.requested_at DESC LIMIT 200"
+                ),
+                {"h": ctx.hotel_id, "st": status},
+            )
+        )
+        .mappings()
+        .all()
+    )
+    by_id = {r["id"]: r for r in rows}
+    adjustments = (
+        await uow.session.execute(
+            select(Adjustment).where(Adjustment.hotel_id == ctx.hotel_id, Adjustment.id.in_(list(by_id)))
+        )
+    ).scalars()
+    out = []
+    for a in adjustments:
+        extra = by_id[a.id]
+        out.append(
+            {
+                **adjustment_payload(a, extra["currency"]),
+                "stay_id": extra["stay_id"],
+                "room": extra["room"],
+                "requested_by_name": extra["requested_by_name"],
+            }
+        )
+    return sorted(out, key=lambda x: x["requested_at"], reverse=True)
+
+
+async def chargeable_categories(uow: UnitOfWork, ctx: TenantContext) -> list[dict[str, Any]]:
+    """Categories staff may use for other charges (D42): revenue, not accommodation."""
+    rows = (
+        await uow.session.execute(
+            select(ChargeCategory)
+            .where(
+                (ChargeCategory.hotel_id.is_(None)) | (ChargeCategory.hotel_id == ctx.hotel_id),
+                ChargeCategory.is_revenue.is_(True),
+                ~ChargeCategory.code.startswith("accommodation"),
+            )
+            .order_by(ChargeCategory.revenue_group, ChargeCategory.name)
+        )
+    ).scalars()
+    return [
+        {"id": c.id, "code": c.code, "name": c.name, "group": c.revenue_group, "vat_rate_bp": c.vat_rate_bp}
+        for c in rows
+    ]

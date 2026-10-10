@@ -124,6 +124,170 @@
         "title": "Address",
         "type": "object"
       },
+      "AdjustmentList": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/AdjustmentListItem"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "AdjustmentList",
+        "type": "object"
+      },
+      "AdjustmentListItem": {
+        "properties": {
+          "decided_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided At"
+          },
+          "decided_by": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided By"
+          },
+          "decision_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decision Note"
+          },
+          "folio_id": {
+            "format": "uuid",
+            "title": "Folio Id",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "new_amount": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "order_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Id"
+          },
+          "original": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "requested_at": {
+            "format": "date-time",
+            "title": "Requested At",
+            "type": "string"
+          },
+          "requested_by": {
+            "format": "uuid",
+            "title": "Requested By",
+            "type": "string"
+          },
+          "requested_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requested By Name"
+          },
+          "room": {
+            "title": "Room",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "stay_id": {
+            "format": "uuid",
+            "title": "Stay Id",
+            "type": "string"
+          },
+          "target_entry_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Entry Id"
+          }
+        },
+        "required": [
+          "id",
+          "folio_id",
+          "target_entry_id",
+          "order_id",
+          "original",
+          "new_amount",
+          "reason",
+          "status",
+          "requested_by",
+          "requested_at",
+          "decided_by",
+          "decided_at",
+          "decision_note",
+          "stay_id",
+          "room",
+          "requested_by_name"
+        ],
+        "title": "AdjustmentListItem",
+        "type": "object"
+      },
       "AdjustmentOut": {
         "properties": {
           "decided_at": {
@@ -1338,6 +1502,74 @@
           "status"
         ],
         "title": "ChangeRequestOut",
+        "type": "object"
+      },
+      "ChargeCategoryList": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/ChargeCategoryOut"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "ChargeCategoryList",
+        "type": "object"
+      },
+      "ChargeCategoryOut": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "group": {
+            "title": "Group",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "vat_rate_bp": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vat Rate Bp"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "group",
+          "vat_rate_bp"
+        ],
+        "title": "ChargeCategoryOut",
         "type": "object"
       },
       "ChargeRequest": {
@@ -8894,6 +9126,32 @@
         "title": "StaffPatch",
         "type": "object"
       },
+      "StaffQuote": {
+        "additionalProperties": false,
+        "description": "Price a cart for a room before a staff phone order (same server pricing as the tablet).",
+        "properties": {
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/CartLine"
+            },
+            "maxItems": 500,
+            "minItems": 1,
+            "title": "Lines",
+            "type": "array"
+          },
+          "room_id": {
+            "format": "uuid",
+            "title": "Room Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "lines",
+          "room_id"
+        ],
+        "title": "StaffQuote",
+        "type": "object"
+      },
       "StaffRoles": {
         "additionalProperties": false,
         "properties": {
@@ -10564,6 +10822,58 @@
   "openapi": "3.1.0",
   "paths": {
     "/api/v1/adjustments": {
+      "get": {
+        "operationId": "list_adjustments_api_v1_adjustments_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "pending",
+                    "approved",
+                    "rejected"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdjustmentList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Adjustments",
+        "tags": [
+          "billing"
+        ]
+      },
       "post": {
         "operationId": "request_adjustment_api_v1_adjustments_post",
         "requestBody": {
@@ -12044,6 +12354,27 @@
         "summary": "Create Profile",
         "tags": [
           "stays"
+        ]
+      }
+    },
+    "/api/v1/charge-categories": {
+      "get": {
+        "operationId": "charge_categories_api_v1_charge_categories_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChargeCategoryList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Charge Categories",
+        "tags": [
+          "billing"
         ]
       }
     },
@@ -15261,6 +15592,48 @@
           }
         },
         "summary": "Staff Order",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/api/v1/orders/quote": {
+      "post": {
+        "description": "Prices a cart for a room so the phone order can be confirmed with the exact total.",
+        "operationId": "staff_quote_api_v1_orders_quote_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StaffQuote"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Quote"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Staff Quote",
         "tags": [
           "orders"
         ]

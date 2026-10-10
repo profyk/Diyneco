@@ -338,3 +338,26 @@ async def test_tablet_cannot_order_for_another_room_or_hotel(client, factory, ow
         )
     ).json()
     assert (await client.get(f"/orders/{order['id']}", headers=other_gm)).status_code == 404
+
+
+async def test_staff_quote_then_phone_order(client, factory, owner_engine):
+    hotel, _gm, _tablet, items, _stay = await setup(client, factory, owner_engine)
+    rec = await factory.auth(hotel, "receptionist")
+    lines = cart(items, burgers=1, cokes=1)
+    quote = await client.post(
+        "/orders/quote", json={"room_id": str(hotel.room_ids[0]), "lines": lines}, headers=rec
+    )
+    assert quote.status_code == 200, quote.text
+    placed = await client.post(
+        "/orders",
+        json={"room_id": str(hotel.room_ids[0]), "lines": lines, "quoted_total": quote.json()["total"]},
+        headers={**rec, **idem()},
+    )
+    assert placed.status_code == 201, placed.text
+    assert placed.json()["total"] == quote.json()["total"]
+    other = await factory.hotel(rooms=1)
+    stranger = await factory.auth(other, "receptionist")
+    r = await client.post(
+        "/orders/quote", json={"room_id": str(hotel.room_ids[0]), "lines": lines}, headers=stranger
+    )
+    assert r.status_code in (404, 422)

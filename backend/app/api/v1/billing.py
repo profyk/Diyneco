@@ -4,14 +4,16 @@ two-person adjustments, checkout, invoices and credit notes."""
 from __future__ import annotations
 
 import uuid
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import APIRouter, Depends, Query, Request, Response
 
 from app.api.deps import IdemUser, Principal, StepUp, Uow, require_permission, state_of
 from app.schemas.billing import (
+    AdjustmentList,
     AdjustmentOut,
     AdjustmentRequest,
+    ChargeCategoryList,
     ChargeRequest,
     CheckoutOut,
     CheckoutRequest,
@@ -36,6 +38,11 @@ FolioCharge = Annotated[Principal, Depends(require_permission("folio.charge"))]
 FolioDiscount = Annotated[Principal, Depends(require_permission("folio.discount"))]
 AdjustRequest = Annotated[Principal, Depends(require_permission("folio.adjust.request"))]
 AdjustApprove = Annotated[Principal, Depends(require_permission("folio.adjust.approve"))]
+
+
+@router.get("/charge-categories", response_model=ChargeCategoryList)
+async def charge_categories(request: Request, uow: Uow, principal: FolioRead) -> dict[str, Any]:
+    return {"data": await svc.chargeable_categories(uow, principal.tenant(request)), "next_cursor": None}
 
 
 @router.get("/folios/{stay_id}", response_model=FolioOut)
@@ -68,6 +75,16 @@ async def add_discount(
 ) -> Response:
     result = await svc.add_discount(uow, principal.tenant(request), stay_id, body.model_dump())
     return await idem.complete(uow, 201, FolioOut.model_validate(result).model_dump(mode="json"))
+
+
+@router.get("/adjustments", response_model=AdjustmentList)
+async def list_adjustments(
+    request: Request,
+    uow: Uow,
+    principal: FolioRead,
+    status: Annotated[Literal["pending", "approved", "rejected"] | None, Query()] = None,
+) -> dict[str, Any]:
+    return {"data": await svc.list_adjustments(uow, principal.tenant(request), status), "next_cursor": None}
 
 
 @router.post("/adjustments", status_code=201, response_model=AdjustmentOut)

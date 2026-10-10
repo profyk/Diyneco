@@ -115,6 +115,30 @@ def _pdf_only() -> list[BillDelivery]:
     return ["pdf"]
 
 
+class ChargeCategoryOut(BaseModel):
+    id: uuid.UUID
+    code: str
+    name: str
+    group: str
+    vat_rate_bp: int | None
+
+
+class ChargeCategoryList(BaseModel):
+    data: list[ChargeCategoryOut]
+    next_cursor: str | None = None
+
+
+class AdjustmentListItem(AdjustmentOut):
+    stay_id: uuid.UUID
+    room: str
+    requested_by_name: str | None
+
+
+class AdjustmentList(BaseModel):
+    data: list[AdjustmentListItem]
+    next_cursor: str | None = None
+
+
 class CheckoutRequest(StrictModel):
     override: bool = False
     override_reason: Reason | None = None

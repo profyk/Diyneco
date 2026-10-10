@@ -10,7 +10,16 @@ from fastapi import APIRouter, Depends, Query, Request, Response
 
 from app.api.deps import IdemUser, Principal, StepUp, Uow, require_permission
 from app.api.pagination import DEFAULT_LIMIT, Cursor, Limit, decode_cursor, page
-from app.schemas.orders import OrderList, OrderOut, OrderPlaced, OrderStatus, ReasonBody, StaffOrder
+from app.schemas.orders import (
+    OrderList,
+    OrderOut,
+    OrderPlaced,
+    OrderStatus,
+    Quote,
+    ReasonBody,
+    StaffOrder,
+    StaffQuote,
+)
 from app.services import orders as svc
 
 router = APIRouter(prefix="/orders", tags=["orders"])
@@ -47,6 +56,14 @@ async def list_orders(
     )
     data, next_cursor = page(rows, limit, lambda r: [r[0].number])
     return {"data": [p for _, p in data], "next_cursor": next_cursor}
+
+
+@router.post("/quote", response_model=Quote)
+async def staff_quote(
+    body: StaffQuote, request: Request, uow: Uow, principal: OrdersCreate
+) -> dict[str, Any]:
+    """Prices a cart for a room so the phone order can be confirmed with the exact total."""
+    return await svc.quote(uow, principal.tenant(request), body.room_id, body.model_dump()["lines"])
 
 
 @router.post("", status_code=201, response_model=OrderPlaced)

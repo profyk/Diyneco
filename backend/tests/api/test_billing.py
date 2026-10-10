@@ -259,3 +259,36 @@ async def test_folios_and_adjustments_are_tenant_scoped(client, factory, owner_e
         ),
     ):
         assert r.status_code == 404 and r.json()["error"]["code"] == "NOT_FOUND"
+
+
+async def test_adjustment_queue_lists_pending_requests(client, factory, owner_engine):
+    hotel = await factory.hotel(rooms=1)
+    stay = await walk_in(client, factory, hotel)
+    rec = await factory.auth(hotel, "receptionist")
+    folio = (await laundry(client, rec, stay["id"], owner_engine)).json()
+    entry = next(e for e in folio["entries"] if e["category"] == "laundry")
+    rm = await factory.auth(hotel, "reception_manager")
+    await client.post(
+        "/adjustments",
+        json={"folio_entry_id": entry["id"], "new_amount": zar(0), "reason": "Mistake"},
+        headers={**rm, **idem()},
+    )
+    gm = await factory.auth(hotel, "general_manager")
+    pending = (await client.get("/adjustments", params={"status": "pending"}, headers=gm)).json()["data"]
+    assert len(pending) == 1 and pending[0]["room"] == "101" and pending[0]["stay_id"] == stay["id"]
+    assert pending[0]["requested_by_name"]
+    assert (await client.get("/adjustments", params={"status": "approved"}, headers=gm)).json()["data"] == []
+    other = await factory.hotel(rooms=1)
+    assert (await client.get("/adjustments", headers=await factory.auth(other, "general_manager"))).json()[
+        "data"
+    ] == []
+
+
+async def test_chargeable_categories(client, factory):
+    hotel = await factory.hotel(rooms=1)
+    rec = await factory.auth(hotel, "receptionist")
+    codes = {c["code"] for c in (await client.get("/charge-categories", headers=rec)).json()["data"]}
+    assert {"laundry", "minibar", "food"} <= codes
+    assert not codes & {"accommodation", "tip", "payment"}
+    km = await factory.auth(hotel, "kitchen_manager")
+    assert (await client.get("/charge-categories", headers=km)).status_code == 403

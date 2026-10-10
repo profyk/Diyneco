@@ -46,6 +46,12 @@ class PlaceOrder(QuoteRequest):
     quoted_total: Money
 
 
+class StaffQuote(QuoteRequest):
+    """Price a cart for a room before a staff phone order (same server pricing as the tablet)."""
+
+    room_id: uuid.UUID
+
+
 class StaffOrder(QuoteRequest):
     room_id: uuid.UUID
     special_instructions: Annotated[str, StringConstraints(max_length=500)] | None = None
