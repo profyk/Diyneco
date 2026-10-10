@@ -1,5 +1,30 @@
 # Progress
 
+## 2026-10-10: Gap audit, fixes and full-scale operations screens
+
+### Done
+
+- POPIA: guest export and anonymisation (step-up), daily retention job, encrypted guest ID
+  numbers when a hotel opts in (D59, D62).
+- Bugs fixed: account emails could not be completed (links plus pasted codes, D60); the daily
+  close wiped saved totals on review; changing a subscription wiped custom limits; the
+  schedule API returned `from_`.
+- Security: Content-Security-Policy, HSTS and COOP on every web app; CI actions on Node 24.
+- Merchant: Companies; allergens, option groups, photos, serving hours and category editing on
+  the menu; room edit/delete, room-type edit and CSV import; device disable and move; custom
+  roles and staff details; room-charge blocks and invoice emails; webhook delivery log;
+  hotel address and logo; guest-tablet information pages (D61); Dispatch board; Room rack;
+  Housekeeping; arrivals, departures and no-show views; typed daily close with overrides and
+  late entries.
+- Admin: hotel page (account, owners, usage against limits, custom limits, support access,
+  platform actions), activity feed, hotel status filters (D63).
+
+### Next
+
+- Browser end-to-end tests (Playwright) against a seeded API.
+- Global search, platform staff management, subscription invoicing, image resizing (D32),
+  `HEALTH_DEGRADED` events.
+
 ## 2026-10-10: Front ends (all five web apps) and currencies
 
 ### Done
