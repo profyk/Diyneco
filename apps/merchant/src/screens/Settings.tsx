@@ -342,6 +342,7 @@ function Integrations() {
   const { api } = useSession();
   const keys = useQuery({ queryKey: ["api-keys"], queryFn: () => ok(api.GET("/api/v1/api-keys")) });
   const hooks = useQuery({ queryKey: ["webhooks"], queryFn: () => ok(api.GET("/api/v1/webhooks")) });
+  const [log, setLog] = useState<string | null>(null);
   const [dialog, setDialog] = useState<null | "key" | "hook">(null);
   const [secret, setSecret] = useState<{ title: string; value: string } | null>(null);
   const revoke = useAction((id: string) => ok(api.DELETE("/api/v1/api-keys/{key_id}", { params: { path: { key_id: id } } })), {
@@ -413,6 +414,9 @@ function Integrations() {
                     <Button size="sm" variant="secondary" onClick={() => test.mutate(w.id)}>
                       Send test
                     </Button>{" "}
+                    <Button size="sm" variant="ghost" onClick={() => setLog(w.id)}>
+                      Deliveries
+                    </Button>{" "}
                     <Button
                       size="sm"
                       variant="ghost"
@@ -430,6 +434,7 @@ function Integrations() {
         )}
       </Card>
       {revoke.error || test.error ? <ErrorNotice error={revoke.error ?? test.error} /> : null}
+      {log ? <DeliveryLog webhookId={log} onClose={() => setLog(null)} /> : null}
       {dialog ? (
         <IntegrationDialog
           kind={dialog}
@@ -753,5 +758,54 @@ function InfoPages() {
         </div>
       ) : null}
     </Card>
+  );
+}
+
+/** The last attempts to deliver events to one webhook, with response codes and retries. */
+function DeliveryLog({ webhookId, onClose }: { webhookId: string; onClose: () => void }) {
+  const { api } = useSession();
+  const log = useQuery({
+    queryKey: ["webhook-deliveries", webhookId],
+    queryFn: () => ok(api.GET("/api/v1/webhooks/{webhook_id}/deliveries", { params: { path: { webhook_id: webhookId } } })),
+    refetchInterval: 10_000,
+  });
+  return (
+    <Dialog open onClose={onClose} size="lg" title="Webhook deliveries" description="Failed deliveries are retried with growing gaps; after the last retry the webhook is turned off and the owners are emailed.">
+      {log.isLoading ? (
+        <Skeleton className="h-32" />
+      ) : log.data?.data.length ? (
+        <div className="max-h-[60vh] overflow-auto">
+          <Table>
+            <thead>
+              <tr>
+                <Th>When</Th>
+                <Th>Attempt</Th>
+                <Th>Result</Th>
+                <Th>Next retry</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {log.data.data.map((d) => (
+                <tr key={d.id}>
+                  <Td className="whitespace-nowrap">
+                    {formatDate(d.created_at)} {formatTime(d.created_at)}
+                  </Td>
+                  <Td>{d.attempt}</Td>
+                  <Td>
+                    <Badge tone={d.state === "delivered" ? "good" : d.state === "pending" ? "warn" : "crit"}>
+                      {d.status_code ? `HTTP ${d.status_code}` : label(d.state)}
+                    </Badge>
+                    {d.error ? <p className="mt-1 text-xs text-muted">{d.error}</p> : null}
+                  </Td>
+                  <Td className="text-muted">{d.next_attempt_at ? formatTime(d.next_attempt_at) : "–"}</Td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        </div>
+      ) : (
+        <EmptyState title="Nothing sent yet" body="Send a test to check the endpoint." />
+      )}
+    </Dialog>
   );
 }

@@ -92,6 +92,7 @@ export function StayDetail({ id }: { id: string }) {
                 <Button variant="secondary" onClick={() => setPanel("move")}>
                   Move room
                 </Button>
+                {live ? <BlockChargesButton stayId={s.id} blocked={s.charges_blocked} /> : null}
               </>
             ) : null}
             {open && can("checkout.perform") && (live || s.status === "checked_out") ? (
@@ -707,6 +708,7 @@ function Invoices({ data }: { data: { id: string; number: string; title: string;
   const { api, can } = useSession();
   const toast = useToast();
   const [credit, setCredit] = useState<string | null>(null);
+  const [mailing, setMailing] = useState<string | null>(null);
   const download = async (id: string) => {
     try {
       const r = await ok(api.GET("/api/v1/invoices/{invoice_id}/pdf", { params: { path: { invoice_id: id } } }));
@@ -736,6 +738,11 @@ function Invoices({ data }: { data: { id: string; number: string; title: string;
                 <Button size="sm" variant="secondary" onClick={() => void download(i.id)}>
                   PDF
                 </Button>
+                {can("invoices.send") ? (
+                  <Button size="sm" variant="ghost" onClick={() => setMailing(i.id)}>
+                    Email
+                  </Button>
+                ) : null}
                 {i.kind !== "credit_note" && can("invoices.credit") ? (
                   <Button size="sm" variant="ghost" onClick={() => setCredit(i.id)}>
                     Credit
@@ -747,6 +754,7 @@ function Invoices({ data }: { data: { id: string; number: string; title: string;
         </ul>
       )}
       {credit ? <CreditDialog invoiceId={credit} onClose={() => setCredit(null)} /> : null}
+      {mailing ? <EmailInvoiceDialog invoiceId={mailing} onClose={() => setMailing(null)} /> : null}
     </Card>
   );
 }
@@ -773,6 +781,55 @@ function CreditDialog({ invoiceId, onClose }: { invoiceId: string; onClose: () =
     >
       <Field label="Reason">{(p) => <Textarea {...p} value={reason} onChange={(e) => setReason(e.target.value)} />}</Field>
       {save.error ? <ErrorNotice error={save.error} className="mt-3" /> : null}
+    </Dialog>
+  );
+}
+
+/** Stops the guest charging orders to the room (for example when a card guarantee fails). */
+function BlockChargesButton({ stayId, blocked }: { stayId: string; blocked: boolean }) {
+  const { api } = useSession();
+  const toggle = useAction(
+    () =>
+      blocked
+        ? ok(api.POST("/api/v1/stays/{stay_id}/unblock-charges", { params: { path: { stay_id: stayId } } }))
+        : ok(api.POST("/api/v1/stays/{stay_id}/block-charges", { params: { path: { stay_id: stayId } } })),
+    { success: blocked ? "Room charges allowed again." : "Room charges stopped. The tablet asks the guest to pay at reception." },
+  );
+  return (
+    <Button variant={blocked ? "success" : "secondary"} loading={toggle.isPending} onClick={() => toggle.mutate(undefined)}>
+      {blocked ? "Allow room charges" : "Stop room charges"}
+    </Button>
+  );
+}
+
+function EmailInvoiceDialog({ invoiceId, onClose }: { invoiceId: string; onClose: () => void }) {
+  const { api } = useSession();
+  const [to, setTo] = useState("");
+  const list = to
+    .split(/[,;\s]+/)
+    .map((x) => x.trim())
+    .filter(Boolean);
+  const valid = list.length > 0 && list.length <= 5 && list.every((x) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x));
+  const send = useAction(
+    () => ok(api.POST("/api/v1/invoices/{invoice_id}/email", { params: { path: { invoice_id: invoiceId } }, body: { to: list } })),
+    { success: (r) => `Invoice sent to ${r.queued_to.join(", ")}.`, onDone: onClose },
+  );
+  return (
+    <Dialog
+      open
+      onClose={onClose}
+      title="Email the invoice"
+      description="Sends the PDF. Up to five addresses, separated by commas."
+      footer={
+        <Button disabled={!valid} loading={send.isPending} onClick={() => send.mutate(undefined)}>
+          Send
+        </Button>
+      }
+    >
+      <Field label="Email addresses">
+        {(p) => <Input {...p} type="text" inputMode="email" placeholder="accounts@company.co.za" value={to} onChange={(e) => setTo(e.target.value)} />}
+      </Field>
+      {send.error ? <ErrorNotice error={send.error} className="mt-4" /> : null}
     </Dialog>
   );
 }
