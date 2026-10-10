@@ -249,7 +249,9 @@ async def put_subscription(uow: UnitOfWork, ctx: TenantContext, body: dict[str, 
         "status": body["status"],
         "starts_on": body["starts_on"],
         "renews_on": body.get("renews_on"),
-        "limit_overrides": body.get("limit_overrides") or {},
+        "limit_overrides": body["limit_overrides"]
+        if body.get("limit_overrides") is not None
+        else (current.limit_overrides if current is not None else {}),
         "cancelled_at": datetime.now(UTC) if body["status"] == "cancelled" else None,
     }
     old = None

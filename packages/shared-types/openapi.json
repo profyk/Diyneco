@@ -10269,20 +10269,27 @@
         "additionalProperties": false,
         "properties": {
           "limit_overrides": {
-            "additionalProperties": {
-              "minimum": 0.0,
-              "type": "integer"
-            },
-            "propertyNames": {
-              "enum": [
-                "rooms",
-                "devices",
-                "staff",
-                "api_keys"
-              ]
-            },
-            "title": "Limit Overrides",
-            "type": "object"
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "minimum": 0.0,
+                  "type": "integer"
+                },
+                "propertyNames": {
+                  "enum": [
+                    "rooms",
+                    "devices",
+                    "staff",
+                    "api_keys"
+                  ]
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit Overrides"
           },
           "plan_id": {
             "format": "uuid",

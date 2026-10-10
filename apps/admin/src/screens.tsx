@@ -158,21 +158,31 @@ export function Hotels() {
   );
 }
 
-function HotelDialog({ hotel, onClose }: { hotel: { id: string; name: string; status: string }; onClose: () => void }) {
+type Sub = "trialing" | "active" | "past_due" | "cancelled";
+
+function HotelDialog({
+  hotel,
+  onClose,
+}: {
+  hotel: { id: string; name: string; status: string; plan: string | null; subscription_status: string | null; renews_on: string | null };
+  onClose: () => void;
+}) {
   const { api, can } = useSession();
   const toast = useToast();
   const [reason, setReason] = useState("");
   const [ticket, setTicket] = useState("");
   const [minutes, setMinutes] = useState("30");
-  const [planId, setPlanId] = useState("");
-  const [status, setStatus] = useState<"trialing" | "active" | "past_due" | "cancelled">("active");
+  const [chosenPlan, setPlanId] = useState<string | null>(null);
+  const [status, setStatus] = useState<Sub>((hotel.subscription_status as Sub | null) ?? "active");
   const [startsOn, setStartsOn] = useState(new Date().toISOString().slice(0, 10));
-  const [renewsOn, setRenewsOn] = useState("");
+  const [renewsOn, setRenewsOn] = useState(hotel.renews_on ?? "");
   const plans = useQuery({
     queryKey: ["plans"],
     queryFn: () => ok(api.GET("/api/v1/admin/plans")),
     enabled: can("platform.billing.manage"),
   });
+  // Starts on the hotel's current plan; custom limits are kept because they are not sent.
+  const planId = chosenPlan ?? plans.data?.data.find((pl) => pl.name === hotel.plan || pl.code === hotel.plan)?.id ?? "";
   const id = { params: { path: { hotel_id: hotel.id } } };
   const suspend = useAction(() => ok(api.POST("/api/v1/admin/hotels/{hotel_id}/suspend", { ...id, body: { reason } })), {
     success: "Hotel suspended. Tablets show a paused screen.",

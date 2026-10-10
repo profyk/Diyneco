@@ -106,9 +106,10 @@ class SubscriptionPut(StrictModel):
     status: Literal["trialing", "active", "past_due", "cancelled"]
     starts_on: date
     renews_on: date | None = None
-    limit_overrides: dict[Literal["rooms", "devices", "staff", "api_keys"], Annotated[int, Field(ge=0)]] = (
-        Field(default_factory=dict)
-    )
+    # Left out: the current overrides are kept. {} clears them.
+    limit_overrides: (
+        dict[Literal["rooms", "devices", "staff", "api_keys"], Annotated[int, Field(ge=0)]] | None
+    ) = None
 
 
 class SubscriptionOut(BaseModel):

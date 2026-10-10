@@ -168,6 +168,26 @@ async def test_subscription_plans_and_limits(client, factory):
     assert over.json()["error"]["code"] == "PLAN_LIMIT_REACHED"
     assert over.json()["error"]["details"]["limit"] == 1
 
+    # Changing only the status keeps the hotel's custom limits; {} clears them.
+    renewed = await client.put(
+        f"/admin/hotels/{hotel.id}/subscription",
+        json={"plan_id": plan["id"], "status": "past_due", "starts_on": str(date.today())},
+        headers=admin,
+    )
+    assert renewed.status_code == 200, renewed.text
+    assert renewed.json()["limit_overrides"] == {"rooms": 1} and renewed.json()["limits"]["rooms"] == 1
+    cleared = await client.put(
+        f"/admin/hotels/{hotel.id}/subscription",
+        json={
+            "plan_id": plan["id"],
+            "status": "active",
+            "starts_on": str(date.today()),
+            "limit_overrides": {},
+        },
+        headers=admin,
+    )
+    assert cleared.json()["limit_overrides"] == {}
+
 
 async def test_feature_flags(client, factory):
     hotel = await factory.hotel(rooms=1)

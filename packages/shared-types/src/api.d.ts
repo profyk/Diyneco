@@ -6073,7 +6073,7 @@ export interface components {
             /** Limit Overrides */
             limit_overrides?: {
                 [key: string]: number;
-            };
+            } | null;
             /**
              * Plan Id
              * Format: uuid
