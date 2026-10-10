@@ -3485,6 +3485,13 @@
             ],
             "title": "Image Url"
           },
+          "ingredients": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Ingredients",
+            "type": "array"
+          },
           "modifier_groups": {
             "items": {
               "additionalProperties": true,
@@ -3521,6 +3528,7 @@
           "image_url",
           "dietary_tags",
           "allergens",
+          "ingredients",
           "available_now",
           "next_available_at",
           "modifier_groups"

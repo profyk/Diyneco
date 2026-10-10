@@ -257,11 +257,14 @@ function MenuTab({ cart, setCart, enabled, onOrdered }: { cart: CartLine[]; setC
             onClick={() => setPicking(item)}
             className="flex flex-col overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface text-left transition active:scale-[0.99] disabled:opacity-50"
           >
-            {item.image_url ? <img src={item.image_url} alt="" className="h-44 w-full object-cover" /> : null}
+            {item.image_url ? <img src={item.image_url} alt="" loading="lazy" className="h-44 w-full object-cover" /> : null}
             <div className="flex flex-1 flex-col gap-1 p-4">
               <p className="text-lg font-semibold text-ink">{item.name}</p>
               {item.description ? <p className="line-clamp-2 text-sm text-muted">{item.description}</p> : null}
               {item.dietary_tags.length ? <p className="text-xs text-teal">{item.dietary_tags.join(" · ").replace(/_/g, " ")}</p> : null}
+              {(item.modifier_groups as ModifierGroup[]).some((g) => g.min_select > 0) ? (
+                <p className="text-xs text-muted">Choose your options</p>
+              ) : null}
               <div className="mt-auto flex items-center justify-between pt-2">
                 <span className="text-lg font-semibold tabular-nums text-ink">{formatMoney(item.price)}</span>
                 {!item.available_now ? <Badge>{item.next_available_at ? `From ${formatTime(item.next_available_at)}` : "Not available"}</Badge> : null}
@@ -285,28 +288,33 @@ function MenuTab({ cart, setCart, enabled, onOrdered }: { cart: CartLine[]; setC
   );
 }
 
+const QUICK_NOTES = ["No onion", "No salt", "Extra spicy", "Not spicy", "Sauce on the side", "No ice", "Cut in half"];
+
 function ItemDialog({ item, onClose, onAdd }: { item: MenuItem; onClose: () => void; onAdd: (l: CartLine) => void }) {
   const groups = item.modifier_groups as ModifierGroup[];
   const [quantity, setQuantity] = useState(1);
   const [picked, setPicked] = useState<string[]>([]);
   const [note, setNote] = useState("");
-  const valid = groups.every((g) => {
-    const n = g.options.filter((o) => picked.includes(o.id)).length;
-    return n >= g.min_select && n <= g.max_select;
-  });
+  const [tried, setTried] = useState(false);
+  const count = (g: ModifierGroup) => g.options.filter((o) => picked.includes(o.id)).length;
+  const missing = groups.filter((g) => count(g) < g.min_select);
+  const valid = missing.length === 0 && groups.every((g) => count(g) <= g.max_select);
   const toggle = (g: ModifierGroup, id: string) => {
     const inGroup = picked.filter((p) => g.options.some((o) => o.id === p));
     if (picked.includes(id)) return setPicked(picked.filter((p) => p !== id));
     if (g.max_select === 1) return setPicked([...picked.filter((p) => !inGroup.includes(p)), id]);
     if (inGroup.length < g.max_select) setPicked([...picked, id]);
   };
+  // Shown for guidance only; the server prices the order and the guest confirms its total.
+  const extras = groups.flatMap((g) => g.options).filter((o) => picked.includes(o.id)).reduce((sum, o) => sum + o.price_delta.amount_minor, 0);
+  const lineTotal = { amount_minor: (item.price.amount_minor + extras) * quantity, currency: item.price.currency };
+  const addQuick = (q: string) => setNote((n) => (n.toLowerCase().includes(q.toLowerCase()) ? n : (n ? `${n}, ${q}` : q).slice(0, 200)));
   return (
     <Dialog
       open
       onClose={onClose}
       size="lg"
       title={item.name}
-      description={item.allergens.length ? `Contains: ${item.allergens.join(", ").replace(/_/g, " ")}` : undefined}
       footer={
         <div className="flex w-full flex-wrap items-center gap-3">
           <Button size="lg" variant="secondary" aria-label="One fewer" onClick={() => setQuantity(Math.max(1, quantity - 1))}>
@@ -320,35 +328,70 @@ function ItemDialog({ item, onClose, onAdd }: { item: MenuItem; onClose: () => v
           <Button size="lg" variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button size="lg" disabled={!valid} onClick={() => onAdd({ key: `${item.id}-${Date.now()}`, item, quantity, options: picked, note: note.trim() })}>
-            Add to order
+          <Button
+            size="lg"
+            onClick={() => {
+              if (!valid) return setTried(true);
+              onAdd({ key: `${item.id}-${Date.now()}`, item, quantity, options: picked, note: note.trim() });
+            }}
+          >
+            Add · {formatMoney(lineTotal)}
           </Button>
         </div>
       }
     >
       <div className="flex flex-col gap-5">
-        {item.description ? <p className="text-muted">{item.description}</p> : null}
-        {groups.map((g) => (
-          <fieldset key={g.id}>
-            <legend className="mb-2 font-semibold text-ink">
-              {g.name}{" "}
-              <span className="font-normal text-muted">
-                {g.min_select ? `(choose ${g.min_select === g.max_select ? g.min_select : `${g.min_select}–${g.max_select}`})` : `(optional, up to ${g.max_select})`}
-              </span>
-            </legend>
-            <div className="flex flex-wrap gap-2">
-              {g.options.filter((o) => o.is_available).map((o) => (
-                <Button key={o.id} size="lg" variant={picked.includes(o.id) ? "primary" : "secondary"} aria-pressed={picked.includes(o.id)} onClick={() => toggle(g, o.id)}>
-                  {o.name}
-                  {o.price_delta.amount_minor ? ` +${formatMoney(o.price_delta)}` : ""}
-                </Button>
-              ))}
-            </div>
-          </fieldset>
-        ))}
-        <Field label="Note for the kitchen (optional)">
-          {(p) => <Textarea {...p} maxLength={200} value={note} onChange={(e) => setNote(e.target.value)} />}
+        {item.image_url ? (
+          <img src={item.image_url} alt={item.name} className="max-h-72 w-full rounded-[var(--radius-card)] object-cover" />
+        ) : null}
+        {item.description ? <p className="text-lg text-ink">{item.description}</p> : null}
+        {item.ingredients.length ? (
+          <p className="text-muted">
+            <span className="font-semibold text-ink">Ingredients: </span>
+            {item.ingredients.join(", ")}
+          </p>
+        ) : null}
+        {item.allergens.length ? (
+          <p className="rounded-lg bg-warn-bg px-3 py-2 font-medium text-warn">
+            Contains {item.allergens.join(", ").replace(/_/g, " ")}. Tell us about any allergy in your message.
+          </p>
+        ) : null}
+        {groups.map((g) => {
+          const short = tried && count(g) < g.min_select;
+          return (
+            <fieldset key={g.id} className={short ? "rounded-lg ring-2 ring-crit ring-offset-4 ring-offset-surface" : undefined}>
+              <legend className="mb-2 font-semibold text-ink">
+                {g.name}{" "}
+                {g.min_select ? (
+                  <Badge tone={short ? "crit" : "warn"}>Required{g.max_select > 1 ? `, choose ${g.min_select}–${g.max_select}` : ""}</Badge>
+                ) : (
+                  <span className="font-normal text-muted">(optional{g.max_select > 1 ? `, up to ${g.max_select}` : ""})</span>
+                )}
+              </legend>
+              <div className="flex flex-wrap gap-2">
+                {g.options.filter((o) => o.is_available).map((o) => (
+                  <Button key={o.id} size="lg" variant={picked.includes(o.id) ? "primary" : "secondary"} aria-pressed={picked.includes(o.id)} onClick={() => toggle(g, o.id)}>
+                    {o.name}
+                    {o.price_delta.amount_minor ? ` +${formatMoney(o.price_delta)}` : ""}
+                  </Button>
+                ))}
+              </div>
+              {short ? <p className="mt-2 font-medium text-crit">Please choose your {g.name.toLowerCase()}.</p> : null}
+            </fieldset>
+          );
+        })}
+        <Field label="Message to the kitchen (optional)">
+          {(p) => (
+            <Textarea {...p} maxLength={200} placeholder="For example: no onion, or an allergy we should know about" value={note} onChange={(e) => setNote(e.target.value)} />
+          )}
         </Field>
+        <div className="-mt-3 flex flex-wrap gap-2">
+          {QUICK_NOTES.map((q) => (
+            <Button key={q} size="sm" variant="ghost" onClick={() => addQuick(q)}>
+              + {q}
+            </Button>
+          ))}
+        </div>
       </div>
     </Dialog>
   );

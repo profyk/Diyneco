@@ -3830,6 +3830,8 @@ export interface components {
             id: string;
             /** Image Url */
             image_url: string | null;
+            /** Ingredients */
+            ingredients: string[];
             /** Modifier Groups */
             modifier_groups: {
                 [key: string]: unknown;

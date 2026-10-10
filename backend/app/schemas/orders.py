@@ -166,6 +166,7 @@ class GuestMenuItem(BaseModel):
     image_url: str | None
     dietary_tags: list[str]
     allergens: list[str]
+    ingredients: list[str]
     available_now: bool
     next_available_at: datetime | None
     modifier_groups: list[dict[str, object]]

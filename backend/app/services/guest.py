@@ -97,6 +97,7 @@ async def menu(st: AppState, uow: UnitOfWork, ctx: TenantContext) -> dict[str, A
                 "image_url": p["image_url"],
                 "dietary_tags": p["dietary_tags"],
                 "allergens": p["allergens"],
+                "ingredients": p["ingredients"],
                 "available_now": p["available_now"],
                 "next_available_at": p["next_available_at"],
                 "modifier_groups": p["modifier_groups"],
