@@ -22,6 +22,7 @@ import {
   useToast,
 } from "@diyneco/shared-ui";
 import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
 import { useState } from "react";
 
 import { label, useAction } from "./common";
@@ -73,6 +74,7 @@ export function Overview() {
           </div>
         </>
       )}
+      <Activity />
       <Card className="mt-6">
         <CardHeader title="Orders per day" description="Last 30 days, all hotels" />
         <div className="flex h-40 items-end gap-1 px-5 pb-5" role="img" aria-label="Orders per day for the last 30 days">
@@ -91,17 +93,32 @@ export function Hotels() {
   const { api, can } = useSession();
   const [open, setOpen] = useState<string | null>(null);
   const [q, setQ] = useState("");
+  const [status, setStatus] = useState("");
   const hotels = useQuery({ queryKey: ["hotels"], queryFn: () => ok(api.GET("/api/v1/admin/hotels")) });
   const approve = useAction(
     (id: string) => ok(api.POST("/api/v1/admin/hotels/{hotel_id}/approve", { params: { path: { hotel_id: id } } })),
     { success: "Approved. The owner was emailed." },
   );
-  const list = (hotels.data?.data ?? []).filter((h) => !q || h.name.toLowerCase().includes(q.toLowerCase()));
+  const list = (hotels.data?.data ?? []).filter(
+    (h) => (!q || h.name.toLowerCase().includes(q.toLowerCase()) || h.slug.includes(q.toLowerCase())) && (!status || h.status === status),
+  );
+  const count = (st: string) => (hotels.data?.data ?? []).filter((h) => !st || h.status === st).length;
   const selected = hotels.data?.data.find((h) => h.id === open);
   return (
     <>
       <PageHeader title="Hotels" description="Counts only: guest records are never visible to Diyneco staff." />
-      <Input type="search" placeholder="Search hotels" className="mb-4 max-w-sm" value={q} onChange={(e) => setQ(e.target.value)} />
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <Input type="search" aria-label="Search hotels" placeholder="Search hotels" className="max-w-sm" value={q} onChange={(e) => setQ(e.target.value)} />
+        {["", "pending_approval", "active", "suspended"].map((st) => (
+          <button
+            key={st || "all"}
+            onClick={() => setStatus(st)}
+            className={`rounded-full px-3 py-1.5 text-sm font-medium ${status === st ? "bg-brand text-on-brand" : "bg-surface text-ink hover:bg-surface-2"}`}
+          >
+            {st ? label(st) : "All"} {count(st)}
+          </button>
+        ))}
+      </div>
       {approve.error ? <ErrorNotice error={approve.error} className="mb-4" /> : null}
       <Card>
         {hotels.isLoading ? (
@@ -125,7 +142,9 @@ export function Hotels() {
               {list.map((h) => (
                 <tr key={h.id} className="hover:bg-surface-2">
                   <Td>
-                    <p className="font-medium">{h.name}</p>
+                    <Link className="font-medium text-blue hover:underline" href={`/hotels/${h.id}`}>
+                      {h.name}
+                    </Link>
                     <p className="text-xs text-muted">Since {formatDate(h.created_at)}</p>
                   </Td>
                   <Td>
@@ -158,9 +177,9 @@ export function Hotels() {
   );
 }
 
-type Sub = "trialing" | "active" | "past_due" | "cancelled";
+export type Sub = "trialing" | "active" | "past_due" | "cancelled";
 
-function HotelDialog({
+export function HotelDialog({
   hotel,
   onClose,
 }: {
@@ -547,5 +566,49 @@ export function Health() {
         </>
       )}
     </>
+  );
+}
+
+const EVENT_TEXT: Record<string, string> = {
+  TENANT_CREATED: "signed up",
+  TENANT_APPROVED: "was approved",
+  TENANT_SUSPENDED: "was suspended",
+  TENANT_REACTIVATED: "was reactivated",
+  SUBSCRIPTION_CHANGE_REQUESTED: "asked to change plan",
+};
+
+/** The platform's last 24 hours: signups, approvals, plan requests and suspensions. */
+function Activity() {
+  const { api, can } = useSession();
+  const feed = useQuery({
+    queryKey: ["activity"],
+    queryFn: () => ok(api.GET("/api/v1/admin/activity", { params: { query: { hours: 24 } } })),
+    refetchInterval: 30_000,
+    enabled: can("platform.metrics"),
+  });
+  const events = feed.data?.data ?? [];
+  return (
+    <Card className="mt-6">
+      <CardHeader title="Activity" description="Last 24 hours across all hotels" />
+      {feed.isLoading ? (
+        <Skeleton className="m-5 h-10" />
+      ) : events.length ? (
+        <ul className="max-h-80 divide-y divide-line overflow-auto text-sm">
+          {events.slice(0, 50).map((e) => (
+            <li key={e.id} className="flex flex-wrap justify-between gap-2 px-5 py-2">
+              <span>
+                <Link className="font-medium text-blue hover:underline" href={`/hotels/${e.hotel_id}`}>
+                  {e.hotel_name ?? "A hotel"}
+                </Link>{" "}
+                {EVENT_TEXT[e.type] ?? label(e.type.toLowerCase())}
+              </span>
+              <span className="text-muted">{new Date(e.created_at).toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" })}</span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <EmptyState title="Quiet day" body="No signups, approvals or plan requests in the last 24 hours." />
+      )}
+    </Card>
   );
 }

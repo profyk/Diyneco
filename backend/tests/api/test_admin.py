@@ -361,3 +361,26 @@ async def test_exit_admin_cannot_read_guest_pii_through_any_endpoint(client, fac
     # The guest data is really there: the hotel's own manager can read it.
     gm = await factory.auth(hotel, "general_manager")
     assert _leaks((await client.get(f"/guests/{ids['guest_id']}", headers=gm)).text)
+
+
+async def test_hotel_detail_and_platform_activity(client, factory):
+    hotel = await factory.hotel(rooms=2, status="pending_approval")
+    admin = await platform(factory)
+    await client.post(f"/admin/hotels/{hotel.id}/approve", headers={**admin, **idem()})
+
+    detail = await client.get(f"/admin/hotels/{hotel.id}", headers=admin)
+    assert detail.status_code == 200, detail.text
+    d = detail.json()
+    assert d["hotel"]["id"] == str(hotel.id) and d["hotel"]["counts"]["rooms"] == 2
+    assert [o["email"] for o in d["owners"]] == [hotel.users["hotel_owner"].email]
+    assert d["currency"] and d["timezone"]
+    assert [a["action"] for a in d["platform_actions"]][:1] == ["hotel.approve"]
+    assert (await client.get(f"/admin/hotels/{uuid.uuid4()}", headers=admin)).status_code == 404
+
+    feed = (await client.get("/admin/activity", headers=admin)).json()["data"]
+    mine = [e for e in feed if e["hotel_id"] == str(hotel.id)]
+    assert mine and mine[0]["type"] == "TENANT_APPROVED" and mine[0]["hotel_name"] == hotel.name
+
+    gm = await factory.auth(hotel, "general_manager")
+    assert (await client.get(f"/admin/hotels/{hotel.id}", headers=gm)).status_code == 403
+    assert (await client.get("/admin/activity", headers=gm)).status_code == 403

@@ -185,3 +185,47 @@ class Health(BaseModel):
     status: str
     checks: dict[str, HealthCheck]
     checked_at: datetime
+
+
+class HotelOwner(BaseModel):
+    name: str
+    email: str
+
+
+class PlatformAction(BaseModel):
+    id: int
+    action: str
+    entity_type: str
+    actor: str
+    reason: str | None
+    created_at: datetime
+
+
+class AdminHotelDetail(BaseModel):
+    """One hotel for the platform team: no guest data, only what running the account needs."""
+
+    hotel: AdminHotel
+    legal_name: str | None
+    country: str
+    currency: str
+    timezone: str
+    phone: str | None
+    email: str | None
+    owners: list[HotelOwner]
+    subscription: SubscriptionOut | None
+    support_grants: list[SupportGrantOut]
+    platform_actions: list[PlatformAction]
+
+
+class ActivityEvent(BaseModel):
+    id: uuid.UUID
+    hotel_id: uuid.UUID
+    hotel_name: str | None
+    type: str
+    payload: dict[str, Any]
+    created_at: datetime
+
+
+class ActivityList(BaseModel):
+    data: list[ActivityEvent]
+    next_cursor: str | None = None

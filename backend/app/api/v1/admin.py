@@ -6,10 +6,12 @@ from __future__ import annotations
 import uuid
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import APIRouter, Depends, Query, Request, Response
 
 from app.api.deps import IdemUser, Principal, StepUp, Uow, require_permission, state_of
 from app.schemas.admin import (
+    ActivityList,
+    AdminHotelDetail,
     AdminHotelList,
     FlagList,
     FlagPatch,
@@ -56,6 +58,21 @@ async def health(request: Request, uow: Uow, principal: PlatformMetrics) -> dict
 @router.get("/hotels", response_model=AdminHotelList)
 async def hotels(uow: Uow, principal: TenantsRead) -> dict[str, Any]:
     return {"data": await svc.hotels(uow), "next_cursor": None}
+
+
+@router.get("/hotels/{hotel_id}", response_model=AdminHotelDetail)
+async def hotel_detail(
+    hotel_id: uuid.UUID, request: Request, uow: Uow, principal: TenantsRead
+) -> dict[str, Any]:
+    """One hotel: contacts, subscription, usage, support access and platform actions taken."""
+    return await svc.hotel_detail(uow, principal.for_hotel(request, hotel_id))
+
+
+@router.get("/activity", response_model=ActivityList)
+async def activity(
+    uow: Uow, principal: PlatformMetrics, hours: Annotated[int, Query(ge=1, le=24)] = 24
+) -> dict[str, Any]:
+    return {"data": await svc.activity(uow, hours), "next_cursor": None}
 
 
 async def _status(

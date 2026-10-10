@@ -53,6 +53,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Activity */
+        get: operations["activity_api_v1_admin_activity_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/analytics": {
         parameters: {
             query?: never;
@@ -114,6 +131,26 @@ export interface paths {
         };
         /** Hotels */
         get: operations["hotels_api_v1_admin_hotels_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/hotels/{hotel_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Hotel Detail
+         * @description One hotel: contacts, subscription, usage, support access and platform actions taken.
+         */
+        get: operations["hotel_detail_api_v1_admin_hotels__hotel_id__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2657,6 +2694,39 @@ export interface components {
             /** Status */
             status: string;
         };
+        /** ActivityEvent */
+        ActivityEvent: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Hotel Id
+             * Format: uuid
+             */
+            hotel_id: string;
+            /** Hotel Name */
+            hotel_name: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Payload */
+            payload: {
+                [key: string]: unknown;
+            };
+            /** Type */
+            type: string;
+        };
+        /** ActivityList */
+        ActivityList: {
+            /** Data */
+            data: components["schemas"]["ActivityEvent"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+        };
         /** Address */
         Address: {
             /** City */
@@ -2805,6 +2875,32 @@ export interface components {
             status_reason: string | null;
             /** Subscription Status */
             subscription_status: string | null;
+        };
+        /**
+         * AdminHotelDetail
+         * @description One hotel for the platform team: no guest data, only what running the account needs.
+         */
+        AdminHotelDetail: {
+            /** Country */
+            country: string;
+            /** Currency */
+            currency: string;
+            /** Email */
+            email: string | null;
+            hotel: components["schemas"]["AdminHotel"];
+            /** Legal Name */
+            legal_name: string | null;
+            /** Owners */
+            owners: components["schemas"]["HotelOwner"][];
+            /** Phone */
+            phone: string | null;
+            /** Platform Actions */
+            platform_actions: components["schemas"]["PlatformAction"][];
+            subscription: components["schemas"]["SubscriptionOut"] | null;
+            /** Support Grants */
+            support_grants: components["schemas"]["SupportGrantOut"][];
+            /** Timezone */
+            timezone: string;
         };
         /** AdminHotelList */
         AdminHotelList: {
@@ -3936,6 +4032,13 @@ export interface components {
             status: string;
             /** Version */
             version: number;
+        };
+        /** HotelOwner */
+        HotelOwner: {
+            /** Email */
+            email: string;
+            /** Name */
+            name: string;
         };
         /** HotelPatch */
         HotelPatch: {
@@ -5230,6 +5333,24 @@ export interface components {
             monthly_price?: components["schemas"]["Money"] | null;
             /** Name */
             name?: string | null;
+        };
+        /** PlatformAction */
+        PlatformAction: {
+            /** Action */
+            action: string;
+            /** Actor */
+            actor: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Entity Type */
+            entity_type: string;
+            /** Id */
+            id: number;
+            /** Reason */
+            reason: string | null;
         };
         /** Quote */
         Quote: {
@@ -6611,6 +6732,37 @@ export interface operations {
             };
         };
     };
+    activity_api_v1_admin_activity_get: {
+        parameters: {
+            query?: {
+                hours?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     analytics_api_v1_admin_analytics_get: {
         parameters: {
             query?: {
@@ -6731,6 +6883,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminHotelList"];
+                };
+            };
+        };
+    };
+    hotel_detail_api_v1_admin_hotels__hotel_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                hotel_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminHotelDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

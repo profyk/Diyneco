@@ -45,6 +45,82 @@
         "title": "AcceptedResponse",
         "type": "object"
       },
+      "ActivityEvent": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "hotel_id": {
+            "format": "uuid",
+            "title": "Hotel Id",
+            "type": "string"
+          },
+          "hotel_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hotel Name"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "title": "Payload",
+            "type": "object"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "hotel_id",
+          "hotel_name",
+          "type",
+          "payload",
+          "created_at"
+        ],
+        "title": "ActivityEvent",
+        "type": "object"
+      },
+      "ActivityList": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/ActivityEvent"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "ActivityList",
+        "type": "object"
+      },
       "Address": {
         "additionalProperties": false,
         "properties": {
@@ -545,6 +621,105 @@
           "last_activity"
         ],
         "title": "AdminHotel",
+        "type": "object"
+      },
+      "AdminHotelDetail": {
+        "description": "One hotel for the platform team: no guest data, only what running the account needs.",
+        "properties": {
+          "country": {
+            "title": "Country",
+            "type": "string"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "hotel": {
+            "$ref": "#/components/schemas/AdminHotel"
+          },
+          "legal_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Legal Name"
+          },
+          "owners": {
+            "items": {
+              "$ref": "#/components/schemas/HotelOwner"
+            },
+            "title": "Owners",
+            "type": "array"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "platform_actions": {
+            "items": {
+              "$ref": "#/components/schemas/PlatformAction"
+            },
+            "title": "Platform Actions",
+            "type": "array"
+          },
+          "subscription": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SubscriptionOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "support_grants": {
+            "items": {
+              "$ref": "#/components/schemas/SupportGrantOut"
+            },
+            "title": "Support Grants",
+            "type": "array"
+          },
+          "timezone": {
+            "title": "Timezone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "hotel",
+          "legal_name",
+          "country",
+          "currency",
+          "timezone",
+          "phone",
+          "email",
+          "owners",
+          "subscription",
+          "support_grants",
+          "platform_actions"
+        ],
+        "title": "AdminHotelDetail",
         "type": "object"
       },
       "AdminHotelList": {
@@ -3976,6 +4151,24 @@
           "version"
         ],
         "title": "HotelOut",
+        "type": "object"
+      },
+      "HotelOwner": {
+        "properties": {
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "email"
+        ],
+        "title": "HotelOwner",
         "type": "object"
       },
       "HotelPatch": {
@@ -7696,6 +7889,52 @@
           }
         },
         "title": "PlanPatch",
+        "type": "object"
+      },
+      "PlatformAction": {
+        "properties": {
+          "action": {
+            "title": "Action",
+            "type": "string"
+          },
+          "actor": {
+            "title": "Actor",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "entity_type": {
+            "title": "Entity Type",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "id",
+          "action",
+          "entity_type",
+          "actor",
+          "reason",
+          "created_at"
+        ],
+        "title": "PlatformAction",
         "type": "object"
       },
       "Quote": {
@@ -11616,6 +11855,51 @@
         ]
       }
     },
+    "/api/v1/admin/activity": {
+      "get": {
+        "operationId": "activity_api_v1_admin_activity_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "hours",
+            "required": false,
+            "schema": {
+              "default": 24,
+              "maximum": 24,
+              "minimum": 1,
+              "title": "Hours",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Activity",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/api/v1/admin/analytics": {
       "get": {
         "operationId": "analytics_api_v1_admin_analytics_get",
@@ -11758,6 +12042,50 @@
           }
         },
         "summary": "Hotels",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/hotels/{hotel_id}": {
+      "get": {
+        "description": "One hotel: contacts, subscription, usage, support access and platform actions taken.",
+        "operationId": "hotel_detail_api_v1_admin_hotels__hotel_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "hotel_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Hotel Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminHotelDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Hotel Detail",
         "tags": [
           "admin"
         ]

@@ -552,3 +552,92 @@ async def revoke_grant(uow: UnitOfWork, ctx: TenantContext, grant_id: uuid.UUID)
         ).scalar_one()
         await write_audit(s, ctx, "support.access_revoked", "support_grant", grant.id)
     return grant_payload(grant)
+
+
+# --- Hotel detail and activity ---------------------------------------------------------------
+
+
+async def hotel_detail(uow: UnitOfWork, ctx: TenantContext) -> dict[str, Any]:
+    """Read under the hotel's own context (its RLS applies); guest data is never selected."""
+    listed = {h["id"]: h for h in await hotels(uow)}
+    if ctx.hotel_id not in listed:
+        raise AppError("NOT_FOUND")
+    hotel = await _enter(uow, ctx)
+    s = uow.session
+    settings = await HotelRepository(s, ctx).get_settings()
+    owners = (
+        await s.execute(
+            text(
+                "SELECT u.name, u.email FROM app.hotel_users hu JOIN app.users u ON u.id = hu.user_id "
+                "JOIN app.user_roles ur ON ur.hotel_user_id = hu.id JOIN app.roles r ON r.id = ur.role_id "
+                "WHERE hu.hotel_id = :h AND hu.status = 'active' AND r.code = 'hotel_owner' "
+                "AND r.hotel_id IS NULL ORDER BY u.name"
+            ),
+            {"h": ctx.hotel_id},
+        )
+    ).all()
+    current = (
+        await s.execute(
+            select(Subscription, Plan)
+            .join(Plan, Plan.id == Subscription.plan_id)
+            .where(
+                Subscription.hotel_id == ctx.hotel_id,
+                Subscription.status.in_(("trialing", "active", "past_due")),
+            )
+        )
+    ).first()
+    actions = (
+        await s.execute(
+            text(
+                "SELECT id, action, entity_type, actor_label, reason, created_at FROM app.audit_logs "
+                "WHERE hotel_id = :h AND actor_type = 'platform' ORDER BY id DESC LIMIT 50"
+            ),
+            {"h": ctx.hotel_id},
+        )
+    ).mappings()
+    return {
+        "hotel": listed[ctx.hotel_id],
+        "legal_name": hotel.legal_name,
+        "country": hotel.country,
+        "currency": settings.currency if settings else "",
+        "timezone": settings.timezone if settings else "",
+        "phone": hotel.phone,
+        "email": hotel.email,
+        "owners": [{"name": o.name, "email": str(o.email)} for o in owners],
+        "subscription": subscription_payload(current[0], current[1]) if current else None,
+        "support_grants": await list_grants(uow, ctx),
+        "platform_actions": [
+            {
+                "id": a["id"],
+                "action": a["action"],
+                "entity_type": a["entity_type"],
+                "actor": a["actor_label"],
+                "reason": a["reason"],
+                "created_at": a["created_at"],
+            }
+            for a in actions
+        ],
+    }
+
+
+async def activity(uow: UnitOfWork, hours: int) -> list[dict[str, Any]]:
+    """Platform events (signups, approvals, plan requests, suspensions), newest first."""
+    names = {h["id"]: h["name"] for h in await hotels(uow)}
+    rows = (
+        await uow.session.execute(
+            text("SELECT * FROM app.admin_platform_events(now() - make_interval(hours => :h))"),
+            {"h": hours},
+        )
+    ).mappings()
+    events = [
+        {
+            "id": r["id"],
+            "hotel_id": r["hotel_id"],
+            "hotel_name": names.get(r["hotel_id"]),
+            "type": r["type"],
+            "payload": r["payload"],
+            "created_at": r["created_at"],
+        }
+        for r in rows
+    ]
+    return sorted(events, key=lambda e: e["created_at"], reverse=True)
