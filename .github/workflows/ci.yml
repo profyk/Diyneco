@@ -140,4 +140,20 @@ jobs:
       - name: Type-check shared packages and apps
         run: pnpm -r --filter "./packages/*" --filter "./apps/*" --if-present typecheck
       - name: Build every app
-        run: pnpm -r --filter "./apps/*" --if-present build
+        # One app at a time; a failure is reported as an annotation with the build's error lines.
+        run: |
+          status=0
+          for app in apps/*/; do
+            name=$(basename "$app")
+            [ -f "$app/package.json" ] || continue
+            if ! (cd "$app" && pnpm build > "/tmp/build-$name.log" 2>&1); then
+              status=1
+              msg=$(grep -iE "error|failed|cannot|unexpected" "/tmp/build-$name.log" | head -15 | tr '
+' ' ' | cut -c1-1800)
+              echo "::error title=Build failed: $name::$msg"
+              tail -40 "/tmp/build-$name.log"
+            else
+              echo "built $name"
+            fi
+          done
+          exit $status
