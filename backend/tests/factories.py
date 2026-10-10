@@ -38,6 +38,9 @@ ALL_HOTEL_ROLES = (
 MFA_ROLES = {"hotel_owner", "hotel_admin", "general_manager", "finance_manager"}
 PIN = "1234"
 
+# The test hotels choose rand as their currency; nothing in the app assumes it (D57).
+TEST_CURRENCY = "ZAR"
+
 
 def strong_password() -> str:
     return f"Test-Password-{secrets.token_hex(6)}"
@@ -125,7 +128,11 @@ class Factory:
                     .returning(t.Hotel.id)
                 )
             ).scalar_one()
-            await s.execute(insert(t.HotelSettings).values(hotel_id=hotel_id, invoice_prefix="TST"))
+            await s.execute(
+                insert(t.HotelSettings).values(
+                    hotel_id=hotel_id, invoice_prefix="TST", currency=TEST_CURRENCY
+                )
+            )
             plan_id = (await s.execute(select(t.Plan.id).where(t.Plan.code == "starter"))).scalar_one()
             await s.execute(
                 insert(t.Subscription).values(
@@ -158,7 +165,9 @@ class Factory:
             seeded.room_type_id = (
                 await s.execute(
                     insert(d.RoomType)
-                    .values(hotel_id=hotel_id, name="Standard", base_rate_minor=150000)
+                    .values(
+                        hotel_id=hotel_id, name="Standard", base_rate_minor=150000, currency=TEST_CURRENCY
+                    )
                     .returning(d.RoomType.id)
                 )
             ).scalar_one()
@@ -272,12 +281,17 @@ class Factory:
                         arrival_date=date.today(),
                         departure_date=date.today() + timedelta(days=2),
                         nightly_rate_minor=150000,
+                        currency=TEST_CURRENCY,
                     )
                     .returning(d.Stay.id)
                 )
             ).scalar_one()
             folio = (
-                await s.execute(insert(d.Folio).values(hotel_id=hotel.id, stay_id=stay).returning(d.Folio.id))
+                await s.execute(
+                    insert(d.Folio)
+                    .values(hotel_id=hotel.id, stay_id=stay, currency=TEST_CURRENCY)
+                    .returning(d.Folio.id)
+                )
             ).scalar_one()
             food = (
                 await s.execute(
@@ -297,6 +311,7 @@ class Factory:
                         description="Breakfast",
                         unit_amount_minor=15000,
                         amount_minor=15000,
+                        currency=TEST_CURRENCY,
                         business_date=date.today(),
                     )
                     .returning(d.FolioEntry.id)
@@ -331,6 +346,7 @@ class Factory:
                         room_id=hotel.room_ids[0],
                         room_number="101",
                         status=status,
+                        currency=TEST_CURRENCY,
                         subtotal_minor=31000,
                         fee_minor=5000,
                         total_minor=36000,

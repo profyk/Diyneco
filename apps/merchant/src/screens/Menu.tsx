@@ -1,6 +1,6 @@
 "use client";
 
-import { formatMoney, ok, parseAmount } from "@diyneco/api-client";
+import { currencySymbol, formatMoney, ok, parseAmount } from "@diyneco/api-client";
 import {
   Badge,
   Button,
@@ -20,7 +20,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { useAction } from "../common";
-import { useSession } from "../session";
+import { useCurrency, useSession } from "../session";
 
 const DIETARY = ["vegetarian", "vegan", "halaal", "kosher", "gluten_free"] as const;
 
@@ -166,6 +166,7 @@ function ItemDialog({
   onClose: () => void;
 }) {
   const { api } = useSession();
+  const currency = useCurrency();
   const existing = useQuery({
     queryKey: ["menu", "item", itemId],
     queryFn: () => ok(api.GET("/api/v1/menu/items/{item_id}", { params: { path: { item_id: itemId! } } })),
@@ -194,7 +195,7 @@ function ItemDialog({
   const body = {
     name: v.name.trim(),
     description: v.description.trim() || null,
-    price: { amount_minor: minor ?? 0, currency: "ZAR" },
+    price: { amount_minor: minor ?? 0, currency },
     category_id: v.category_id,
     station_id: v.station_id,
     charge_category: v.charge_category,
@@ -238,7 +239,7 @@ function ItemDialog({
           <Field label="Description" className="sm:col-span-2">
             {(p) => <Textarea {...p} value={v.description} onChange={(e) => set({ description: e.target.value })} />}
           </Field>
-          <Field label="Price (R)">{(p) => <Input {...p} inputMode="decimal" value={v.price} onChange={(e) => set({ price: e.target.value })} />}</Field>
+          <Field label={`Price (${currencySymbol(currency)})`}>{(p) => <Input {...p} inputMode="decimal" value={v.price} onChange={(e) => set({ price: e.target.value })} />}</Field>
           <Field label="Type">
             {(p) => (
               <Select {...p} value={v.charge_category} onChange={(e) => set({ charge_category: e.target.value as "food" | "beverage" })}>

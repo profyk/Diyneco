@@ -24,7 +24,7 @@ class Metrics(BaseModel):
     active_stays: int
     orders_today: int
     orders_this_month: int
-    mrr: SignedMoney
+    mrr: list[SignedMoney]
     active_subscriptions: int
     cancelled_this_month: int
     churn_bp: int
@@ -76,6 +76,14 @@ class PlanCreate(StrictModel):
         default_factory=dict
     )
     features: dict[FlagKey, bool] = Field(default_factory=dict)
+
+
+class PlanPatch(StrictModel):
+    name: Annotated[str, StringConstraints(min_length=1, max_length=80)] | None = None
+    monthly_price: Money | None = None
+    limits: dict[Literal["rooms", "devices", "staff", "api_keys"], Annotated[int, Field(ge=0)]] | None = None
+    features: dict[FlagKey, bool] | None = None
+    is_active: bool | None = None
 
 
 class PlanOut(BaseModel):

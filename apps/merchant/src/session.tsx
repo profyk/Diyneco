@@ -173,6 +173,13 @@ export function useSession(): SessionContext {
   return ctx;
 }
 
+/** The hotel's own currency (chosen by the hotel; never assumed). */
+export function useCurrency(): string {
+  const { state } = useSession();
+  if (state.status !== "signed-in" || !state.me.hotel) throw new Error("no hotel");
+  return state.me.hotel.currency;
+}
+
 /** The signed-in state; only use inside the authenticated shell. */
 export function useMe() {
   const { state } = useSession();

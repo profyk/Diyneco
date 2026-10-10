@@ -6,27 +6,53 @@ export interface Money {
   currency: string;
 }
 
-/** "R 1 234,56"-style formatting is avoided: South African hotels write R1,234.56. */
+const formatters = new Map<string, Intl.NumberFormat>();
+
+/** The currency's own symbol and two decimals, e.g. R1,234.50, €12.00, KSh 300.00. */
 export function formatMoney(m: Money | null | undefined): string {
   if (!m) return "–";
-  const negative = m.amount_minor < 0;
-  const abs = Math.abs(m.amount_minor);
-  const whole = Math.floor(abs / 100).toLocaleString("en-US");
-  const cents = String(abs % 100).padStart(2, "0");
-  const symbol = m.currency === "ZAR" ? "R" : `${m.currency} `;
-  return `${negative ? "−" : ""}${symbol}${whole}.${cents}`;
+  let f = formatters.get(m.currency);
+  if (!f) {
+    try {
+      f = new Intl.NumberFormat("en", {
+        style: "currency",
+        currency: m.currency,
+        currencyDisplay: "narrowSymbol",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+    } catch {
+      f = new Intl.NumberFormat("en", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    formatters.set(m.currency, f);
+  }
+  return f.format(m.amount_minor / 100).replace("-", "−");
 }
 
-/** Converts a typed amount ("125.50", "R1,200") to minor units, or null if it is not a valid amount. */
+/** The symbol a currency is shown with (for field labels). */
+export function currencySymbol(currency: string): string {
+  try {
+    return (
+      new Intl.NumberFormat("en", { style: "currency", currency, currencyDisplay: "narrowSymbol" })
+        .formatToParts(0)
+        .find((p) => p.type === "currency")?.value ?? currency
+    );
+  } catch {
+    return currency;
+  }
+}
+
+/** Converts a typed amount ("125.50", "1,200") to minor units, or null if it is not a valid amount. */
 export function parseAmount(text: string): number | null {
-  const cleaned = text.replace(/[R\s,]/gi, "");
+  const cleaned = text.replace(/[^\d.]/g, "");
   if (!/^\d{1,9}(\.\d{0,2})?$/.test(cleaned)) return null;
   const [whole = "0", frac = ""] = cleaned.split(".");
   return Number(whole) * 100 + Number(frac.padEnd(2, "0"));
 }
 
-export function zar(amount_minor: number): Money {
-  return { amount_minor, currency: "ZAR" };
+/** An amount in a given currency; the currency always comes from the hotel or plan. */
+export function money(amount_minor: number, currency: string): Money {
+  return { amount_minor, currency };
 }
 
 const timeFmt = new Intl.DateTimeFormat("en-ZA", { hour: "2-digit", minute: "2-digit", hour12: false });

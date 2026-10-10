@@ -29,8 +29,20 @@ class SignupOwner(StrictModel):
     password: Password
 
 
+class CurrencyOut(BaseModel):
+    code: str
+    name: str
+    symbol: str
+
+
+class CurrencyList(BaseModel):
+    data: list[CurrencyOut]
+
+
 class SignupHotel(StrictModel):
     name: Name
+    # The hotel's operating currency (ISO 4217), chosen at signup; no default (D57).
+    currency: Annotated[str, StringConstraints(pattern=r"^[A-Z]{3}$")]
     legal_name: Name | None = None
     phone: Phone | None = None
     email: EmailStr | None = None

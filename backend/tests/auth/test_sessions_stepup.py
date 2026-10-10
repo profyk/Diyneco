@@ -380,7 +380,7 @@ async def test_email_verification(client, factory, mailbox, owner_engine):
                 "email": f"thandi.{secrets.token_hex(3)}@example.com",
                 "password": f"Owner-Password-{secrets.token_hex(4)}",
             },
-            "hotel": {"name": "Verify Lodge"},
+            "hotel": {"name": "Verify Lodge", "currency": "ZAR"},
         },
         headers={"Idempotency-Key": str(uuid.uuid4())},
     )

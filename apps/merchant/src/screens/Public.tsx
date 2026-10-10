@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError, formatDate, newIdempotencyKey, ok } from "@diyneco/api-client";
-import { Badge, Button, Card, CardHeader, ErrorNotice, Field, Input, PageHeader, Table, Td } from "@diyneco/shared-ui";
+import { Badge, Button, Card, CardHeader, ErrorNotice, Field, Input, PageHeader, Select, Table, Td } from "@diyneco/shared-ui";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { type FormEvent, type ReactNode, useState } from "react";
@@ -58,10 +58,14 @@ function useSubmit(fn: () => Promise<unknown>) {
 }
 
 export function Signup() {
-  const [f, setF] = useState({ hotel: "", legal: "", phone: "", name: "", email: "", password: "" });
+  const [f, setF] = useState({ hotel: "", legal: "", phone: "", currency: "", name: "", email: "", password: "" });
+  const currencies = useQuery({
+    queryKey: ["currencies"],
+    queryFn: async () => (await (await fetch(`${API_URL}/api/v1/currencies`)).json()) as { data: { code: string; name: string }[] },
+  });
   const s = useSubmit(() =>
     publicPost("/signup", {
-      hotel: { name: f.hotel, legal_name: f.legal || null, phone: f.phone || null },
+      hotel: { name: f.hotel, legal_name: f.legal || null, phone: f.phone || null, currency: f.currency },
       owner: { name: f.name, email: f.email, password: f.password },
     }),
   );
@@ -89,12 +93,24 @@ export function Signup() {
         {field("hotel", "Hotel name")}
         {field("legal", "Registered company name (optional)")}
         {field("phone", "Hotel phone (optional)", "tel")}
+        <Field label="Currency" hint="The currency your prices and bills use. You can change it until your first guest checks in.">
+          {(p) => (
+            <Select {...p} value={f.currency} onChange={(e) => setF({ ...f, currency: e.target.value })}>
+              <option value="">Choose your currency</option>
+              {currencies.data?.data.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.code} · {c.name}
+                </option>
+              ))}
+            </Select>
+          )}
+        </Field>
         <hr className="border-line" />
         {field("name", "Your name")}
         {field("email", "Your email", "email")}
         {field("password", "Password", "password", "At least 12 characters. A passphrase works well.")}
         {s.error ? <ErrorNotice error={s.error} /> : null}
-        <Button type="submit" loading={s.busy} disabled={!f.hotel || !f.name || !f.email || f.password.length < 12}>
+        <Button type="submit" loading={s.busy} disabled={!f.hotel || !f.currency || !f.name || !f.email || f.password.length < 12}>
           Register
         </Button>
         <p className="text-xs text-muted">

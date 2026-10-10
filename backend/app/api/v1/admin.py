@@ -19,6 +19,7 @@ from app.schemas.admin import (
     PlanCreate,
     PlanList,
     PlanOut,
+    PlanPatch,
     SubscriptionOut,
     SubscriptionPut,
     SupportAccessOut,
@@ -120,6 +121,15 @@ async def create_plan(
 ) -> Response:
     result = await svc.create_plan(uow, principal.platform_actor(request), body.model_dump())
     return await idem.complete(uow, 201, PlanOut.model_validate(result).model_dump(mode="json"))
+
+
+@router.patch("/plans/{plan_id}", response_model=PlanOut)
+async def update_plan(
+    plan_id: uuid.UUID, body: PlanPatch, request: Request, uow: Uow, principal: BillingManage
+) -> dict[str, Any]:
+    return await svc.update_plan(
+        uow, principal.platform_actor(request), plan_id, body.model_dump(exclude_unset=True)
+    )
 
 
 @router.get("/feature-flags", response_model=FlagList)

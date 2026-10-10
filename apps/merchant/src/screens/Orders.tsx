@@ -150,7 +150,7 @@ function OrderDialog({ id, onClose }: { id: string; onClose: () => void }) {
     (minor: number) =>
       ok(
         api.POST("/api/v1/adjustments", {
-          body: { order_id: id, new_amount: { amount_minor: minor, currency: "ZAR" }, reason },
+          body: { order_id: id, new_amount: { amount_minor: minor, currency: order.data?.total.currency ?? "" }, reason },
         }),
       ),
     { success: "Adjustment requested. Another manager must approve it.", onDone: () => setMode(null) },

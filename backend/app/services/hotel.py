@@ -11,6 +11,7 @@ from typing import Any
 from sqlalchemy import text
 
 from app.audit.writer import write_audit
+from app.core.currencies import is_supported
 from app.core.errors import AppError
 from app.core.state import AppState
 from app.db.session import TenantContext, UnitOfWork
@@ -148,6 +149,30 @@ async def get_settings(uow: UnitOfWork, ctx: TenantContext) -> tuple[dict[str, A
     return settings_payload(st), st.version
 
 
+# Amounts are stored without conversion, so the currency may change only before any money
+# has been recorded; the hotel's configured prices move to the new currency with it (D57).
+_MONEY_RECORDED = text(
+    "SELECT EXISTS (SELECT 1 FROM app.folios WHERE hotel_id = :h) "
+    "OR EXISTS (SELECT 1 FROM app.orders WHERE hotel_id = :h) "
+    "OR EXISTS (SELECT 1 FROM app.payments WHERE hotel_id = :h)"
+)
+
+
+async def _change_currency(uow: UnitOfWork, ctx: TenantContext, currency: str) -> None:
+    s = uow.session
+    if (await s.execute(_MONEY_RECORDED, {"h": ctx.hotel_id})).scalar_one():
+        raise _field_error(
+            "currency",
+            "The currency can only change before the first guest is checked in or the first order is placed.",
+            "INVALID_TRANSITION",
+        )
+    for table in ("room_types", "menu_items"):
+        await s.execute(
+            text(f"UPDATE app.{table} SET currency = :c WHERE hotel_id = :h"),  # noqa: S608 - fixed names
+            {"c": currency, "h": ctx.hotel_id},
+        )
+
+
 def _field_error(field: str, problem: str, code: str = "VALIDATION_FAILED") -> AppError:
     return AppError(
         code, problem, details={"fields": [{"field": field, "problem": problem, "type": "value_error"}]}
@@ -156,18 +181,19 @@ def _field_error(field: str, problem: str, code: str = "VALIDATION_FAILED") -> A
 
 def _to_column_values(current: HotelSettings, changes: dict[str, Any]) -> dict[str, Any]:
     values: dict[str, Any] = {}
+    currency = changes.get("currency") or current.currency
+    if not is_supported(currency):
+        raise _field_error("currency", "That currency is not supported.")
     for api_field, raw in changes.items():
         column, kind = SETTINGS_FIELDS[api_field]
         if kind == "money":
-            if raw["currency"] != current.currency:
+            if raw["currency"] != currency:
                 raise _field_error(api_field, "Currency must match the hotel currency.", "AMOUNT_INVALID")
             values[column] = raw["amount_minor"]
         elif kind == "time":
             values[column] = raw if isinstance(raw, time) else time.fromisoformat(raw)
         else:
             values[column] = raw
-    if "currency" in values and values["currency"] != current.currency:
-        raise _field_error("currency", "The hotel currency cannot be changed.")
     if "timezone" in values:
         try:
             zoneinfo.ZoneInfo(values["timezone"])
@@ -191,6 +217,8 @@ async def patch_settings(
         raise AppError("PRECONDITION_FAILED")
     before = settings_payload(current)
     values = _to_column_values(current, changes)
+    if values.get("currency", current.currency) != current.currency:
+        await _change_currency(uow, ctx, values["currency"])
     updated = await repo.update_settings(expected_version, values)
     if updated is None:
         raise AppError("PRECONDITION_FAILED")

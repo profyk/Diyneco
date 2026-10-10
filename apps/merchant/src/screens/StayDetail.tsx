@@ -1,6 +1,6 @@
 "use client";
 
-import { ApiError, formatDate, formatMoney, formatTime, ok, parseAmount } from "@diyneco/api-client";
+import { ApiError, currencySymbol, formatDate, formatMoney, formatTime, ok, parseAmount } from "@diyneco/api-client";
 import {
   Badge,
   Button,
@@ -24,7 +24,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { label, StayStatus, useAction } from "../common";
-import { useSession } from "../session";
+import { useCurrency, useSession } from "../session";
 
 type Panel = null | "charge" | "discount" | "payment" | "dates" | "move" | "checkout" | { adjust: string };
 
@@ -214,13 +214,21 @@ export function StayDetail({ id }: { id: string }) {
   );
 }
 
-function amountOrNull(text: string) {
-  const minor = parseAmount(text);
-  return minor === null ? null : { amount_minor: minor, currency: "ZAR" };
+function useAmount() {
+  const currency = useCurrency();
+  return {
+    currency,
+    symbol: currencySymbol(currency),
+    parse: (text: string) => {
+      const minor = parseAmount(text);
+      return minor === null ? null : { amount_minor: minor, currency };
+    },
+  };
 }
 
 function ChargeDialog({ stayId, onClose }: { stayId: string; onClose: () => void }) {
   const { api } = useSession();
+  const amt = useAmount();
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
@@ -234,7 +242,7 @@ function ChargeDialog({ stayId, onClose }: { stayId: string; onClose: () => void
       ok(
         api.POST("/api/v1/folios/{stay_id}/charges", {
           params: { path: { stay_id: stayId } },
-          body: { charge_category_id: category, description: description.trim(), amount: amountOrNull(amount)!, quantity: Number(quantity) },
+          body: { charge_category_id: category, description: description.trim(), amount: amt.parse(amount)!, quantity: Number(quantity) },
         }),
       ),
     { success: "Charge added.", onDone: onClose },
@@ -246,7 +254,7 @@ function ChargeDialog({ stayId, onClose }: { stayId: string; onClose: () => void
       title="Add a charge"
       description="Laundry, minibar, spa and other services. Prices include VAT if the hotel is registered."
       footer={
-        <Button disabled={!category || !description.trim() || !amountOrNull(amount)} loading={save.isPending} onClick={() => save.mutate(undefined)}>
+        <Button disabled={!category || !description.trim() || !amt.parse(amount)} loading={save.isPending} onClick={() => save.mutate(undefined)}>
           Add charge
         </Button>
       }
@@ -265,7 +273,7 @@ function ChargeDialog({ stayId, onClose }: { stayId: string; onClose: () => void
           )}
         </Field>
         <Field label="Description">{(p) => <Input {...p} value={description} onChange={(e) => setDescription(e.target.value)} />}</Field>
-        <Field label="Unit price (R)">{(p) => <Input {...p} inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />}</Field>
+        <Field label={`Unit price (${amt.symbol})`}>{(p) => <Input {...p} inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />}</Field>
         <Field label="Quantity">
           {(p) => <Input {...p} type="number" min={1} value={quantity} onChange={(e) => setQuantity(e.target.value)} />}
         </Field>
@@ -277,12 +285,13 @@ function ChargeDialog({ stayId, onClose }: { stayId: string; onClose: () => void
 
 function DiscountDialog({ stayId, onClose }: { stayId: string; onClose: () => void }) {
   const { api } = useSession();
+  const amt = useAmount();
   const [kind, setKind] = useState<"percent" | "fixed">("percent");
   const [value, setValue] = useState("");
   const [appliesTo, setAppliesTo] = useState<"all" | "accommodation" | "fnb" | "other">("all");
   const [reason, setReason] = useState("");
   const percentBp = Math.round(Number(value) * 100);
-  const valid = kind === "percent" ? percentBp >= 1 && percentBp <= 10000 : Boolean(amountOrNull(value));
+  const valid = kind === "percent" ? percentBp >= 1 && percentBp <= 10000 : Boolean(amt.parse(value));
   const save = useAction(
     () =>
       ok(
@@ -291,7 +300,7 @@ function DiscountDialog({ stayId, onClose }: { stayId: string; onClose: () => vo
           body:
             kind === "percent"
               ? { kind, percent_bp: percentBp, applies_to: appliesTo, reason: reason.trim() }
-              : { kind, amount: amountOrNull(value)!, applies_to: appliesTo, reason: reason.trim() },
+              : { kind, amount: amt.parse(value)!, applies_to: appliesTo, reason: reason.trim() },
         }),
       ),
     { success: "Discount applied.", onDone: onClose },
@@ -317,7 +326,7 @@ function DiscountDialog({ stayId, onClose }: { stayId: string; onClose: () => vo
             </Select>
           )}
         </Field>
-        <Field label={kind === "percent" ? "Percent" : "Amount (R)"}>
+        <Field label={kind === "percent" ? "Percent" : `Amount (${amt.symbol})`}>
           {(p) => <Input {...p} inputMode="decimal" value={value} onChange={(e) => setValue(e.target.value)} />}
         </Field>
         <Field label="Applies to">
@@ -341,13 +350,14 @@ function DiscountDialog({ stayId, onClose }: { stayId: string; onClose: () => vo
 
 function AdjustDialog({ entryId, onClose }: { entryId: string; onClose: () => void }) {
   const { api } = useSession();
+  const amt = useAmount();
   const [amount, setAmount] = useState("");
   const [reason, setReason] = useState("");
   const save = useAction(
     () =>
       ok(
         api.POST("/api/v1/adjustments", {
-          body: { folio_entry_id: entryId, new_amount: amountOrNull(amount)!, reason: reason.trim() },
+          body: { folio_entry_id: entryId, new_amount: amt.parse(amount)!, reason: reason.trim() },
         }),
       ),
     { success: "Adjustment requested. Another manager must approve it.", onDone: onClose },
@@ -359,13 +369,13 @@ function AdjustDialog({ entryId, onClose }: { entryId: string; onClose: () => vo
       title="Request an adjustment"
       description="Charges are never edited. A second manager approves a correcting entry."
       footer={
-        <Button disabled={!amountOrNull(amount) || reason.trim().length < 3} loading={save.isPending} onClick={() => save.mutate(undefined)}>
+        <Button disabled={!amt.parse(amount) || reason.trim().length < 3} loading={save.isPending} onClick={() => save.mutate(undefined)}>
           Request
         </Button>
       }
     >
       <div className="grid gap-4">
-        <Field label="Correct amount (R)">{(p) => <Input {...p} inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />}</Field>
+        <Field label={`Correct amount (${amt.symbol})`}>{(p) => <Input {...p} inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />}</Field>
         <Field label="Reason">{(p) => <Textarea {...p} value={reason} onChange={(e) => setReason(e.target.value)} />}</Field>
       </div>
       {save.error ? <ErrorNotice error={save.error} className="mt-4" /> : null}
@@ -376,12 +386,13 @@ function AdjustDialog({ entryId, onClose }: { entryId: string; onClose: () => vo
 /** Reception settles the bill: the server works out what is due and any tip. */
 function PaymentDialog({ stayId, onClose }: { stayId: string; onClose: () => void }) {
   const { api } = useSession();
+  const amt = useAmount();
   const toast = useToast();
   const [method, setMethod] = useState<"card_terminal" | "cash" | "eft">("card_terminal");
   const [received, setReceived] = useState("");
   const [reference, setReference] = useState("");
   const [confirmTip, setConfirmTip] = useState(false);
-  const money = amountOrNull(received);
+  const money = amt.parse(received);
   const preview = useQuery({
     queryKey: ["payment-preview", stayId, money?.amount_minor],
     queryFn: () => ok(api.POST("/api/v1/payments/preview", { body: { stay_id: stayId, amount_received: money! } })),
@@ -435,7 +446,7 @@ function PaymentDialog({ stayId, onClose }: { stayId: string; onClose: () => voi
             </Select>
           )}
         </Field>
-        <Field label="Amount received (R)">{(p) => <Input {...p} inputMode="decimal" value={received} onChange={(e) => setReceived(e.target.value)} />}</Field>
+        <Field label={`Amount received (${amt.symbol})`}>{(p) => <Input {...p} inputMode="decimal" value={received} onChange={(e) => setReceived(e.target.value)} />}</Field>
         {method === "card_terminal" ? (
           <Field label="Card machine reference" hint="4–20 letters or digits from the slip">
             {(p) => <Input {...p} value={reference} onChange={(e) => setReference(e.target.value)} autoComplete="off" />}

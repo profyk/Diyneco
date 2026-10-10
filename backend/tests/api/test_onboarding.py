@@ -82,6 +82,7 @@ async def test_signup_to_rooms_and_staff_without_manual_db_work(client, owner_en
             "owner": {"name": "Lindiwe Owner", "email": email, "password": password},
             "hotel": {
                 "name": "Karoo Lodge",
+                "currency": "ZAR",
                 "phone": "+27 23 555 0100",
                 "address": {"city": "Prince Albert"},
             },

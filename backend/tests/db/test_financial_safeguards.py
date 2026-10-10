@@ -86,8 +86,8 @@ async def test_closed_folio_rejects_new_entries(factory, api_session, owner_engi
         await api_session.execute(
             text(
                 "INSERT INTO app.folio_entries (hotel_id, folio_id, entry_type, category_id, description, "
-                "unit_amount_minor, amount_minor, business_date) "
-                "VALUES (:h, :f, 'charge', :c, 'late', 100, 100, :d)"
+                "unit_amount_minor, amount_minor, business_date, currency) "
+                "VALUES (:h, :f, 'charge', :c, 'late', 100, 100, :d, 'ZAR')"
             ),
             {"h": hotel.id, "f": rows["folio_id"], "c": rows["food_category"], "d": date.today()},
         )
@@ -111,8 +111,8 @@ async def test_payments_tip_must_equal_overpayment(factory, api_session, due, re
     await as_hotel(api_session, hotel.id)
     stmt = text(
         "INSERT INTO app.payments (hotel_id, folio_id, method, status, amount_due_minor, amount_received_minor, "
-        "tip_amount_minor, provider_reference, idempotency_key) "
-        "VALUES (:h, :f, 'card_terminal', 'paid', :due, :rec, :tip, '4F82C1', :k)"
+        "tip_amount_minor, provider_reference, idempotency_key, currency) "
+        "VALUES (:h, :f, 'card_terminal', 'paid', :due, :rec, :tip, '4F82C1', :k, 'ZAR')"
     )
     params = {
         "h": hotel.id,

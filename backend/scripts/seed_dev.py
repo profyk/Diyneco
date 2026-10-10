@@ -35,6 +35,7 @@ HOTELS = [
         "name": "Grand Example Hotel",
         "domain": "grandexample.example",
         "prefix": "GEH",
+        "currency": "ZAR",
         "address": {
             "line1": "1 Beach Road",
             "city": "Cape Town",
@@ -53,6 +54,7 @@ HOTELS = [
         "name": "Seabreeze Lodge",
         "domain": "seabreeze.example",
         "prefix": "SBL",
+        "currency": "NAD",
         "address": {
             "line1": "12 Dune Lane",
             "city": "Plettenberg Bay",
@@ -100,7 +102,10 @@ async def seed_hotel(s: AsyncSession, spec: dict) -> list[str]:  # type: ignore[
     ).scalar_one()
     await s.execute(
         insert(t.HotelSettings).values(
-            hotel_id=hotel_id, invoice_prefix=spec["prefix"], wifi_name=f"{spec['prefix']}-Guest"
+            hotel_id=hotel_id,
+            invoice_prefix=spec["prefix"],
+            wifi_name=f"{spec['prefix']}-Guest",
+            currency=spec["currency"],
         )
     )
     plan = (await s.execute(select(t.Plan.id).where(t.Plan.code == "professional"))).scalar_one()
@@ -117,7 +122,13 @@ async def seed_hotel(s: AsyncSession, spec: dict) -> list[str]:  # type: ignore[
         rt = (
             await s.execute(
                 insert(d.RoomType)
-                .values(hotel_id=hotel_id, name=name, base_rate_minor=rate, capacity=capacity)
+                .values(
+                    hotel_id=hotel_id,
+                    name=name,
+                    base_rate_minor=rate,
+                    capacity=capacity,
+                    currency=spec["currency"],
+                )
                 .returning(d.RoomType.id)
             )
         ).scalar_one()

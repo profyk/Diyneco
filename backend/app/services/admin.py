@@ -18,6 +18,7 @@ from typing import Any
 from sqlalchemy import insert, select, text, update
 
 from app.audit.writer import write_audit, write_platform_audit
+from app.core.currencies import is_supported
 from app.core.errors import AppError
 from app.core.state import AppState
 from app.db.session import TenantContext, UnitOfWork, set_tenant
@@ -55,6 +56,7 @@ async def metrics(uow: UnitOfWork) -> dict[str, Any]:
         .mappings()
         .one()
     )
+    mrr = (await uow.session.execute(text("SELECT * FROM app.admin_mrr()"))).mappings().all()
     active_now = int(row["active_subscriptions"])
     cancelled = int(row["cancelled_this_month"])
     base = active_now + cancelled
@@ -69,7 +71,8 @@ async def metrics(uow: UnitOfWork) -> dict[str, Any]:
         "active_stays": int(row["active_stays"]),
         "orders_today": int(row["orders_today"]),
         "orders_this_month": int(row["orders_month"]),
-        "mrr": money(int(row["mrr_minor"]), "ZAR"),
+        # Plans may bill in different currencies; MRR is never summed across them.
+        "mrr": [money(int(r["mrr_minor"]), str(r["currency"]).strip()) for r in mrr],
         "active_subscriptions": active_now,
         "cancelled_this_month": cancelled,
         "churn_bp": (cancelled * 10000 // base) if base else 0,
@@ -314,8 +317,56 @@ async def list_plans(uow: UnitOfWork) -> list[dict[str, Any]]:
     return [plan_payload(p) for p in plans]
 
 
+def _check_currency(code: str) -> None:
+    if not is_supported(code):
+        raise AppError("VALIDATION_FAILED", "That currency is not supported.", details={"reason": "currency"})
+
+
+async def update_plan(
+    uow: UnitOfWork, actor: dict[str, Any], plan_id: uuid.UUID, body: dict[str, Any]
+) -> dict[str, Any]:
+    """Price, billing currency, limits, features or availability of a plan. Subscriptions keep
+    pointing at the plan, so a change applies from their next billing period."""
+    s = uow.session
+    before = (await s.execute(select(Plan).where(Plan.id == plan_id))).scalar_one_or_none()
+    if before is None:
+        raise AppError("NOT_FOUND")
+    price = body.get("monthly_price")
+    if price:
+        _check_currency(price["currency"])
+    await s.execute(
+        text("SELECT app.admin_update_plan(:id, :n, :p, :c, CAST(:l AS jsonb), CAST(:f AS jsonb), :a)"),
+        {
+            "id": plan_id,
+            "n": body.get("name"),
+            "p": price["amount_minor"] if price else None,
+            "c": price["currency"] if price else None,
+            "l": json.dumps(body["limits"]) if body.get("limits") is not None else None,
+            "f": json.dumps(body["features"]) if body.get("features") is not None else None,
+            "a": body.get("is_active"),
+        },
+    )
+    s.expire_all()
+    plan = (await s.execute(select(Plan).where(Plan.id == plan_id))).scalar_one()
+    await write_platform_audit(
+        s,
+        action="plan.update",
+        entity_type="plan",
+        entity_id=plan_id,
+        new_value={
+            "code": plan.code,
+            "price_minor": plan.monthly_price_minor,
+            "currency": plan.currency,
+            "was": {"price_minor": before.monthly_price_minor, "currency": before.currency},
+        },
+        **actor,
+    )
+    return plan_payload(plan)
+
+
 async def create_plan(uow: UnitOfWork, actor: dict[str, Any], body: dict[str, Any]) -> dict[str, Any]:
     s = uow.session
+    _check_currency(body["monthly_price"]["currency"])
     taken = (await s.execute(select(Plan.id).where(Plan.code == body["code"]))).first()
     if taken is not None:
         raise AppError("VALIDATION_FAILED", "A plan with that code exists.", details={"reason": "code_taken"})

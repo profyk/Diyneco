@@ -15,6 +15,7 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from app.core.currencies import format_minor
 from app.db.session import TenantContext, UnitOfWork, set_tenant
 from app.notifications.email import Mailer
 from app.services import reports
@@ -31,14 +32,7 @@ RECIPIENTS_SQL = text(
 
 
 def _amount(m: dict[str, Any]) -> str:
-    minor = int(m["amount_minor"])
-    sign = "-" if minor < 0 else ""
-    whole, cents = divmod(abs(minor), 100)
-    return (
-        f"{sign}R {whole:,}.{cents:02d}"
-        if m["currency"] == "ZAR"
-        else f"{sign}{m['currency']} {whole:,}.{cents:02d}"
-    )
+    return format_minor(int(m["amount_minor"]), str(m["currency"]))
 
 
 def render(name: str, report: dict[str, Any]) -> str:

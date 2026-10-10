@@ -15,6 +15,8 @@ from typing import Any
 from fpdf import FPDF
 from fpdf.enums import XPos, YPos
 
+from app.core.currencies import format_minor
+
 NAVY = (11, 35, 80)
 GREY = (90, 98, 112)
 LINE = (214, 220, 228)
@@ -22,10 +24,7 @@ NEXT_LINE: dict[str, Any] = {"new_x": XPos.LMARGIN, "new_y": YPos.NEXT}
 
 
 def amount(minor: int, currency: str) -> str:
-    sign = "-" if minor < 0 else ""
-    whole, cents = divmod(abs(int(minor)), 100)
-    symbol = "R " if currency == "ZAR" else f"{currency} "
-    return f"{sign}{symbol}{whole:,}.{cents:02d}"
+    return format_minor(minor, currency)
 
 
 def _t(value: Any) -> str:

@@ -1792,6 +1792,45 @@
         "title": "CreditNoteRequest",
         "type": "object"
       },
+      "CurrencyList": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/CurrencyOut"
+            },
+            "title": "Data",
+            "type": "array"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "CurrencyList",
+        "type": "object"
+      },
+      "CurrencyOut": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "symbol": {
+            "title": "Symbol",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "symbol"
+        ],
+        "title": "CurrencyOut",
+        "type": "object"
+      },
       "DailyClosePut": {
         "additionalProperties": false,
         "properties": {
@@ -5277,6 +5316,10 @@
       },
       "MeHotel": {
         "properties": {
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -5294,7 +5337,8 @@
         "required": [
           "id",
           "name",
-          "status"
+          "status",
+          "currency"
         ],
         "title": "MeHotel",
         "type": "object"
@@ -5397,7 +5441,11 @@
             "type": "integer"
           },
           "mrr": {
-            "$ref": "#/components/schemas/SignedMoney"
+            "items": {
+              "$ref": "#/components/schemas/SignedMoney"
+            },
+            "title": "Mrr",
+            "type": "array"
           },
           "orders_this_month": {
             "title": "Orders This Month",
@@ -7143,6 +7191,86 @@
         "title": "PlanList",
         "type": "object"
       },
+      "PlanPatch": {
+        "additionalProperties": false,
+        "properties": {
+          "features": {
+            "anyOf": [
+              {
+                "patternProperties": {
+                  "^[a-z][a-z0-9_.]{1,60}$": {
+                    "type": "boolean"
+                  }
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Features"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          },
+          "limits": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "minimum": 0.0,
+                  "type": "integer"
+                },
+                "propertyNames": {
+                  "enum": [
+                    "rooms",
+                    "devices",
+                    "staff",
+                    "api_keys"
+                  ]
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limits"
+          },
+          "monthly_price": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Money"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "title": "PlanPatch",
+        "type": "object"
+      },
       "Quote": {
         "properties": {
           "fee": {
@@ -8806,6 +8934,11 @@
               }
             ]
           },
+          "currency": {
+            "pattern": "^[A-Z]{3}$",
+            "title": "Currency",
+            "type": "string"
+          },
           "email": {
             "anyOf": [
               {
@@ -8852,7 +8985,8 @@
           }
         },
         "required": [
-          "name"
+          "name",
+          "currency"
         ],
         "title": "SignupHotel",
         "type": "object"
@@ -11483,6 +11617,59 @@
         ]
       }
     },
+    "/api/v1/admin/plans/{plan_id}": {
+      "patch": {
+        "operationId": "update_plan_api_v1_admin_plans__plan_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "plan_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Plan Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/app__schemas__admin__PlanOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Plan",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/api/v1/api-keys": {
       "get": {
         "operationId": "list_keys_api_v1_api_keys_get",
@@ -12375,6 +12562,28 @@
         "summary": "Charge Categories",
         "tags": [
           "billing"
+        ]
+      }
+    },
+    "/api/v1/currencies": {
+      "get": {
+        "description": "Currencies a hotel or a plan may use (public: the signup form needs it).",
+        "operationId": "currencies_api_v1_currencies_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrencyList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Currencies",
+        "tags": [
+          "hotel"
         ]
       }
     },

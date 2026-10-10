@@ -117,6 +117,7 @@ class MeHotel(BaseModel):
     id: uuid.UUID
     name: str
     status: str
+    currency: str
 
 
 class MeOut(BaseModel):

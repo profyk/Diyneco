@@ -38,7 +38,7 @@ async def test_platform_reads_need_platform_permissions(client, factory):
     admin = await platform(factory)
     metrics = await client.get("/admin/metrics", headers=admin)
     assert metrics.status_code == 200, metrics.text
-    assert metrics.json()["hotels"] >= 1 and metrics.json()["mrr"]["currency"] == "ZAR"
+    assert metrics.json()["hotels"] >= 1 and isinstance(metrics.json()["mrr"], list)
     listing = (await client.get("/admin/hotels", headers=admin)).json()["data"]
     row = next(h for h in listing if h["id"] == str(hotel.id))
     assert row["counts"]["rooms"] == 2 and row["plan"] == "starter"

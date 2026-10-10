@@ -18,6 +18,8 @@ from sqlalchemy import insert, select, text
 
 from app.audit.writer import write_audit
 from app.core import crypto
+from app.core.currencies import is_supported
+from app.core.errors import AppError
 from app.core.passwords import check_password
 from app.core.state import AppState
 from app.db.session import TenantContext, UnitOfWork, set_tenant
@@ -77,6 +79,14 @@ async def signup(
         )
         return SIGNUP_RESPONSE
 
+    if not is_supported(hotel["currency"]):
+        raise AppError(
+            "VALIDATION_FAILED",
+            "That currency is not supported.",
+            details={
+                "fields": [{"field": "hotel.currency", "problem": "Not supported.", "type": "value_error"}]
+            },
+        )
     hotel_id: uuid.UUID = (await s.execute(text("SELECT app.uuid_v7()"))).scalar_one()
     user_id: uuid.UUID = (await s.execute(text("SELECT app.uuid_v7()"))).scalar_one()
     await set_tenant(s, hotel_id, user_id)
@@ -98,7 +108,9 @@ async def signup(
         )
     )
     await s.execute(
-        insert(HotelSettings).values(hotel_id=hotel_id, invoice_prefix=invoice_prefix(hotel["name"]))
+        insert(HotelSettings).values(
+            hotel_id=hotel_id, invoice_prefix=invoice_prefix(hotel["name"]), currency=hotel["currency"]
+        )
     )
     plan_id = (await s.execute(select(Plan.id).where(Plan.code == DEFAULT_PLAN))).scalar_one()
     await s.execute(

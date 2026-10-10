@@ -1,6 +1,6 @@
 "use client";
 
-import { formatDate, formatMoney, type Money, ok, parseAmount } from "@diyneco/api-client";
+import { currencySymbol, formatDate, formatMoney, type Money, ok, parseAmount } from "@diyneco/api-client";
 import {
   Badge,
   Button,
@@ -24,7 +24,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { isoDay, label, useAction } from "../common";
-import { useSession } from "../session";
+import { useCurrency, useSession } from "../session";
 
 type Tab = "revenue" | "payments" | "operations" | "occupancy" | "close" | "receivable";
 
@@ -337,6 +337,7 @@ function Occupancy({ from, to }: { from: string; to: string }) {
 
 function DailyClose() {
   const { api } = useSession();
+  const currency = useCurrency();
   const [day, setDay] = useState(isoDay(-1));
   const [batch, setBatch] = useState("");
   const [cash, setCash] = useState("");
@@ -347,7 +348,7 @@ function DailyClose() {
   });
   const money = (t: string) => {
     const m = parseAmount(t);
-    return m === null ? null : { amount_minor: m, currency: "ZAR" };
+    return m === null ? null : { amount_minor: m, currency };
   };
   const save = useAction(
     (review: boolean) =>
@@ -392,8 +393,8 @@ function DailyClose() {
           <Card className="p-5">
             <h2 className="font-display text-base font-semibold">Finance check</h2>
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <Field label="Card machine batch total (R)">{(p) => <Input {...p} inputMode="decimal" value={batch} onChange={(e) => setBatch(e.target.value)} />}</Field>
-              <Field label="Cash counted (R)">{(p) => <Input {...p} inputMode="decimal" value={cash} onChange={(e) => setCash(e.target.value)} />}</Field>
+              <Field label={`Card machine batch total (${currencySymbol(currency)})`}>{(p) => <Input {...p} inputMode="decimal" value={batch} onChange={(e) => setBatch(e.target.value)} />}</Field>
+              <Field label={`Cash counted (${currencySymbol(currency)})`}>{(p) => <Input {...p} inputMode="decimal" value={cash} onChange={(e) => setCash(e.target.value)} />}</Field>
               <Field label="Notes" className="sm:col-span-2">{(p) => <Textarea {...p} value={notes} onChange={(e) => setNotes(e.target.value)} />}</Field>
             </div>
             {save.error ? <ErrorNotice error={save.error} className="mt-3" /> : null}

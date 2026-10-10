@@ -18,10 +18,12 @@ from app.api.deps import (
     require_permission,
     state_of,
 )
+from app.core.currencies import CURRENCIES
 from app.core.errors import AppError
 from app.core.logging import request_id_var
 from app.repositories.roles import RoleRepository
 from app.schemas.hotel import (
+    CurrencyList,
     HotelOut,
     HotelPatch,
     LogoUploadOut,
@@ -140,6 +142,12 @@ async def patch_settings(
         uow, principal.tenant(request), expected, _changes(body, NOT_NULL_SETTINGS)
     )
     return _with_etag(result, version, SettingsOut)
+
+
+@router.get("/currencies", response_model=CurrencyList)
+async def currencies() -> dict[str, Any]:
+    """Currencies a hotel or a plan may use (public: the signup form needs it)."""
+    return {"data": [{"code": c.code, "name": c.name, "symbol": c.symbol} for c in CURRENCIES.values()]}
 
 
 @router.get("/permissions", response_model=PermissionList)

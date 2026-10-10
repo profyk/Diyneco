@@ -1,6 +1,6 @@
 "use client";
 
-import { formatDate, formatMoney, formatTime, ok, parseAmount } from "@diyneco/api-client";
+import { currencySymbol, formatDate, formatTime, ok, parseAmount } from "@diyneco/api-client";
 import {
   Badge,
   Button,
@@ -68,6 +68,19 @@ export function Settings() {
   );
 }
 
+const MONEY_FIELDS = ["room_charge_auto_approve_limit", "room_service_fee", "abridged_invoice_max"] as const;
+
+function withCurrency(patch: Record<string, unknown>, current: Record<string, unknown>): Record<string, unknown> {
+  const currency = (patch.currency as string | undefined) ?? (current.currency as string);
+  if (!patch.currency) return patch;
+  const out = { ...patch };
+  for (const f of MONEY_FIELDS) {
+    const m = (patch[f] ?? current[f]) as { amount_minor: number } | undefined;
+    if (m) out[f] = { amount_minor: m.amount_minor, currency };
+  }
+  return out;
+}
+
 async function withEtag<T>(r: Promise<{ data?: T; response: Response; error?: unknown }>) {
   const res = await r;
   const data = await ok(Promise.resolve(res));
@@ -130,13 +143,15 @@ function HotelProfile() {
 function BillingSettings() {
   const { api, can } = useSession();
   const settings = useQuery({ queryKey: ["settings"], queryFn: () => withEtag(api.GET("/api/v1/hotel/settings")) });
+  const currencies = useQuery({ queryKey: ["currencies"], queryFn: () => ok(api.GET("/api/v1/currencies")) });
   const [patch, setPatch] = useState<Record<string, unknown>>({});
   const save = useAction(
     () =>
       ok(
         api.PATCH("/api/v1/hotel/settings", {
           params: { header: { "If-Match": settings.data!.etag } as never },
-          body: patch as never,
+          // Money fields always travel in the currency being saved.
+          body: withCurrency(patch, settings.data!.data) as never,
         }),
       ),
     { success: "Settings saved.", onDone: () => setPatch({}) },
@@ -151,7 +166,7 @@ function BillingSettings() {
       defaultValue={(current.amount_minor / 100).toFixed(2)}
       onChange={(e) => {
         const m = parseAmount(e.target.value);
-        if (m !== null) setPatch({ ...patch, [key]: { amount_minor: m, currency: current.currency } });
+        if (m !== null) setPatch({ ...patch, [key]: { amount_minor: m, currency: s.currency } });
       }}
     />
   );
@@ -171,6 +186,21 @@ function BillingSettings() {
           {toggle("room_charging_enabled", "Guests may charge orders to their room")}
           {toggle("checkout_override_allowed", "Managers may check out a guest who still owes money")}
         </div>
+        <Field
+          label="Currency"
+          hint="Prices, bills and reports use it. It can change only before the first guest is checked in or the first order is placed."
+          className="sm:col-span-2"
+        >
+          {(p) => (
+            <Select {...p} disabled={!editable} value={s.currency} onChange={(e) => setPatch({ ...patch, currency: e.target.value })}>
+              {currencies.data?.data.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.code} · {c.name}
+                </option>
+              ))}
+            </Select>
+          )}
+        </Field>
         <Field label="VAT number">
           {(p) => (
             <Input {...p} disabled={!editable} value={(s.vat_number as string | null) ?? ""} onChange={(e) => setPatch({ ...patch, vat_number: e.target.value || null })} />
@@ -187,9 +217,9 @@ function BillingSettings() {
             />
           )}
         </Field>
-        <Field label="Orders above this need a manager (R)">{() => money("room_charge_auto_approve_limit", s.room_charge_auto_approve_limit)}</Field>
-        <Field label="Room-service fee per order (R)">{() => money("room_service_fee", s.room_service_fee)}</Field>
-        <Field label="Abridged tax invoice limit (R)" hint="Above this a full tax invoice with the guest's address is issued.">
+        <Field label={`Orders above this need a manager (${currencySymbol(s.currency)})`}>{() => money("room_charge_auto_approve_limit", s.room_charge_auto_approve_limit)}</Field>
+        <Field label={`Room-service fee per order (${currencySymbol(s.currency)})`}>{() => money("room_service_fee", s.room_service_fee)}</Field>
+        <Field label={`Abridged tax invoice limit (${currencySymbol(s.currency)})`} hint="Above this a full tax invoice with the guest's address is issued.">
           {() => money("abridged_invoice_max", s.abridged_invoice_max)}
         </Field>
         <Field label="Invoice prefix">

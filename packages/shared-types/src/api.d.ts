@@ -242,6 +242,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/plans/{plan_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Plan */
+        patch: operations["update_plan_api_v1_admin_plans__plan_id__patch"];
+        trace?: never;
+    };
     "/api/v1/api-keys": {
         parameters: {
             query?: never;
@@ -580,6 +597,26 @@ export interface paths {
         };
         /** Charge Categories */
         get: operations["charge_categories_api_v1_charge_categories_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/currencies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Currencies
+         * @description Currencies a hotel or a plan may use (public: the signup form needs it).
+         */
+        get: operations["currencies_api_v1_currencies_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3143,6 +3180,20 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /** CurrencyList */
+        CurrencyList: {
+            /** Data */
+            data: components["schemas"]["CurrencyOut"][];
+        };
+        /** CurrencyOut */
+        CurrencyOut: {
+            /** Code */
+            code: string;
+            /** Name */
+            name: string;
+            /** Symbol */
+            symbol: string;
+        };
         /** DailyClosePut */
         DailyClosePut: {
             cash_counted?: components["schemas"]["Money"] | null;
@@ -4316,6 +4367,8 @@ export interface components {
         };
         /** MeHotel */
         MeHotel: {
+            /** Currency */
+            currency: string;
             /**
              * Id
              * Format: uuid
@@ -4366,7 +4419,8 @@ export interface components {
             connected_devices: number;
             /** Hotels */
             hotels: number;
-            mrr: components["schemas"]["SignedMoney"];
+            /** Mrr */
+            mrr: components["schemas"]["SignedMoney"][];
             /** Orders This Month */
             orders_this_month: number;
             /** Orders Today */
@@ -4997,6 +5051,22 @@ export interface components {
             /** Next Cursor */
             next_cursor?: string | null;
         };
+        /** PlanPatch */
+        PlanPatch: {
+            /** Features */
+            features?: {
+                [key: string]: boolean;
+            } | null;
+            /** Is Active */
+            is_active?: boolean | null;
+            /** Limits */
+            limits?: {
+                [key: string]: number;
+            } | null;
+            monthly_price?: components["schemas"]["Money"] | null;
+            /** Name */
+            name?: string | null;
+        };
         /** Quote */
         Quote: {
             fee: components["schemas"]["Money"];
@@ -5527,6 +5597,8 @@ export interface components {
         /** SignupHotel */
         SignupHotel: {
             address?: components["schemas"]["Address"] | null;
+            /** Currency */
+            currency: string;
             /** Email */
             email?: string | null;
             /** Legal Name */
@@ -6733,6 +6805,41 @@ export interface operations {
             };
         };
     };
+    update_plan_api_v1_admin_plans__plan_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlanPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["app__schemas__admin__PlanOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_keys_api_v1_api_keys_get: {
         parameters: {
             query?: never;
@@ -7366,6 +7473,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ChargeCategoryList"];
+                };
+            };
+        };
+    };
+    currencies_api_v1_currencies_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CurrencyList"];
                 };
             };
         };

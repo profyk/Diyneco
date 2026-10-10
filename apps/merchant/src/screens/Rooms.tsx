@@ -1,6 +1,6 @@
 "use client";
 
-import { formatMoney, ok, parseAmount } from "@diyneco/api-client";
+import { currencySymbol, formatMoney, ok, parseAmount } from "@diyneco/api-client";
 import {
   Button,
   Card,
@@ -23,7 +23,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { label, RoomStatus, useAction } from "../common";
-import { useSession } from "../session";
+import { useCurrency, useSession } from "../session";
 
 const STATUSES = ["available", "cleaning", "maintenance", "out_of_service", "reserved"] as const;
 type SettableStatus = (typeof STATUSES)[number];
@@ -160,6 +160,7 @@ export function Rooms() {
 
 function TypeDialog({ onClose }: { onClose: () => void }) {
   const { api } = useSession();
+  const currency = useCurrency();
   const [name, setName] = useState("");
   const [rate, setRate] = useState("");
   const [capacity, setCapacity] = useState("2");
@@ -168,7 +169,7 @@ function TypeDialog({ onClose }: { onClose: () => void }) {
     () =>
       ok(
         api.POST("/api/v1/room-types", {
-          body: { name: name.trim(), base_rate: { amount_minor: minor ?? 0, currency: "ZAR" }, capacity: Number(capacity) },
+          body: { name: name.trim(), base_rate: { amount_minor: minor ?? 0, currency }, capacity: Number(capacity) },
         }),
       ),
     { success: "Room type added.", onDone: onClose },
@@ -188,7 +189,7 @@ function TypeDialog({ onClose }: { onClose: () => void }) {
         <Field label="Name" className="sm:col-span-3">
           {(p) => <Input {...p} placeholder="Deluxe King" value={name} onChange={(e) => setName(e.target.value)} />}
         </Field>
-        <Field label="Nightly rate (R)" className="sm:col-span-2">
+        <Field label={`Nightly rate (${currencySymbol(currency)})`} className="sm:col-span-2">
           {(p) => <Input {...p} inputMode="decimal" value={rate} onChange={(e) => setRate(e.target.value)} />}
         </Field>
         <Field label="Sleeps">{(p) => <Input {...p} type="number" min={1} value={capacity} onChange={(e) => setCapacity(e.target.value)} />}</Field>

@@ -136,12 +136,13 @@ async def test_composite_fk_blocks_cross_hotel_parent(factory, owner_engine):
     b_rows = await factory.stay_with_folio(b)
     cases = [
         (
-            "INSERT INTO app.stays (hotel_id, room_id, guest_id, arrival_date, departure_date, nightly_rate_minor) "
-            "VALUES (:a, :b_room, :b_guest, :d1, :d2, 1000)"
+            "INSERT INTO app.stays (hotel_id, room_id, guest_id, arrival_date, departure_date, nightly_rate_minor, "
+            "currency) VALUES (:a, :b_room, :b_guest, :d1, :d2, 1000, 'ZAR')"
         ),
         (
             "INSERT INTO app.folio_entries (hotel_id, folio_id, entry_type, category_id, description, "
-            "unit_amount_minor, amount_minor, business_date) VALUES (:a, :b_folio, 'charge', :cat, 'x', 1, 1, :d1)"
+            "unit_amount_minor, amount_minor, business_date, currency) "
+            "VALUES (:a, :b_folio, 'charge', :cat, 'x', 1, 1, :d1, 'ZAR')"
         ),
         "INSERT INTO app.devices (hotel_id, label, kind, room_id) VALUES (:a, 'X-1', 'guest', :b_room)",
         "INSERT INTO app.rooms (hotel_id, room_type_id, number) VALUES (:a, :b_room_type, '999')",
@@ -215,7 +216,7 @@ async def test_one_live_stay_per_room(factory, api_session):
     await as_hotel(api_session, hotel.id)
     insert = text(
         "INSERT INTO app.stays (hotel_id, room_id, guest_id, status, arrival_date, departure_date, "
-        "nightly_rate_minor) VALUES (:h, :r, :g, :st, :d1, :d2, 1000)"
+        "nightly_rate_minor, currency) VALUES (:h, :r, :g, :st, :d1, :d2, 1000, 'ZAR')"
     )
     params = {
         "h": hotel.id,

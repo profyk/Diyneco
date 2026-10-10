@@ -90,7 +90,8 @@ def money() -> Mapped[int]:
 
 
 def currency() -> Mapped[str]:
-    return mapped_column(CHAR(3), server_default=text("'ZAR'"))
+    # No default: every amount carries the currency its hotel or plan chose (DECISIONS D57).
+    return mapped_column(CHAR(3))
 
 
 def version() -> Mapped[int]:

@@ -24,6 +24,7 @@ def signup_body(email: str | None = None) -> dict:
         },
         "hotel": {
             "name": "Grand Example Hotel",
+            "currency": "ZAR",
             "phone": "+27 21 555 0100",
             "address": {"line1": "1 Beach Rd", "city": "Cape Town", "country": "ZA"},
         },
@@ -70,7 +71,9 @@ async def test_signup_creates_pending_hotel_owner_and_outbox_event(client, owner
 async def test_signup_with_existing_email_reveals_nothing(client, mailbox, owner_engine):
     body = signup_body()
     await client.post("/signup", json=body, headers=idem())
-    again = await client.post("/signup", json={**body, "hotel": {"name": "Second Hotel"}}, headers=idem())
+    again = await client.post(
+        "/signup", json={**body, "hotel": {"name": "Second Hotel", "currency": "ZAR"}}, headers=idem()
+    )
     assert again.status_code == 201
     assert again.json() == (await client.post("/signup", json=signup_body(), headers=idem())).json()
     assert mailbox.sent[-2].template == "signup_existing_account" or any(
@@ -196,7 +199,7 @@ async def test_settings_patch_needs_permission_step_up_and_audits_each_field(cli
         ({"room_service_fee": {"amount_minor": -1, "currency": "ZAR"}}, "VALIDATION_FAILED"),
         ({"room_service_fee": {"amount_minor": 10.5, "currency": "ZAR"}}, "VALIDATION_FAILED"),
         ({"timezone": "Mars/Olympus"}, "VALIDATION_FAILED"),
-        ({"currency": "USD"}, "VALIDATION_FAILED"),
+        ({"currency": "XYZ"}, "VALIDATION_FAILED"),  # unsupported; a supported one may change (D57)
         ({"vat_rate_bp": 20000}, "VALIDATION_FAILED"),
     ],
 )

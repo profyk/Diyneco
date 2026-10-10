@@ -27,6 +27,7 @@ from app.core.state import AppState
 from app.db.session import TenantContext, UnitOfWork, set_tenant
 from app.models.tenancy import (
     Hotel,
+    HotelSettings,
     HotelUser,
     MfaFactor,
     MfaRecoveryCode,
@@ -764,6 +765,13 @@ async def me(
         if hotel_id
         else None
     )
+    currency = (
+        (
+            await s.execute(select(HotelSettings.currency).where(HotelSettings.hotel_id == hotel_id))
+        ).scalar_one_or_none()
+        if hotel_id
+        else None
+    )
     return {
         "kind": kind,
         "user": {
@@ -774,7 +782,9 @@ async def me(
         }
         if user
         else None,
-        "hotel": {"id": hotel.id, "name": hotel.name, "status": hotel.status} if hotel else None,
+        "hotel": {"id": hotel.id, "name": hotel.name, "status": hotel.status, "currency": currency}
+        if hotel
+        else None,
         "roles": list(roles),
         "permissions": sorted(permissions),
         "mfa": "mfa" in amr,
