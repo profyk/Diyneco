@@ -37,6 +37,7 @@ from app.notifications.email import Mailer, build_email_provider
 from app.realtime.bus import Event, EventBus
 from app.services import daily_close_job, images, integrations, privacy, webhook_delivery
 from app.services.admin import OWNER_EMAILS_SQL
+from app.services.health_monitor import HealthMonitor
 
 log = logging.getLogger("diyneco.worker")
 
@@ -98,6 +99,7 @@ class Worker:
     http: httpx.AsyncClient | None = None
     storage: Storage | None = None
     assets_bucket: str = "hotel-assets"
+    health: HealthMonitor = field(default_factory=HealthMonitor)
     _stop: asyncio.Event = field(default_factory=asyncio.Event)
 
     def stop(self) -> None:
@@ -143,8 +145,10 @@ class Worker:
                     await daily_close_job.send_daily_closes(self.db.sessionmaker, self.mailer)
                     await privacy.run_retention(self.db.sessionmaker)
                     last_jobs = time.monotonic()
-                if self.storage is not None and time.monotonic() - last_images > IMAGES_EVERY_S:
-                    await images.process_pending(self.db.sessionmaker, self.storage, self.assets_bucket)
+                if time.monotonic() - last_images > IMAGES_EVERY_S:
+                    await self.health.check(self.db.sessionmaker)
+                    if self.storage is not None:
+                        await images.process_pending(self.db.sessionmaker, self.storage, self.assets_bucket)
                     last_images = time.monotonic()
                 drained = await drain_once(self.db.sessionmaker, self.bus)
                 if self.http is not None and self.keyring is not None:

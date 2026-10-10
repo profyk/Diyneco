@@ -2701,11 +2701,8 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
-            /**
-             * Hotel Id
-             * Format: uuid
-             */
-            hotel_id: string;
+            /** Hotel Id */
+            hotel_id: string | null;
             /** Hotel Name */
             hotel_name: string | null;
             /**

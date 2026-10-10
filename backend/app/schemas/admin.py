@@ -219,7 +219,7 @@ class AdminHotelDetail(BaseModel):
 
 class ActivityEvent(BaseModel):
     id: uuid.UUID
-    hotel_id: uuid.UUID
+    hotel_id: uuid.UUID | None  # None for platform-wide events such as HEALTH_DEGRADED
     hotel_name: str | None
     type: str
     payload: dict[str, Any]

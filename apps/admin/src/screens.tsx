@@ -575,6 +575,8 @@ const EVENT_TEXT: Record<string, string> = {
   TENANT_SUSPENDED: "was suspended",
   TENANT_REACTIVATED: "was reactivated",
   SUBSCRIPTION_CHANGE_REQUESTED: "asked to change plan",
+  HEALTH_DEGRADED: "Platform health degraded",
+  HEALTH_RECOVERED: "Platform health recovered",
 };
 
 /** The platform's last 24 hours: signups, approvals, plan requests and suspensions. */
@@ -596,12 +598,21 @@ function Activity() {
         <ul className="max-h-80 divide-y divide-line overflow-auto text-sm">
           {events.slice(0, 50).map((e) => (
             <li key={e.id} className="flex flex-wrap justify-between gap-2 px-5 py-2">
-              <span>
-                <Link className="font-medium text-blue hover:underline" href={`/hotels/${e.hotel_id}`}>
-                  {e.hotel_name ?? "A hotel"}
-                </Link>{" "}
-                {EVENT_TEXT[e.type] ?? label(e.type.toLowerCase())}
-              </span>
+              {e.hotel_id ? (
+                <span>
+                  <Link className="font-medium text-blue hover:underline" href={`/hotels/${e.hotel_id}`}>
+                    {e.hotel_name ?? "A hotel"}
+                  </Link>{" "}
+                  {EVENT_TEXT[e.type] ?? label(e.type.toLowerCase())}
+                </span>
+              ) : (
+                <span className={e.type === "HEALTH_DEGRADED" ? "font-medium text-crit" : "font-medium text-good"}>
+                  {EVENT_TEXT[e.type] ?? label(e.type.toLowerCase())}
+                  {Array.isArray(e.payload.problems)
+                    ? `: ${(e.payload.problems as { detail: string }[]).map((x) => x.detail).join("; ")}`
+                    : ""}
+                </span>
+              )}
               <span className="text-muted">{new Date(e.created_at).toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" })}</span>
             </li>
           ))}

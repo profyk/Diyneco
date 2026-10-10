@@ -53,9 +53,16 @@
             "type": "string"
           },
           "hotel_id": {
-            "format": "uuid",
-            "title": "Hotel Id",
-            "type": "string"
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hotel Id"
           },
           "hotel_name": {
             "anyOf": [
