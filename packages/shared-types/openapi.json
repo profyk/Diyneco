@@ -13061,6 +13061,7 @@
     },
     "/api/v1/deliveries": {
       "get": {
+        "description": "`all` (everything ready or on its way) is the dispatcher's view and needs deliveries.manage.",
         "operationId": "list_deliveries_api_v1_deliveries_get",
         "parameters": [
           {
@@ -13071,7 +13072,8 @@
               "default": "ready",
               "enum": [
                 "ready",
-                "mine"
+                "mine",
+                "all"
               ],
               "title": "Scope",
               "type": "string"

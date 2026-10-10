@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, Query, Request, Response
 
 from app.api.deps import IdemUser, Principal, Uow, require_permission
 from app.api.pagination import DEFAULT_LIMIT, Cursor, Limit, decode_cursor, page
+from app.core.errors import AppError
 from app.schemas.room_service import (
     AssignRequest,
     DeliveryList,
@@ -38,8 +39,11 @@ async def list_deliveries(
     request: Request,
     uow: Uow,
     principal: DeliveriesView,
-    scope: Annotated[Literal["ready", "mine"], Query()] = "ready",
+    scope: Annotated[Literal["ready", "mine", "all"], Query()] = "ready",
 ) -> dict[str, Any]:
+    """`all` (everything ready or on its way) is the dispatcher's view and needs deliveries.manage."""
+    if scope == "all" and "deliveries.manage" not in principal.permissions:
+        raise AppError("PERMISSION_DENIED")
     return {"data": await dsvc.list_deliveries(uow, principal.tenant(request), scope), "next_cursor": None}
 
 

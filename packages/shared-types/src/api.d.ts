@@ -632,7 +632,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Deliveries */
+        /**
+         * List Deliveries
+         * @description `all` (everything ready or on its way) is the dispatcher's view and needs deliveries.manage.
+         */
         get: operations["list_deliveries_api_v1_deliveries_get"];
         put?: never;
         post?: never;
@@ -7667,7 +7670,7 @@ export interface operations {
     list_deliveries_api_v1_deliveries_get: {
         parameters: {
             query?: {
-                scope?: "ready" | "mine";
+                scope?: "ready" | "mine" | "all";
             };
             header?: never;
             path?: never;

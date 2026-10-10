@@ -14,6 +14,7 @@ import { useSession } from "./session";
 const NAV: { href: string; label: string; perm?: string; any?: string[] }[] = [
   { href: "/", label: "Today" },
   { href: "/orders", label: "Orders", perm: "orders.read" },
+  { href: "/dispatch", label: "Dispatch", perm: "deliveries.manage" },
   { href: "/approvals", label: "Approvals", any: ["orders.approve", "folio.adjust.approve"] },
   { href: "/stays", label: "Stays & check-in", perm: "stays.read" },
   { href: "/rooms", label: "Rooms", perm: "rooms.read" },

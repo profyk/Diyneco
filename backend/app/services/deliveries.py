@@ -103,6 +103,8 @@ async def list_deliveries(uow: UnitOfWork, ctx: TenantContext, scope: str) -> li
     q = select(Order).where(Order.hotel_id == ctx.hotel_id)
     if scope == "ready":
         q = q.where(Order.status == "READY")
+    elif scope == "all":  # dispatch view: everything waiting or on its way, whoever has it
+        q = q.where(Order.status.in_(("READY", *MINE)))
     else:
         q = q.where(
             Order.status.in_(MINE),

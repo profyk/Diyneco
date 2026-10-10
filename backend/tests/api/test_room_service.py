@@ -160,6 +160,11 @@ async def test_first_claim_wins_and_release(client, factory, owner_engine):
         headers={**sm, **idem()},
     )
     assert assigned.json()["status"] == "ASSIGNED"
+    # The dispatcher sees everything on its way; staff may not use that view.
+    board = (await client.get("/deliveries", params={"scope": "all"}, headers=sm)).json()["data"]
+    assert [d["order_id"] for d in board] == [order["id"]] and board[0]["assigned_to"]
+    no_board = await client.get("/deliveries", params={"scope": "all"}, headers=ss)
+    assert no_board.json()["error"]["code"] == "PERMISSION_DENIED"
     denied = await client.post(
         f"/deliveries/{order['id']}/assign",
         json={"user_id": str(hotel.users["room_service_staff"].user_id)},
