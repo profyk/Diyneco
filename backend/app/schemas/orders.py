@@ -9,6 +9,7 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, Field, StringConstraints
 
 from app.schemas.common import Money, SignedMoney, StrictModel
+from app.schemas.hotel import InfoPage
 
 OrderStatus = Literal[
     "PENDING_APPROVAL",
@@ -201,4 +202,4 @@ class GuestInfo(BaseModel):
     checkout_time: time
     phone: str | None
     email: str | None
-    pages: list[dict[str, str]]
+    pages: list[InfoPage]

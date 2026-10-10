@@ -277,7 +277,17 @@ async def test_guest_menu_session_and_info(client, factory, owner_engine):
     names = [i["name"] for c in menu["categories"] for i in c["items"]]
     assert set(names) == {"Chicken Burger", "Coke"}
     info = (await client.get("/guest/info", headers=tablet)).json()
-    assert info["hotel_name"] == hotel.name
+    assert info["hotel_name"] == hotel.name and info["pages"] == []
+
+    # Information pages written in settings appear on the tablet.
+    gm_s = await factory.step_up(hotel, "general_manager", _gm)
+    version = (await client.get("/hotel/settings", headers=gm_s)).headers["ETag"]
+    pages = [{"title": "Breakfast", "body": "06:30 to 10:00 in the Garden Room."}]
+    saved = await client.patch(
+        "/hotel/settings", json={"info_pages": pages}, headers={**gm_s, "If-Match": version}
+    )
+    assert saved.status_code == 200, saved.text
+    assert (await client.get("/guest/info", headers=tablet)).json()["pages"] == pages
 
 
 async def test_staff_phone_order_and_order_list(client, factory, owner_engine):

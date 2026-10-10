@@ -519,6 +519,12 @@ function InfoTab() {
         {i.phone ? <p>Reception: {i.phone}</p> : null}
         {i.email ? <p>Email: {i.email}</p> : null}
       </div>
+      {i.pages.map((p, n) => (
+        <details key={n} className="mt-3 rounded-[var(--radius-card)] border border-line bg-surface p-5 text-lg" open={i.pages.length === 1}>
+          <summary className="min-h-12 cursor-pointer font-display text-xl font-semibold">{p.title}</summary>
+          <p className="mt-3 whitespace-pre-line text-ink">{p.body}</p>
+        </details>
+      ))}
     </section>
   );
 }

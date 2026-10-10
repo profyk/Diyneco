@@ -81,6 +81,7 @@ class HotelSettings(Base):
     room_status_after_checkout: Mapped[str] = mapped_column(server_default=text("'cleaning'"))
     checkout_time: Mapped[time] = mapped_column(server_default=text("'10:00'"))
     wifi_name: Mapped[str | None]
+    info_pages: Mapped[list[dict[str, str]]] = mapped_column(JSONB, server_default=text("'[]'"))
     invoice_prefix: Mapped[str]
     abridged_invoice_max_minor: Mapped[int] = mapped_column(BigInteger, server_default=text("500000"))
     guest_id_number_enabled: Mapped[bool] = mapped_column(server_default=text("false"))

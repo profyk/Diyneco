@@ -201,6 +201,9 @@ async def test_settings_patch_needs_permission_step_up_and_audits_each_field(cli
         ({"timezone": "Mars/Olympus"}, "VALIDATION_FAILED"),
         ({"currency": "XYZ"}, "VALIDATION_FAILED"),  # unsupported; a supported one may change (D57)
         ({"vat_rate_bp": 20000}, "VALIDATION_FAILED"),
+        ({"info_pages": [{"title": "", "body": "x"}]}, "VALIDATION_FAILED"),
+        ({"info_pages": [{"title": "t", "body": "x"}] * 21}, "VALIDATION_FAILED"),
+        ({"info_pages": None}, "VALIDATION_FAILED"),
     ],
 )
 async def test_settings_validation(client, factory, patch, code):

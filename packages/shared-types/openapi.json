@@ -3147,10 +3147,7 @@
           },
           "pages": {
             "items": {
-              "additionalProperties": {
-                "type": "string"
-              },
-              "type": "object"
+              "$ref": "#/components/schemas/InfoPage"
             },
             "title": "Pages",
             "type": "array"
@@ -4208,6 +4205,30 @@
           "created"
         ],
         "title": "ImportReport",
+        "type": "object"
+      },
+      "InfoPage": {
+        "additionalProperties": false,
+        "description": "A page of hotel information on the guest tablet, such as breakfast times or the spa.",
+        "properties": {
+          "body": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Body",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "body"
+        ],
+        "title": "InfoPage",
         "type": "object"
       },
       "InvitationAcceptedResponse": {
@@ -8915,6 +8936,13 @@
             "title": "Guest Data Retention Days",
             "type": "integer"
           },
+          "info_pages": {
+            "items": {
+              "$ref": "#/components/schemas/InfoPage"
+            },
+            "title": "Info Pages",
+            "type": "array"
+          },
           "invoice_prefix": {
             "title": "Invoice Prefix",
             "type": "string"
@@ -8991,6 +9019,7 @@
           "room_status_after_checkout",
           "checkout_time",
           "wifi_name",
+          "info_pages",
           "invoice_prefix",
           "abridged_invoice_max",
           "guest_data_retention_days"
@@ -9069,6 +9098,21 @@
               }
             ],
             "title": "Guest Data Retention Days"
+          },
+          "info_pages": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/InfoPage"
+                },
+                "maxItems": 20,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Info Pages"
           },
           "invoice_prefix": {
             "anyOf": [

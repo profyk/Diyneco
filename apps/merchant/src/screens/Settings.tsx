@@ -17,6 +17,7 @@ import {
   Skeleton,
   Table,
   Td,
+  Textarea,
   Th,
 } from "@diyneco/shared-ui";
 import { useQuery } from "@tanstack/react-query";
@@ -25,13 +26,14 @@ import { useState } from "react";
 import { label, useAction } from "../common";
 import { useSession } from "../session";
 
-type Tab = "hotel" | "billing" | "integrations" | "plan" | "support" | "audit";
+type Tab = "hotel" | "billing" | "tablet" | "integrations" | "plan" | "support" | "audit";
 
 export function Settings() {
   const { can } = useSession();
   const tabs: { key: Tab; title: string; show: boolean }[] = [
     { key: "hotel", title: "Hotel", show: can("hotel.read") },
     { key: "billing", title: "Billing & VAT", show: can("settings.read") },
+    { key: "tablet", title: "Guest tablet", show: can("settings.read") },
     { key: "integrations", title: "Integrations", show: can("integrations.manage") },
     { key: "plan", title: "Plan", show: can("subscription.read") },
     { key: "support", title: "Diyneco support", show: can("audit.read") },
@@ -60,6 +62,7 @@ export function Settings() {
       </div>
       {tab === "hotel" ? <HotelProfile /> : null}
       {tab === "billing" ? <BillingSettings /> : null}
+      {tab === "tablet" ? <InfoPages /> : null}
       {tab === "integrations" ? <Integrations /> : null}
       {tab === "plan" ? <Plan /> : null}
       {tab === "support" ? <Support /> : null}
@@ -674,3 +677,80 @@ function Audit() {
   );
 }
 
+type Page = { title: string; body: string };
+
+/** Information pages on the guest tablet's "Hotel info" tab (breakfast times, spa, shuttle). */
+function InfoPages() {
+  const { api, can } = useSession();
+  const settings = useQuery({ queryKey: ["settings"], queryFn: () => withEtag(api.GET("/api/v1/hotel/settings")) });
+  const [draft, setDraft] = useState<Page[] | null>(null);
+  const save = useAction(
+    () =>
+      ok(
+        api.PATCH("/api/v1/hotel/settings", {
+          params: { header: { "If-Match": settings.data!.etag } as never },
+          body: { info_pages: (draft ?? []).map((p) => ({ title: p.title.trim(), body: p.body.trim() })) },
+        }),
+      ),
+    { success: "Pages saved. Tablets show them now.", onDone: () => setDraft(null) },
+  );
+  if (!settings.data) return <Skeleton className="h-40" />;
+  const pages = draft ?? settings.data.data.info_pages;
+  const editable = can("settings.update");
+  const update = (i: number, patch: Partial<Page>) => setDraft(pages.map((p, j) => (j === i ? { ...p, ...patch } : p)));
+  const move = (i: number, by: -1 | 1) => {
+    const next = [...pages];
+    [next[i], next[i + by]] = [next[i + by]!, next[i]!];
+    setDraft(next);
+  };
+  const valid = pages.every((p) => p.title.trim() && p.body.trim());
+  return (
+    <Card className="max-w-3xl p-5">
+      <h2 className="font-display text-base font-semibold">Hotel information</h2>
+      <p className="mt-1 text-sm text-muted">
+        Pages guests read on the tablet&apos;s Hotel info tab, after the Wi-Fi name, check-out time and reception contacts. Up to 20 pages.
+      </p>
+      <div className="mt-5 flex flex-col gap-4">
+        {pages.length === 0 ? <EmptyState title="No pages yet" body="Add breakfast times, facilities, transport or house rules." /> : null}
+        {pages.map((p, i) => (
+          <div key={i} className="rounded-lg border border-line p-4">
+            <div className="grid gap-3">
+              <Field label="Title">
+                {(f) => <Input {...f} maxLength={80} disabled={!editable} value={p.title} onChange={(e) => update(i, { title: e.target.value })} />}
+              </Field>
+              <Field label="Text">
+                {(f) => (
+                  <Textarea {...f} rows={4} maxLength={4000} disabled={!editable} value={p.body} onChange={(e) => update(i, { body: e.target.value })} />
+                )}
+              </Field>
+            </div>
+            {editable ? (
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button size="sm" variant="ghost" disabled={i === 0} onClick={() => move(i, -1)}>
+                  Move up
+                </Button>
+                <Button size="sm" variant="ghost" disabled={i === pages.length - 1} onClick={() => move(i, 1)}>
+                  Move down
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setDraft(pages.filter((_, j) => j !== i))}>
+                  Remove
+                </Button>
+              </div>
+            ) : null}
+          </div>
+        ))}
+      </div>
+      {save.error ? <ErrorNotice error={save.error} className="mt-4" /> : null}
+      {editable ? (
+        <div className="mt-5 flex flex-wrap justify-between gap-2">
+          <Button variant="secondary" disabled={pages.length >= 20} onClick={() => setDraft([...pages, { title: "", body: "" }])}>
+            Add page
+          </Button>
+          <Button disabled={draft === null || !valid} loading={save.isPending} onClick={() => save.mutate(undefined)}>
+            Save pages
+          </Button>
+        </div>
+      ) : null}
+    </Card>
+  );
+}

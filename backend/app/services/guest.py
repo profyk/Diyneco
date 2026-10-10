@@ -172,5 +172,5 @@ async def info(uow: UnitOfWork, ctx: TenantContext) -> dict[str, Any]:
         "checkout_time": settings.checkout_time,
         "phone": hotel.phone,
         "email": hotel.email,
-        "pages": [],  # hotel information pages: not in the v1 schema yet
+        "pages": settings.info_pages,
     }

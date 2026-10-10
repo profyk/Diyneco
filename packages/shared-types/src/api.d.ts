@@ -3664,9 +3664,7 @@ export interface components {
             /** Hotel Name */
             hotel_name: string;
             /** Pages */
-            pages: {
-                [key: string]: string;
-            }[];
+            pages: components["schemas"]["InfoPage"][];
             /** Phone */
             phone: string | null;
             /** Wifi Name */
@@ -4019,6 +4017,16 @@ export interface components {
             rows: number;
             /** Valid */
             valid: boolean;
+        };
+        /**
+         * InfoPage
+         * @description A page of hotel information on the guest tablet, such as breakfast times or the spa.
+         */
+        InfoPage: {
+            /** Body */
+            body: string;
+            /** Title */
+            title: string;
         };
         /** InvitationAcceptedResponse */
         InvitationAcceptedResponse: {
@@ -5652,6 +5660,8 @@ export interface components {
             currency: string;
             /** Guest Data Retention Days */
             guest_data_retention_days: number;
+            /** Info Pages */
+            info_pages: components["schemas"]["InfoPage"][];
             /** Invoice Prefix */
             invoice_prefix: string;
             /** Menu Prices Include Vat */
@@ -5689,6 +5699,8 @@ export interface components {
             currency?: string | null;
             /** Guest Data Retention Days */
             guest_data_retention_days?: number | null;
+            /** Info Pages */
+            info_pages?: components["schemas"]["InfoPage"][] | null;
             /** Invoice Prefix */
             invoice_prefix?: string | null;
             /** Menu Prices Include Vat */

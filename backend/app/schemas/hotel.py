@@ -89,6 +89,13 @@ class HotelPatch(StrictModel):
     address: Address | None = None
 
 
+class InfoPage(StrictModel):
+    """A page of hotel information on the guest tablet, such as breakfast times or the spa."""
+
+    title: Annotated[str, StringConstraints(min_length=1, max_length=80, strip_whitespace=True)]
+    body: Annotated[str, StringConstraints(min_length=1, max_length=4000, strip_whitespace=True)]
+
+
 class SettingsOut(BaseModel):
     timezone: str
     currency: str
@@ -104,6 +111,7 @@ class SettingsOut(BaseModel):
     room_status_after_checkout: Literal["cleaning", "available"]
     checkout_time: str
     wifi_name: str | None
+    info_pages: list[InfoPage]
     invoice_prefix: str
     abridged_invoice_max: Money
     guest_data_retention_days: int
@@ -124,6 +132,7 @@ class SettingsPatch(StrictModel):
     room_status_after_checkout: Literal["cleaning", "available"] | None = None
     checkout_time: Annotated[str, StringConstraints(pattern=r"^([01]\d|2[0-3]):[0-5]\d$")] | None = None
     wifi_name: Annotated[str, StringConstraints(max_length=64)] | None = None
+    info_pages: Annotated[list[InfoPage], Field(max_length=20)] | None = None
     invoice_prefix: Annotated[str, StringConstraints(pattern=r"^[A-Z0-9]{2,8}$")] | None = None
     abridged_invoice_max: Money | None = None
     guest_data_retention_days: Annotated[int, Field(ge=365, le=3650)] | None = None
