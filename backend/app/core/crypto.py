@@ -118,7 +118,13 @@ def luhn_valid(digits: str) -> bool:
     return total % 10 == 0
 
 
+# Ids are UUIDs; their digit runs across the dashes can pass the Luhn check by chance
+# (about 1 in 400), so UUID-shaped text is removed before looking for card numbers.
+_UUID = re.compile(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
+
+
 def looks_like_card_number(text: str) -> bool:
+    text = _UUID.sub(" ", text)
     for match in _CARD_CANDIDATE.finditer(text):
         digits = re.sub(r"\D", "", match.group())
         if 13 <= len(digits) <= 19 and luhn_valid(digits):

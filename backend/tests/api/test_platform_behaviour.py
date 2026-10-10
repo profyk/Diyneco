@@ -3,6 +3,8 @@ query parameters, card data, configuration fail-fast, RBAC grant rule."""
 
 from __future__ import annotations
 
+import uuid
+
 import pytest
 from pydantic import ValidationError
 from sqlalchemy import text
@@ -80,6 +82,10 @@ def test_card_number_detection():
     assert not looks_like_card_number("4111111111111112")  # fails Luhn
     assert not looks_like_card_number("+27 82 123 4567")  # phone number
     assert not looks_like_card_number("1234")
+    # Ids are never mistaken for cards (this once failed CI: about 1 in 400 UUIDs passed Luhn).
+    ids = [str(uuid.uuid4()) for _ in range(5000)] + ["01923456-7890-7123-8456-789012345678"]
+    assert not any(looks_like_card_number(i) for i in ids)
+    assert looks_like_card_number(f"{ids[0]} 4111 1111 1111 1111")
 
 
 def _settings(**overrides):
