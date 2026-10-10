@@ -18,6 +18,7 @@ const NAV: { href: string; label: string; perm?: string; any?: string[] }[] = [
   { href: "/stays", label: "Stays & check-in", perm: "stays.read" },
   { href: "/rooms", label: "Rooms", perm: "rooms.read" },
   { href: "/guests", label: "Guests", perm: "guests.read" },
+  { href: "/companies", label: "Companies", perm: "guests.read" },
   { href: "/menu", label: "Menu", perm: "menu.read" },
   { href: "/payments", label: "Payments", perm: "payments.read" },
   { href: "/reports", label: "Reports", perm: "reports.read" },

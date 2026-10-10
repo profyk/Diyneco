@@ -24,6 +24,7 @@ import { useState } from "react";
 
 import { isoDay, StayStatus, useAction } from "../common";
 import { useSession } from "../session";
+import { CompanyDialog } from "./Companies";
 
 const TABS = [
   { key: "inhouse", title: "In house", query: { status: "active" as const } },
@@ -134,6 +135,7 @@ function StayForm({ kind, onClose }: { kind: "walkin" | "reservation"; onClose: 
   const [arrival, setArrival] = useState(isoDay(1));
   const [departure, setDeparture] = useState(isoDay(2));
   const [company, setCompany] = useState("");
+  const [newCompany, setNewCompany] = useState(false);
   const [po, setPo] = useState("");
   const [training, setTraining] = useState(false);
 
@@ -232,16 +234,22 @@ function StayForm({ kind, onClose }: { kind: "walkin" | "reservation"; onClose: 
         )}
         <Field label="Bill to" hint="Company bills show the company, its VAT number and the order number.">
           {(p) => (
-            <Select {...p} value={company} onChange={(e) => setCompany(e.target.value)}>
+            <Select
+              {...p}
+              value={company}
+              onChange={(e) => (e.target.value === "+new" ? setNewCompany(true) : setCompany(e.target.value))}
+            >
               <option value="">The guest</option>
               {profiles.data?.data.map((b) => (
                 <option key={b.id} value={b.id}>
                   {b.company_name}
                 </option>
               ))}
+              {can("billing.manage") ? <option value="+new">New company…</option> : null}
             </Select>
           )}
         </Field>
+        {newCompany ? <CompanyDialog onClose={() => setNewCompany(false)} onCreated={setCompany} /> : null}
         {company ? (
           <Field label="Company order number">{(p) => <Input {...p} value={po} onChange={(e) => setPo(e.target.value)} />}</Field>
         ) : null}
