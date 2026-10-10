@@ -9,6 +9,7 @@ import { type ReactNode, useEffect, useRef, useState } from "react";
 
 import { EnrolScreen, LoginScreen } from "./auth-screens";
 import { API_URL } from "./config";
+import { Search } from "./Search";
 import { useSession } from "./session";
 
 const NAV: { href: string; label: string; perm?: string; any?: string[] }[] = [
@@ -156,7 +157,7 @@ function Shell({ children }: { children: ReactNode }) {
           <button type="button" className="rounded-md px-2 py-1 text-ink lg:hidden" onClick={() => setMenuOpen(true)}>
             ☰ <span className="sr-only">Menu</span>
           </button>
-          <span className="hidden lg:block" />
+          <Search pages={nav} />
           <Badge tone={live === "live" ? "good" : live === "connecting" ? "info" : "warn"}>
             {live === "live" ? "Live" : live === "connecting" ? "Connecting…" : "Offline: showing last known data"}
           </Badge>

@@ -20,6 +20,7 @@ import {
   useToast,
 } from "@diyneco/shared-ui";
 import { useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
 import { useDeferredValue, useState } from "react";
 
 import { isoDay, label, useAction } from "../common";
@@ -28,7 +29,7 @@ import { useSession } from "../session";
 export function Guests() {
   const { api, can } = useSession();
   const privacy = can("privacy.manage");
-  const [q, setQ] = useState("");
+  const [q, setQ] = useState(useSearchParams().get("q") ?? "");
   const [forgetting, setForgetting] = useState<{ id: string; name: string } | null>(null);
   const [idFor, setIdFor] = useState<{ id: string; name: string; has: boolean } | null>(null);
   const settings = useQuery({
