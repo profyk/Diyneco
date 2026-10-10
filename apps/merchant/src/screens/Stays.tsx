@@ -9,6 +9,7 @@ import {
   EmptyState,
   ErrorNotice,
   Field,
+  Badge,
   Input,
   PageHeader,
   Select,
@@ -26,22 +27,40 @@ import { isoDay, StayStatus, useAction } from "../common";
 import { useSession } from "../session";
 import { CompanyDialog } from "./Companies";
 
-const TABS = [
-  { key: "inhouse", title: "In house", query: { status: "active" as const } },
-  { key: "arrivals", title: "Arrivals today", query: { status: "reserved" as const, from: isoDay(), to: isoDay() } },
-  { key: "upcoming", title: "Reservations", query: { status: "reserved" as const } },
-  { key: "out", title: "Checked out", query: { status: "checked_out" as const } },
+type StayRow = { arrival_date: string; departure_date: string };
+
+// Dates are compared as YYYY-MM-DD strings in the hotel's local calendar.
+const TABS: {
+  key: string;
+  title: string;
+  query: { status: "active" | "reserved" | "checked_out"; from?: string; to?: string };
+  keep?: (s: StayRow, today: string) => boolean;
+}[] = [
+  { key: "arrivals", title: "Arrivals today", query: { status: "reserved", from: isoDay(), to: isoDay() }, keep: (s, t) => s.arrival_date === t },
+  { key: "inhouse", title: "In house", query: { status: "active" } },
+  { key: "departures", title: "Departures today", query: { status: "active" }, keep: (s, t) => s.departure_date <= t },
+  { key: "upcoming", title: "Reservations", query: { status: "reserved" }, keep: (s, t) => s.arrival_date >= t },
+  { key: "noshow", title: "No-shows", query: { status: "reserved" }, keep: (s, t) => s.arrival_date < t },
+  { key: "out", title: "Checked out", query: { status: "checked_out" } },
 ];
 
 export function Stays() {
   const { api, can } = useSession();
-  const [tab, setTab] = useState("inhouse");
+  const [tab, setTab] = useState("arrivals");
+  const [q, setQ] = useState("");
   const [form, setForm] = useState<null | "walkin" | "reservation">(null);
   const t = TABS.find((x) => x.key === tab) ?? TABS[0]!;
   const stays = useQuery({
     queryKey: ["stays", tab],
     queryFn: () => ok(api.GET("/api/v1/stays", { params: { query: { ...t.query, limit: 200 } } })),
   });
+  const today = isoDay();
+  const needle = q.trim().toLowerCase();
+  const rows = (stays.data?.data ?? []).filter(
+    (s) =>
+      (!t.keep || t.keep(s, today)) &&
+      (!needle || s.room.number.toLowerCase().includes(needle) || s.guest.name.toLowerCase().includes(needle)),
+  );
 
   return (
     <>
@@ -75,13 +94,21 @@ export function Stays() {
           </button>
         ))}
       </div>
+      <Input
+        type="search"
+        aria-label="Find a stay"
+        placeholder="Find by room or guest name"
+        className="mb-4 max-w-md"
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+      />
       <Card>
         {stays.isLoading ? (
           <Skeleton className="m-5 h-10" />
         ) : stays.error ? (
           <ErrorNotice error={stays.error} className="m-5" />
-        ) : !stays.data?.data.length ? (
-          <EmptyState title="No stays here" />
+        ) : !rows.length ? (
+          <EmptyState title={needle ? "No stays match" : "No stays here"} />
         ) : (
           <Table>
             <thead>
@@ -94,7 +121,7 @@ export function Stays() {
               </tr>
             </thead>
             <tbody>
-              {stays.data.data.map((s) => (
+              {rows.map((s) => (
                 <tr key={s.id} className="hover:bg-surface-2">
                   <Td className="font-medium">
                     <Link className="text-blue hover:underline" href={`/stays/${s.id}`}>
@@ -111,6 +138,10 @@ export function Stays() {
                   </Td>
                   <Td>
                     <StayStatus status={s.status} />
+                    {s.status === "active" && s.departure_date < today ? <Badge tone="crit" className="ml-1">Overdue</Badge> : null}
+                    {s.status === "active" && s.departure_date === today ? <Badge tone="warn" className="ml-1">Due out</Badge> : null}
+                    {s.status === "reserved" && s.arrival_date < today ? <Badge tone="crit" className="ml-1">No-show</Badge> : null}
+                    {s.charges_blocked ? <Badge tone="warn" className="ml-1">Charges stopped</Badge> : null}
                   </Td>
                   <Td className="text-right tabular-nums">{s.folio ? formatMoney(s.folio.balance) : "–"}</Td>
                 </tr>

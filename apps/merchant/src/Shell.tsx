@@ -17,6 +17,8 @@ const NAV: { href: string; label: string; perm?: string; any?: string[] }[] = [
   { href: "/dispatch", label: "Dispatch", perm: "deliveries.manage" },
   { href: "/approvals", label: "Approvals", any: ["orders.approve", "folio.adjust.approve"] },
   { href: "/stays", label: "Stays & check-in", perm: "stays.read" },
+  { href: "/rack", label: "Room rack", perm: "stays.read" },
+  { href: "/housekeeping", label: "Housekeeping", perm: "rooms.read" },
   { href: "/rooms", label: "Rooms", perm: "rooms.read" },
   { href: "/guests", label: "Guests", perm: "guests.read" },
   { href: "/companies", label: "Companies", perm: "guests.read" },
