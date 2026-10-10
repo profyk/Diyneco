@@ -38,7 +38,7 @@ jobs:
         working-directory: backend
     steps:
       - uses: actions/checkout@v5
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
       - name: Install Python and dependencies
@@ -96,7 +96,7 @@ jobs:
             --docker "${{ job.services.postgres.id }}"
       - name: Upload test report
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: pytest-report
           path: backend/pytest-report.xml
@@ -107,11 +107,11 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: pnpm
@@ -131,8 +131,8 @@ jobs:
       NEXT_PUBLIC_API_URL: https://api.example.invalid
     steps:
       - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: pnpm
