@@ -16,6 +16,8 @@ from app.schemas.menu import (
     CategoryList,
     CategoryOut,
     CategoryPatch,
+    CategoryRoute,
+    CategoryRouted,
     ImageUploadOut,
     ImageUploadRequest,
     ItemCreate,
@@ -33,13 +35,14 @@ from app.schemas.menu import (
     ScheduleCreate,
     ScheduleList,
     ScheduleOut,
+    StandardLayout,
     StationCreate,
     StationList,
     StationOut,
     StationPatch,
 )
 from app.services import menu as svc
-from app.services import menu_import
+from app.services import menu_import, menu_layout
 
 router = APIRouter(tags=["menu"])
 
@@ -114,7 +117,7 @@ async def create_category(
 async def patch_category(
     category_id: uuid.UUID, body: CategoryPatch, request: Request, uow: Uow, principal: MenuManage
 ) -> dict[str, Any]:
-    changes = patch_changes(body, {"name", "sort_order"})
+    changes = patch_changes(body, {"name", "sort_order", "section"})
     return await svc.patch_category(uow, principal.tenant(request), category_id, changes)
 
 
@@ -327,3 +330,17 @@ async def delete_option(
     option_id: uuid.UUID, request: Request, uow: Uow, principal: MenuManage
 ) -> dict[str, Any]:
     return await svc.delete_option(uow, principal.tenant(request), option_id)
+
+
+@router.post("/menu/standard-layout", response_model=StandardLayout)
+async def standard_layout(request: Request, uow: Uow, principal: MenuManage) -> dict[str, Any]:
+    """Adds the usual sections, categories and kitchen stations that are missing (D68)."""
+    return await menu_layout.apply_standard_layout(uow, principal.tenant(request))
+
+
+@router.post("/menu/categories/{category_id}/station", response_model=CategoryRouted)
+async def route_category(
+    category_id: uuid.UUID, body: CategoryRoute, request: Request, uow: Uow, principal: MenuManage
+) -> dict[str, Any]:
+    """Prepares the category's dishes, current and new, at one kitchen station."""
+    return await menu_layout.route_category(uow, principal.tenant(request), category_id, body.station_id)

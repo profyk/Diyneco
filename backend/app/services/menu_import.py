@@ -121,6 +121,7 @@ def _check_row(
         return None, problems
     whole, _, cents = v["price"].partition(".")
     return {
+        "station_from_file": bool(v["station"]),
         "category": v["category"],
         "values": {
             "name": v["name"],
@@ -157,6 +158,9 @@ async def import_csv(
         known = set(categories) | {n.lower() for n in new_categories}
         if row["category"].lower() not in known:
             new_categories.append(row["category"])
+        existing = categories.get(row["category"].lower())
+        if row.pop("station_from_file") is False and existing is not None and existing.default_station_id:
+            row["values"]["station_id"] = existing.default_station_id
         row["values"]["currency"] = settings.currency
         planned.append(row)
 
@@ -178,7 +182,13 @@ async def import_csv(
         return report
 
     for name in new_categories:
-        categories[name.lower()] = await repo.create_category({"name": name, "sort_order": len(categories)})
+        kinds = {
+            r["values"]["charge_category_code"] for r in planned if r["category"].lower() == name.lower()
+        }
+        section = "drinks" if kinds == {"beverage"} else "food"
+        categories[name.lower()] = await repo.create_category(
+            {"name": name, "sort_order": len(categories), "section": section}
+        )
     created: list[uuid.UUID] = []
     for n, row in enumerate(planned):
         item = await repo.create_item(

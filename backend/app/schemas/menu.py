@@ -96,16 +96,23 @@ class ScheduleList(BaseModel):
 # --- Categories ----------------------------------------------------------------------------
 
 
+MenuSection = Literal["food", "drinks"]
+
+
 class CategoryCreate(StrictModel):
     name: Name
     sort_order: SortOrder = 0
     schedule_id: uuid.UUID | None = None
+    section: MenuSection = "food"
+    default_station_id: uuid.UUID | None = None  # where its dishes are prepared
 
 
 class CategoryPatch(StrictModel):
     name: Name | None = None
     sort_order: SortOrder | None = None
     schedule_id: uuid.UUID | None = None
+    section: MenuSection | None = None
+    default_station_id: uuid.UUID | None = None
 
 
 class CategoryOut(BaseModel):
@@ -113,6 +120,8 @@ class CategoryOut(BaseModel):
     name: str
     sort_order: int
     schedule_id: uuid.UUID | None
+    section: MenuSection
+    default_station_id: uuid.UUID | None
 
 
 class CategoryList(BaseModel):
@@ -129,7 +138,7 @@ class ItemCreate(StrictModel):
     price: Money
     vat_rate_bp: VatRate | None = None  # None: the hotel's VAT rate
     charge_category: ChargeCategory = "food"
-    station_id: uuid.UUID
+    station_id: uuid.UUID | None = None  # None: the category's station
     category_id: uuid.UUID
     schedule_id: uuid.UUID | None = None
     dietary_tags: Annotated[list[DietaryTag], Field(max_length=5)] = Field(default_factory=list)
@@ -264,3 +273,18 @@ class ModifierOptionPatch(StrictModel):
     price_delta: Money | None = None
     is_available: bool | None = None
     sort_order: SortOrder | None = None
+
+
+class CategoryRoute(StrictModel):
+    station_id: uuid.UUID
+
+
+class CategoryRouted(CategoryOut):
+    moved_items: int
+
+
+class StandardLayout(BaseModel):
+    created_stations: list[str]
+    created_categories: list[str]
+    stations: list[StationOut]
+    categories: list[CategoryOut]

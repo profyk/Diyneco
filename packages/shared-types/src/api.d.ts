@@ -1623,6 +1623,26 @@ export interface paths {
         patch: operations["patch_category_api_v1_menu_categories__category_id__patch"];
         trace?: never;
     };
+    "/api/v1/menu/categories/{category_id}/station": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Route Category
+         * @description Prepares the category's dishes, current and new, at one kitchen station.
+         */
+        post: operations["route_category_api_v1_menu_categories__category_id__station_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/menu/items": {
         parameters: {
             query?: never;
@@ -1820,6 +1840,26 @@ export interface paths {
         put?: never;
         /** Create Schedule */
         post: operations["create_schedule_api_v1_menu_schedules_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/menu/standard-layout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Standard Layout
+         * @description Adds the usual sections, categories and kitchen stations that are missing (D68).
+         */
+        post: operations["standard_layout_api_v1_menu_standard_layout_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3290,10 +3330,18 @@ export interface components {
         };
         /** CategoryCreate */
         CategoryCreate: {
+            /** Default Station Id */
+            default_station_id?: string | null;
             /** Name */
             name: string;
             /** Schedule Id */
             schedule_id?: string | null;
+            /**
+             * Section
+             * @default food
+             * @enum {string}
+             */
+            section: "food" | "drinks";
             /**
              * Sort Order
              * @default 0
@@ -3309,6 +3357,8 @@ export interface components {
         };
         /** CategoryOut */
         CategoryOut: {
+            /** Default Station Id */
+            default_station_id: string | null;
             /**
              * Id
              * Format: uuid
@@ -3318,17 +3368,57 @@ export interface components {
             name: string;
             /** Schedule Id */
             schedule_id: string | null;
+            /**
+             * Section
+             * @enum {string}
+             */
+            section: "food" | "drinks";
             /** Sort Order */
             sort_order: number;
         };
         /** CategoryPatch */
         CategoryPatch: {
+            /** Default Station Id */
+            default_station_id?: string | null;
             /** Name */
             name?: string | null;
             /** Schedule Id */
             schedule_id?: string | null;
+            /** Section */
+            section?: ("food" | "drinks") | null;
             /** Sort Order */
             sort_order?: number | null;
+        };
+        /** CategoryRoute */
+        CategoryRoute: {
+            /**
+             * Station Id
+             * Format: uuid
+             */
+            station_id: string;
+        };
+        /** CategoryRouted */
+        CategoryRouted: {
+            /** Default Station Id */
+            default_station_id: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Moved Items */
+            moved_items: number;
+            /** Name */
+            name: string;
+            /** Schedule Id */
+            schedule_id: string | null;
+            /**
+             * Section
+             * @enum {string}
+             */
+            section: "food" | "drinks";
+            /** Sort Order */
+            sort_order: number;
         };
         /** ChangeRequest */
         ChangeRequest: {
@@ -3914,6 +4004,8 @@ export interface components {
             items: components["schemas"]["GuestMenuItem"][];
             /** Name */
             name: string;
+            /** Section */
+            section: string;
         };
         /** GuestMenuItem */
         GuestMenuItem: {
@@ -4473,11 +4565,8 @@ export interface components {
              * @default 0
              */
             sort_order: number;
-            /**
-             * Station Id
-             * Format: uuid
-             */
-            station_id: string;
+            /** Station Id */
+            station_id?: string | null;
             /** Vat Rate Bp */
             vat_rate_bp?: number | null;
         };
@@ -6230,6 +6319,17 @@ export interface components {
             name: string | null;
             /** Staff Id */
             staff_id: string | null;
+        };
+        /** StandardLayout */
+        StandardLayout: {
+            /** Categories */
+            categories: components["schemas"]["CategoryOut"][];
+            /** Created Categories */
+            created_categories: string[];
+            /** Created Stations */
+            created_stations: string[];
+            /** Stations */
+            stations: components["schemas"]["StationOut"][];
         };
         /** StationCreate */
         StationCreate: {
@@ -9955,6 +10055,41 @@ export interface operations {
             };
         };
     };
+    route_category_api_v1_menu_categories__category_id__station_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                category_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CategoryRoute"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryRouted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_items_api_v1_menu_items_get: {
         parameters: {
             query?: {
@@ -10525,6 +10660,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    standard_layout_api_v1_menu_standard_layout_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardLayout"];
                 };
             };
         };

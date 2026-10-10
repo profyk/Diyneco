@@ -185,6 +185,7 @@ class GuestMenuItem(BaseModel):
 class GuestMenuCategory(BaseModel):
     id: uuid.UUID
     name: str
+    section: str
     items: list[GuestMenuItem]
 
 

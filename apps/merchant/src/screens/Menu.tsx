@@ -50,6 +50,13 @@ export function Menu() {
   const categories = useQuery({ queryKey: ["menu", "categories"], queryFn: () => ok(api.GET("/api/v1/menu/categories")) });
   const items = useQuery({ queryKey: ["menu", "items"], queryFn: () => ok(api.GET("/api/v1/menu/items")) });
   const stations = useQuery({ queryKey: ["stations"], queryFn: () => ok(api.GET("/api/v1/kitchen-stations")) });
+  const layout = useAction(() => ok(api.POST("/api/v1/menu/standard-layout")), {
+    success: (r) =>
+      r.created_categories.length || r.created_stations.length
+        ? `Added ${r.created_categories.length} categories and ${r.created_stations.length} kitchen stations.`
+        : "Your menu already has the standard sections.",
+  });
+  const stationName = (id: string | null | undefined) => stations.data?.data.find((x) => x.id === id)?.name;
   const availability = useAction(
     ({ id, available }: { id: string; available: boolean }) =>
       ok(api.POST("/api/v1/menu/items/{item_id}/availability", { params: { path: { item_id: id } }, body: { available } })),
@@ -64,8 +71,11 @@ export function Menu() {
         actions={
           can("menu.manage") ? (
             <>
+              <Button variant="secondary" loading={layout.isPending} onClick={() => layout.mutate(undefined)}>
+                Standard layout
+              </Button>
               <Button variant="secondary" onClick={() => setDialog("station")}>
-                Add kitchen station
+                Kitchen stations
               </Button>
               <Button variant="secondary" onClick={() => setDialog("category")}>
                 Add category
@@ -89,11 +99,28 @@ export function Menu() {
         <Skeleton className="h-40" />
       ) : !categories.data?.data.length ? (
         <Card>
-          <EmptyState title="Start your menu" body="Add a kitchen station and a category, then add items." />
+          <EmptyState
+            title="Start your menu"
+            body="Use the standard layout (Food: breakfast, starters, mains, sides, desserts; Drinks: coffees, wines, MCC, beers, spirits, cocktails) with kitchen stations, or add your own categories."
+            action={
+              can("menu.manage") ? (
+                <Button loading={layout.isPending} onClick={() => layout.mutate(undefined)}>
+                  Use the standard layout
+                </Button>
+              ) : undefined
+            }
+          />
         </Card>
       ) : (
         <div className="flex flex-col gap-6">
-          {categories.data.data.map((c) => {
+          {(["food", "drinks"] as const).flatMap((section) => {
+            const inSection = categories.data.data.filter((c) => c.section === section);
+            if (!inSection.length) return [];
+            return [
+              <h2 key={`h-${section}`} className="mt-2 font-display text-xl font-semibold text-ink">
+                {section === "food" ? "Food" : "Drinks"}
+              </h2>,
+              ...inSection.map((c) => {
             const list = (items.data?.data ?? []).filter((i) => i.category_id === c.id);
             return (
               <Card key={c.id}>
@@ -101,7 +128,7 @@ export function Menu() {
                   title={c.name}
                   description={`${list.length} item${list.length === 1 ? "" : "s"}${
                     c.schedule_id ? ` · ${schedules.data?.data.find((x) => x.id === c.schedule_id)?.name ?? "limited hours"}` : " · all day"
-                  }`}
+                  }${c.default_station_id ? ` · prepared at ${stationName(c.default_station_id) ?? "a station"}` : ""}`}
                   actions={
                     can("menu.manage") ? (
                       <Button size="sm" variant="ghost" onClick={() => setEditCategory(c.id)}>
@@ -149,11 +176,13 @@ export function Menu() {
                 )}
               </Card>
             );
+              }),
+            ];
           })}
         </div>
       )}
       {dialog === "category" ? <NameDialog kind="category" onClose={() => setDialog(null)} /> : null}
-      {dialog === "station" ? <NameDialog kind="station" onClose={() => setDialog(null)} /> : null}
+      {dialog === "station" ? <StationsDialog onClose={() => setDialog(null)} /> : null}
       {dialog === "groups" ? <GroupsDialog onClose={() => setDialog(null)} /> : null}
       {dialog === "hours" ? <HoursDialog onClose={() => setDialog(null)} /> : null}
       {dialog === "import" ? <MenuImportDialog onClose={() => setDialog(null)} /> : null}
@@ -161,6 +190,7 @@ export function Menu() {
         <CategoryDialog
           category={categories.data.data.find((c) => c.id === editCategory)!}
           schedules={schedules.data?.data ?? []}
+          stations={(stations.data?.data ?? []).filter((x) => x.is_active)}
           onClose={() => setEditCategory(null)}
         />
       ) : null}
@@ -179,10 +209,11 @@ export function Menu() {
 function NameDialog({ kind, onClose }: { kind: "category" | "station"; onClose: () => void }) {
   const { api } = useSession();
   const [name, setName] = useState("");
+  const [section, setSection] = useState<"food" | "drinks">("food");
   const save = useAction(
     async () =>
       kind === "category"
-        ? ok(api.POST("/api/v1/menu/categories", { body: { name: name.trim(), sort_order: 0 } }))
+        ? ok(api.POST("/api/v1/menu/categories", { body: { name: name.trim(), sort_order: 0, section } }))
         : ok(api.POST("/api/v1/kitchen-stations", { body: { name: name.trim(), sort_order: 0 } })),
     { success: kind === "category" ? "Category added." : "Station added.", onDone: onClose },
   );
@@ -200,6 +231,16 @@ function NameDialog({ kind, onClose }: { kind: "category" | "station"; onClose: 
       }
     >
       <Field label="Name">{(p) => <Input {...p} autoFocus value={name} onChange={(e) => setName(e.target.value)} />}</Field>
+      {kind === "category" ? (
+        <Field label="Section" className="mt-3">
+          {(p) => (
+            <Select {...p} value={section} onChange={(e) => setSection(e.target.value as "food" | "drinks")}>
+              <option value="food">Food</option>
+              <option value="drinks">Drinks</option>
+            </Select>
+          )}
+        </Field>
+      ) : null}
       {save.error ? <ErrorNotice error={save.error} className="mt-3" /> : null}
     </Dialog>
   );
@@ -212,7 +253,7 @@ function ItemDialog({
   onClose,
 }: {
   itemId: string | null;
-  categories: { id: string; name: string }[];
+  categories: { id: string; name: string; default_station_id?: string | null }[];
   stations: { id: string; name: string }[];
   onClose: () => void;
 }) {
@@ -245,7 +286,12 @@ function ItemDialog({
     description: form.description ?? item?.description ?? "",
     price: form.price ?? (item ? (item.price.amount_minor / 100).toFixed(2) : ""),
     category_id: form.category_id ?? item?.category_id ?? categories[0]?.id ?? "",
-    station_id: form.station_id ?? item?.station_id ?? stations[0]?.id ?? "",
+    station_id:
+      form.station_id ??
+      item?.station_id ??
+      categories.find((c) => c.id === (form.category_id ?? categories[0]?.id))?.default_station_id ??
+      stations[0]?.id ??
+      "",
     charge_category: form.charge_category ?? item?.charge_category ?? "food",
     dietary: form.dietary ?? item?.dietary_tags ?? [],
     allergens: form.allergens ?? item?.allergens ?? [],
@@ -634,13 +680,24 @@ function describeWindows(windows: { days: number[]; from: string; to: string }[]
 function CategoryDialog({
   category,
   schedules,
+  stations,
   onClose,
 }: {
-  category: { id: string; name: string; sort_order: number; schedule_id: string | null };
+  category: {
+    id: string;
+    name: string;
+    sort_order: number;
+    schedule_id: string | null;
+    section: "food" | "drinks";
+    default_station_id: string | null;
+  };
   schedules: { id: string; name: string }[];
+  stations: { id: string; name: string }[];
   onClose: () => void;
 }) {
   const { api } = useSession();
+  const [section, setSection] = useState(category.section);
+  const [station, setStation] = useState(category.default_station_id ?? "");
   const [name, setName] = useState(category.name);
   const [order, setOrder] = useState(String(category.sort_order));
   const [schedule, setSchedule] = useState(category.schedule_id ?? "");
@@ -649,9 +706,20 @@ function CategoryDialog({
       ok(
         api.PATCH("/api/v1/menu/categories/{category_id}", {
           params: { path: { category_id: category.id } },
-          body: { name: name.trim(), sort_order: Number(order) || 0, schedule_id: schedule || null },
+          body: { name: name.trim(), sort_order: Number(order) || 0, schedule_id: schedule || null, section },
         }),
-      ),
+      ).then(async (saved) => {
+        // A new station moves the category's dishes there too (and future ones).
+        if (station && station !== category.default_station_id) {
+          await ok(
+            api.POST("/api/v1/menu/categories/{category_id}/station", {
+              params: { path: { category_id: category.id } },
+              body: { station_id: station },
+            }),
+          );
+        }
+        return saved;
+      }),
     { success: "Category saved.", onDone: onClose },
   );
   const [withItems, setWithItems] = useState(false);
@@ -683,6 +751,26 @@ function CategoryDialog({
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Name" className="sm:col-span-2">
           {(p) => <Input {...p} value={name} onChange={(e) => setName(e.target.value)} />}
+        </Field>
+        <Field label="Section">
+          {(p) => (
+            <Select {...p} value={section} onChange={(e) => setSection(e.target.value as "food" | "drinks")}>
+              <option value="food">Food</option>
+              <option value="drinks">Drinks</option>
+            </Select>
+          )}
+        </Field>
+        <Field label="Prepared at" hint="Its dishes, current and new, go to this station's display.">
+          {(p) => (
+            <Select {...p} value={station} onChange={(e) => setStation(e.target.value)}>
+              <option value="">Choose per dish</option>
+              {stations.map((x) => (
+                <option key={x.id} value={x.id}>
+                  {x.name}
+                </option>
+              ))}
+            </Select>
+          )}
         </Field>
         <Field label="Position" hint="Lower numbers show first.">
           {(p) => <Input {...p} type="number" min={0} value={order} onChange={(e) => setOrder(e.target.value)} />}
@@ -806,6 +894,10 @@ const PRESETS: { name: string; min: number; max: number; hint: string; options: 
   { name: "Extras", min: 0, max: 5, hint: "Optional, up to 5", options: ["Extra cheese", "Bacon", "Avocado", "Fried egg", "Jalapeños"] },
   { name: "Egg style", min: 1, max: 1, hint: "Required: one choice", options: ["Fried", "Scrambled", "Poached", "Boiled"] },
   { name: "Milk", min: 0, max: 1, hint: "Optional", options: ["Full cream", "Low fat", "Oat milk", "Almond milk"] },
+  { name: "Wine serving", min: 1, max: 1, hint: "Required: one choice", options: ["Glass (175 ml)", "Bottle (750 ml)"] },
+  { name: "Coffee size", min: 1, max: 1, hint: "Required: one choice", options: ["Single", "Double"] },
+  { name: "Mixer", min: 0, max: 1, hint: "Optional", options: ["Tonic", "Soda water", "Coke", "Lemonade", "Ginger ale"] },
+  { name: "Spice level", min: 1, max: 1, hint: "Required: one choice", options: ["Mild", "Medium", "Hot"] },
 ];
 
 /** One-click option groups with their usual choices; prices are set before creating. */
@@ -1117,5 +1209,71 @@ function GroupRow({
       )}
       {error ? <ErrorNotice error={error} className="mt-2" /> : null}
     </li>
+  );
+}
+
+/** Kitchen stations are where dishes are prepared; each has its own kitchen display. */
+function StationsDialog({ onClose }: { onClose: () => void }) {
+  const { api } = useSession();
+  const stations = useQuery({ queryKey: ["stations"], queryFn: () => ok(api.GET("/api/v1/kitchen-stations")) });
+  const [name, setName] = useState("");
+  const [rename, setRename] = useState<Record<string, string>>({});
+  const add = useAction(() => ok(api.POST("/api/v1/kitchen-stations", { body: { name: name.trim(), sort_order: 0 } })), {
+    success: "Station added. Pair a kitchen display for it under Devices.",
+    onDone: () => setName(""),
+  });
+  const patch = useAction(
+    ({ id, body }: { id: string; body: { name?: string; is_active?: boolean } }) =>
+      ok(api.PATCH("/api/v1/kitchen-stations/{station_id}", { params: { path: { station_id: id } }, body })),
+    { success: "Station saved." },
+  );
+  return (
+    <Dialog
+      open
+      onClose={onClose}
+      size="lg"
+      title="Kitchen stations"
+      description="Main kitchen, Cold kitchen, Pastry, Bar... Each dish goes to one station, usually through its category (Edit category, Prepared at). A station can be switched off once no dish uses it."
+    >
+      {stations.isLoading ? (
+        <Skeleton className="h-24" />
+      ) : (
+        <ul className="mb-5 divide-y divide-line rounded-lg border border-line">
+          {stations.data?.data.map((st) => (
+            <li key={st.id} className="flex flex-wrap items-center gap-2 px-4 py-2">
+              <Input
+                aria-label={`Name of ${st.name}`}
+                className="max-w-60"
+                value={rename[st.id] ?? st.name}
+                onChange={(e) => setRename({ ...rename, [st.id]: e.target.value })}
+              />
+              {rename[st.id] !== undefined && rename[st.id]!.trim() && rename[st.id] !== st.name ? (
+                <Button size="sm" onClick={() => patch.mutate({ id: st.id, body: { name: rename[st.id]!.trim() } })}>
+                  Save name
+                </Button>
+              ) : null}
+              <span className="flex-1" />
+              {st.is_active ? <Badge tone="good">On</Badge> : <Badge>Off</Badge>}
+              <Button size="sm" variant="ghost" onClick={() => patch.mutate({ id: st.id, body: { is_active: !st.is_active } })}>
+                {st.is_active ? "Switch off" : "Switch on"}
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <form
+        className="flex flex-wrap items-end gap-3"
+        onSubmit={(e) => {
+          e.preventDefault();
+          add.mutate(undefined);
+        }}
+      >
+        <Field label="New station">{(p) => <Input {...p} placeholder="Pizza oven" value={name} onChange={(e) => setName(e.target.value)} />}</Field>
+        <Button type="submit" disabled={!name.trim()} loading={add.isPending}>
+          Add station
+        </Button>
+      </form>
+      {add.error || patch.error ? <ErrorNotice error={add.error ?? patch.error} className="mt-4" /> : null}
+    </Dialog>
   );
 }

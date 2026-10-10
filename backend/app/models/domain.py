@@ -276,6 +276,8 @@ class MenuCategory(Base):
     name: Mapped[str]
     sort_order: Mapped[int] = mapped_column(SmallInteger, server_default=text("0"))
     schedule_id: Mapped[uuid.UUID | None]
+    section: Mapped[str] = mapped_column(server_default=text("'food'"))
+    default_station_id: Mapped[uuid.UUID | None]
     created_at: Mapped[datetime] = _created()
     updated_at: Mapped[datetime] = _updated()
     deleted_at: Mapped[datetime | None]

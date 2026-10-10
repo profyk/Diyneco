@@ -105,7 +105,7 @@ async def menu(st: AppState, uow: UnitOfWork, ctx: TenantContext) -> dict[str, A
         )
     return {
         "categories": [
-            {"id": c.id, "name": c.name, "items": by_category[c.id]}
+            {"id": c.id, "name": c.name, "section": c.section, "items": by_category[c.id]}
             for c in await repo.categories()
             if by_category.get(c.id)
         ]

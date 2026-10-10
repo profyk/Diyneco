@@ -53,6 +53,10 @@ async def test_import_checks_then_creates_items_categories_and_options(client, f
     ]
     assert [g["name"] for g in steak["modifier_groups"]] == ["Steak temperature", "Sauce"]
     assert items["Fresh orange juice"]["charge_category"] == "beverage"
+    sections = {
+        c["name"]: c["section"] for c in (await client.get("/menu/categories", headers=gm)).json()["data"]
+    }
+    assert sections == {"Grill": "food", "Drinks": "drinks"}
 
 
 async def test_import_reports_every_problem_and_writes_nothing(client, factory):
@@ -160,3 +164,50 @@ async def test_option_groups_and_choices_can_be_edited_sold_out_and_removed(clie
     assert (await client.delete(f"/menu/modifier-groups/{group['id']}", headers=gm)).status_code == 204
     after = (await client.get(f"/menu/items/{item['id']}", headers=gm)).json()
     assert after["modifier_groups"] == []
+
+
+async def test_standard_layout_sections_and_station_routing(client, factory):
+    hotel = await factory.hotel(rooms=0)
+    gm = await factory.auth(hotel, "general_manager")
+    first = await client.post("/menu/standard-layout", headers=gm)
+    assert first.status_code == 200, first.text
+    body = first.json()
+    assert {"Bar", "Pastry", "Cold kitchen"} <= set(body["created_stations"])
+    cats = {c["name"]: c for c in body["categories"]}
+    stations = {s["name"].lower(): s["id"] for s in body["stations"]}
+    assert cats["Wines"]["section"] == "drinks" and cats["Desserts"]["section"] == "food"
+    assert cats["Desserts"]["default_station_id"] == stations["pastry"]
+    again = (await client.post("/menu/standard-layout", headers=gm)).json()
+    assert again["created_stations"] == [] and again["created_categories"] == []
+
+    # An item without a station is prepared where its category says.
+    r = await client.post(
+        "/menu/items",
+        json={
+            "name": "Malva pudding",
+            "price": {"amount_minor": 6500, "currency": "ZAR"},
+            "category_id": cats["Desserts"]["id"],
+        },
+        headers={**gm, **idem()},
+    )
+    assert r.status_code == 201, r.text and r.json()["station_id"] == stations["pastry"]
+    assert r.json()["station_id"] == stations["pastry"]
+
+    # Routing a category moves its dishes and its future ones.
+    moved = await client.post(
+        f"/menu/categories/{cats['Desserts']['id']}/station",
+        json={"station_id": stations["main kitchen"]},
+        headers=gm,
+    )
+    assert moved.json()["moved_items"] == 1 and moved.json()["default_station_id"] == stations["main kitchen"]
+    item = (await client.get("/menu/items", headers=gm)).json()["data"][0]
+    assert item["station_id"] == stations["main kitchen"]
+
+    # A category without a station needs one on the item.
+    plain = await _category(client, gm, name="Specials")
+    no_station = await client.post(
+        "/menu/items",
+        json={"name": "Soup", "price": {"amount_minor": 5000, "currency": "ZAR"}, "category_id": plain["id"]},
+        headers={**gm, **idem()},
+    )
+    assert no_station.json()["error"]["details"]["fields"][0]["field"] == "station_id"

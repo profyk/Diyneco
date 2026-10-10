@@ -233,14 +233,37 @@ function Room({ onUnpaired }: { onUnpaired: () => void }) {
 function MenuTab({ cart, setCart, enabled, onOrdered }: { cart: CartLine[]; setCart: (c: CartLine[]) => void; enabled: boolean; onOrdered: () => void }) {
   const menu = useQuery({ queryKey: ["menu"], queryFn: () => ok(api.GET("/api/v1/guest/menu")) });
   const [category, setCategory] = useState<string | null>(null);
+  const [section, setSection] = useState<string | null>(null);
   const [picking, setPicking] = useState<MenuItem | null>(null);
   const [review, setReview] = useState(false);
-  const cats = menu.data?.categories ?? [];
+  const all = menu.data?.categories ?? [];
+  // Two levels: Food / Drinks, then that section's categories (Starters, Mains... Coffees, Wines...).
+  const sections = (["food", "drinks"] as const).filter((x) => all.some((c) => c.section === x));
+  const activeSection = section ?? sections[0] ?? "food";
+  const cats = sections.length > 1 ? all.filter((c) => c.section === activeSection) : all;
   const current = cats.find((c) => c.id === category) ?? cats[0];
   const count = cart.reduce((n, l) => n + l.quantity, 0);
   return (
     <div className="flex flex-col md:flex-row">
       <nav className="flex gap-2 overflow-x-auto border-b border-line p-3 md:w-56 md:flex-col md:border-b-0 md:border-r" aria-label="Categories">
+        {sections.length > 1 ? (
+          <div className="flex shrink-0 gap-1 rounded-full bg-surface-2 p-1 md:mb-2" role="tablist" aria-label="Food or drinks">
+            {sections.map((x) => (
+              <button
+                key={x}
+                role="tab"
+                aria-selected={activeSection === x}
+                onClick={() => {
+                  setSection(x);
+                  setCategory(null);
+                }}
+                className={`min-h-12 flex-1 rounded-full px-5 text-lg font-semibold ${activeSection === x ? "bg-brand text-on-brand" : "text-ink"}`}
+              >
+                {x === "food" ? "Food" : "Drinks"}
+              </button>
+            ))}
+          </div>
+        ) : null}
         {cats.map((c) => (
           <Button key={c.id} size="lg" variant={current?.id === c.id ? "primary" : "ghost"} className="shrink-0 justify-start" onClick={() => setCategory(c.id)}>
             {c.name}

@@ -1534,6 +1534,18 @@
       "CategoryCreate": {
         "additionalProperties": false,
         "properties": {
+          "default_station_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Station Id"
+          },
           "name": {
             "maxLength": 120,
             "minLength": 1,
@@ -1551,6 +1563,15 @@
               }
             ],
             "title": "Schedule Id"
+          },
+          "section": {
+            "default": "food",
+            "enum": [
+              "food",
+              "drinks"
+            ],
+            "title": "Section",
+            "type": "string"
           },
           "sort_order": {
             "default": 0,
@@ -1595,6 +1616,18 @@
       },
       "CategoryOut": {
         "properties": {
+          "default_station_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Station Id"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -1616,6 +1649,14 @@
             ],
             "title": "Schedule Id"
           },
+          "section": {
+            "enum": [
+              "food",
+              "drinks"
+            ],
+            "title": "Section",
+            "type": "string"
+          },
           "sort_order": {
             "title": "Sort Order",
             "type": "integer"
@@ -1625,7 +1666,9 @@
           "id",
           "name",
           "sort_order",
-          "schedule_id"
+          "schedule_id",
+          "section",
+          "default_station_id"
         ],
         "title": "CategoryOut",
         "type": "object"
@@ -1633,6 +1676,18 @@
       "CategoryPatch": {
         "additionalProperties": false,
         "properties": {
+          "default_station_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Station Id"
+          },
           "name": {
             "anyOf": [
               {
@@ -1658,6 +1713,21 @@
             ],
             "title": "Schedule Id"
           },
+          "section": {
+            "anyOf": [
+              {
+                "enum": [
+                  "food",
+                  "drinks"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section"
+          },
           "sort_order": {
             "anyOf": [
               {
@@ -1673,6 +1743,85 @@
           }
         },
         "title": "CategoryPatch",
+        "type": "object"
+      },
+      "CategoryRoute": {
+        "additionalProperties": false,
+        "properties": {
+          "station_id": {
+            "format": "uuid",
+            "title": "Station Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "station_id"
+        ],
+        "title": "CategoryRoute",
+        "type": "object"
+      },
+      "CategoryRouted": {
+        "properties": {
+          "default_station_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Station Id"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "moved_items": {
+            "title": "Moved Items",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "schedule_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Schedule Id"
+          },
+          "section": {
+            "enum": [
+              "food",
+              "drinks"
+            ],
+            "title": "Section",
+            "type": "string"
+          },
+          "sort_order": {
+            "title": "Sort Order",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "sort_order",
+          "schedule_id",
+          "section",
+          "default_station_id",
+          "moved_items"
+        ],
+        "title": "CategoryRouted",
         "type": "object"
       },
       "ChangeRequest": {
@@ -3428,11 +3577,16 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "section": {
+            "title": "Section",
+            "type": "string"
           }
         },
         "required": [
           "id",
           "name",
+          "section",
           "items"
         ],
         "title": "GuestMenuCategory",
@@ -5073,9 +5227,16 @@
             "type": "integer"
           },
           "station_id": {
-            "format": "uuid",
-            "title": "Station Id",
-            "type": "string"
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Station Id"
           },
           "vat_rate_bp": {
             "anyOf": [
@@ -5094,7 +5255,6 @@
         "required": [
           "name",
           "price",
-          "station_id",
           "category_id"
         ],
         "title": "ItemCreate",
@@ -10353,6 +10513,46 @@
           "median_seconds"
         ],
         "title": "StaffTimes",
+        "type": "object"
+      },
+      "StandardLayout": {
+        "properties": {
+          "categories": {
+            "items": {
+              "$ref": "#/components/schemas/CategoryOut"
+            },
+            "title": "Categories",
+            "type": "array"
+          },
+          "created_categories": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Created Categories",
+            "type": "array"
+          },
+          "created_stations": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Created Stations",
+            "type": "array"
+          },
+          "stations": {
+            "items": {
+              "$ref": "#/components/schemas/StationOut"
+            },
+            "title": "Stations",
+            "type": "array"
+          }
+        },
+        "required": [
+          "created_stations",
+          "created_categories",
+          "stations",
+          "categories"
+        ],
+        "title": "StandardLayout",
         "type": "object"
       },
       "StationCreate": {
@@ -16345,6 +16545,60 @@
         ]
       }
     },
+    "/api/v1/menu/categories/{category_id}/station": {
+      "post": {
+        "description": "Prepares the category's dishes, current and new, at one kitchen station.",
+        "operationId": "route_category_api_v1_menu_categories__category_id__station_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "category_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Category Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryRoute"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryRouted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Route Category",
+        "tags": [
+          "menu"
+        ]
+      }
+    },
     "/api/v1/menu/items": {
       "get": {
         "operationId": "list_items_api_v1_menu_items_get",
@@ -17175,6 +17429,28 @@
           }
         },
         "summary": "Create Schedule",
+        "tags": [
+          "menu"
+        ]
+      }
+    },
+    "/api/v1/menu/standard-layout": {
+      "post": {
+        "description": "Adds the usual sections, categories and kitchen stations that are missing (D68).",
+        "operationId": "standard_layout_api_v1_menu_standard_layout_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardLayout"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Standard Layout",
         "tags": [
           "menu"
         ]

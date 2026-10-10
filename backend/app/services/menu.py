@@ -148,6 +148,13 @@ async def create_schedule(uow: UnitOfWork, ctx: TenantContext, body: dict[str, A
     return schedule_payload(schedule)
 
 
+async def _check_station(repo: MenuRepository, station_id: uuid.UUID | None) -> None:
+    if station_id is not None:
+        station = await repo.station(station_id)
+        if station is None or not station.is_active:
+            raise AppError("NOT_FOUND", "Unknown station.")
+
+
 async def _check_schedule(repo: MenuRepository, schedule_id: uuid.UUID | None) -> None:
     if schedule_id is not None and await repo.schedule(schedule_id) is None:
         raise AppError("NOT_FOUND", "Unknown schedule.")
@@ -157,7 +164,14 @@ async def _check_schedule(repo: MenuRepository, schedule_id: uuid.UUID | None) -
 
 
 def category_payload(c: MenuCategory) -> dict[str, Any]:
-    return {"id": c.id, "name": c.name, "sort_order": c.sort_order, "schedule_id": c.schedule_id}
+    return {
+        "id": c.id,
+        "name": c.name,
+        "sort_order": c.sort_order,
+        "schedule_id": c.schedule_id,
+        "section": c.section,
+        "default_station_id": c.default_station_id,
+    }
 
 
 async def list_categories(uow: UnitOfWork, ctx: TenantContext) -> list[dict[str, Any]]:
@@ -167,11 +181,14 @@ async def list_categories(uow: UnitOfWork, ctx: TenantContext) -> list[dict[str,
 async def create_category(uow: UnitOfWork, ctx: TenantContext, body: dict[str, Any]) -> dict[str, Any]:
     repo = MenuRepository(uow.session, ctx)
     await _check_schedule(repo, body.get("schedule_id"))
+    await _check_station(repo, body.get("default_station_id"))
     category = await repo.create_category(
         {
             "name": body["name"],
             "sort_order": body.get("sort_order", 0),
             "schedule_id": body.get("schedule_id"),
+            "section": body.get("section", "food"),
+            "default_station_id": body.get("default_station_id"),
         }
     )
     await write_audit(
@@ -195,6 +212,8 @@ async def patch_category(
         raise AppError("NOT_FOUND")
     if "schedule_id" in changes:
         await _check_schedule(repo, changes["schedule_id"])
+    if "default_station_id" in changes:
+        await _check_station(repo, changes["default_station_id"])
     old = {
         k: str(v) if isinstance(v, uuid.UUID) else v for k, v in ((k, getattr(category, k)) for k in changes)
     }
@@ -378,6 +397,12 @@ async def create_item(
     if body["price"]["currency"] != settings.currency:
         raise _field_error("price", "Currency must match the hotel currency.", "AMOUNT_INVALID")
     _check_tags(body.get("dietary_tags"), permissions)
+    station_id = body.get("station_id")
+    if station_id is None:
+        category = await repo.category(body["category_id"])
+        station_id = category.default_station_id if category else None
+        if station_id is None:
+            raise _field_error("station_id", "Choose a kitchen station, or set one on the category.")
     values = {
         "name": body["name"],
         "description": body.get("description"),
@@ -385,7 +410,7 @@ async def create_item(
         "currency": settings.currency,
         "vat_rate_bp": body.get("vat_rate_bp"),
         "charge_category_code": body.get("charge_category", "food"),
-        "station_id": body["station_id"],
+        "station_id": station_id,
         "category_id": body["category_id"],
         "schedule_id": body.get("schedule_id"),
         "dietary_tags": sorted(set(body.get("dietary_tags") or [])),
