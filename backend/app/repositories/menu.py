@@ -282,3 +282,36 @@ class MenuRepository:
             {"h": self.h},
         )
         return [r[0] for r in rows]
+
+    async def update_group(self, group_id: uuid.UUID, values: dict[str, Any]) -> None:
+        await self.s.execute(
+            update(MenuModifierGroup)
+            .where(MenuModifierGroup.hotel_id == self.h, MenuModifierGroup.id == group_id)
+            .values(**values)
+        )
+
+    async def option(self, option_id: uuid.UUID) -> MenuModifier | None:
+        return (
+            await self.s.execute(
+                select(MenuModifier).where(
+                    MenuModifier.hotel_id == self.h,
+                    MenuModifier.id == option_id,
+                    MenuModifier.deleted_at.is_(None),
+                )
+            )
+        ).scalar_one_or_none()
+
+    async def update_option(self, option_id: uuid.UUID, values: dict[str, Any]) -> None:
+        await self.s.execute(
+            update(MenuModifier)
+            .where(MenuModifier.hotel_id == self.h, MenuModifier.id == option_id)
+            .values(**values)
+        )
+
+    async def unlink_group(self, group_id: uuid.UUID) -> None:
+        """Takes a deleted group off every item that offered it."""
+        await self.s.execute(
+            delete(MenuItemModifier).where(
+                MenuItemModifier.hotel_id == self.h, MenuItemModifier.group_id == group_id
+            )
+        )

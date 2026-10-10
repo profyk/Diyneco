@@ -251,3 +251,16 @@ class MenuImportReport(BaseModel):
     errors: list[MenuImportProblem]
     created: int
     new_categories: list[str]
+
+
+class ModifierGroupPatch(StrictModel):
+    name: Name | None = None
+    min_select: Annotated[int, Field(ge=0, le=20, strict=True)] | None = None
+    max_select: Annotated[int, Field(ge=1, le=20, strict=True)] | None = None
+
+
+class ModifierOptionPatch(StrictModel):
+    name: Name | None = None
+    price_delta: Money | None = None
+    is_available: bool | None = None
+    sort_order: SortOrder | None = None

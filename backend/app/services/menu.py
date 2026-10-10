@@ -640,3 +640,111 @@ async def set_item_groups(
     )
     await menu_changed(uow, ctx, repo, "modifiers")
     return await get_item(st, uow, ctx, item_id)
+
+
+# --- Editing option groups and options -----------------------------------------------------
+
+
+async def _group_out(
+    uow: UnitOfWork, ctx: TenantContext, repo: MenuRepository, group_id: uuid.UUID
+) -> dict[str, Any]:
+    groups = await repo.groups([group_id])
+    if not groups:
+        raise AppError("NOT_FOUND")
+    currency = (await _settings(uow, ctx)).currency
+    return group_payload(groups[0], (await repo.options([group_id])).get(group_id, []), currency)
+
+
+async def patch_group(
+    uow: UnitOfWork, ctx: TenantContext, group_id: uuid.UUID, changes: dict[str, Any]
+) -> dict[str, Any]:
+    repo = MenuRepository(uow.session, ctx)
+    groups = await repo.groups([group_id])
+    if not groups:
+        raise AppError("NOT_FOUND")
+    g = groups[0]
+    lo = changes.get("min_select", g.min_select)
+    hi = changes.get("max_select", g.max_select)
+    if lo > hi:
+        raise _field_error("min_select", "The minimum cannot be more than the maximum.")
+    values: dict[str, Any] = {k: changes[k] for k in ("name", "min_select", "max_select") if k in changes}
+    if values:
+        await repo.update_group(group_id, values)
+        await write_audit(
+            uow.session, ctx, "menu.modifier_group_update", "menu_modifier_group", group_id, new_value=values
+        )
+        await menu_changed(uow, ctx, repo, "modifiers")
+    return await _group_out(uow, ctx, repo, group_id)
+
+
+async def delete_group(uow: UnitOfWork, ctx: TenantContext, group_id: uuid.UUID) -> None:
+    repo = MenuRepository(uow.session, ctx)
+    groups = await repo.groups([group_id])
+    if not groups:
+        raise AppError("NOT_FOUND")
+    await repo.unlink_group(group_id)
+    await repo.update_group(group_id, {"deleted_at": datetime.now(UTC)})
+    await write_audit(
+        uow.session,
+        ctx,
+        "menu.modifier_group_delete",
+        "menu_modifier_group",
+        group_id,
+        old_value={"name": groups[0].name},
+    )
+    await menu_changed(uow, ctx, repo, "modifiers")
+
+
+async def patch_option(
+    uow: UnitOfWork,
+    ctx: TenantContext,
+    option_id: uuid.UUID,
+    changes: dict[str, Any],
+    permissions: frozenset[str],
+) -> dict[str, Any]:
+    repo = MenuRepository(uow.session, ctx)
+    option = await repo.option(option_id)
+    if option is None:
+        raise AppError("NOT_FOUND")
+    values: dict[str, Any] = {k: changes[k] for k in ("name", "is_available", "sort_order") if k in changes}
+    if "price_delta" in changes:
+        currency = (await _settings(uow, ctx)).currency
+        if changes["price_delta"]["currency"] != currency:
+            raise _field_error("price_delta", "Currency must match the hotel currency.", "AMOUNT_INVALID")
+        new = changes["price_delta"]["amount_minor"]
+        if new != option.price_delta_minor and "menu.price.update" not in permissions:
+            raise AppError(
+                "PERMISSION_DENIED", "You cannot change prices.", details={"permission": "menu.price.update"}
+            )
+        values["price_delta_minor"] = new
+    if values:
+        await repo.update_option(option_id, values)
+        await write_audit(
+            uow.session,
+            ctx,
+            "menu.price_update" if "price_delta_minor" in values else "menu.modifier_option_update",
+            "menu_modifier",
+            option_id,
+            old_value={"price_delta_minor": option.price_delta_minor, "name": option.name},
+            new_value=values,
+        )
+        await menu_changed(uow, ctx, repo, "modifiers")
+    return await _group_out(uow, ctx, repo, option.group_id)
+
+
+async def delete_option(uow: UnitOfWork, ctx: TenantContext, option_id: uuid.UUID) -> dict[str, Any]:
+    repo = MenuRepository(uow.session, ctx)
+    option = await repo.option(option_id)
+    if option is None:
+        raise AppError("NOT_FOUND")
+    await repo.update_option(option_id, {"deleted_at": datetime.now(UTC)})
+    await write_audit(
+        uow.session,
+        ctx,
+        "menu.modifier_option_delete",
+        "menu_modifier",
+        option_id,
+        old_value={"name": option.name},
+    )
+    await menu_changed(uow, ctx, repo, "modifiers")
+    return await _group_out(uow, ctx, repo, option.group_id)

@@ -6458,6 +6458,52 @@
         "title": "ModifierGroupOut",
         "type": "object"
       },
+      "ModifierGroupPatch": {
+        "additionalProperties": false,
+        "properties": {
+          "max_select": {
+            "anyOf": [
+              {
+                "maximum": 20.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Select"
+          },
+          "min_select": {
+            "anyOf": [
+              {
+                "maximum": 20.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Select"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "title": "ModifierGroupPatch",
+        "type": "object"
+      },
       "ModifierOptionCreate": {
         "additionalProperties": false,
         "properties": {
@@ -6516,6 +6562,60 @@
           "sort_order"
         ],
         "title": "ModifierOptionOut",
+        "type": "object"
+      },
+      "ModifierOptionPatch": {
+        "additionalProperties": false,
+        "properties": {
+          "is_available": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Available"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "price_delta": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Money"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sort_order": {
+            "anyOf": [
+              {
+                "maximum": 1000.0,
+                "minimum": -1000.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sort Order"
+          }
+        },
+        "title": "ModifierOptionPatch",
         "type": "object"
       },
       "Money": {
@@ -16577,6 +16677,94 @@
         ]
       }
     },
+    "/api/v1/menu/modifier-groups/{group_id}": {
+      "delete": {
+        "description": "Removes the group and takes it off every item; past orders keep their choices.",
+        "operationId": "delete_group_api_v1_menu_modifier_groups__group_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Group Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Group",
+        "tags": [
+          "menu"
+        ]
+      },
+      "patch": {
+        "operationId": "patch_group_api_v1_menu_modifier_groups__group_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Group Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModifierGroupPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModifierGroupOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Patch Group",
+        "tags": [
+          "menu"
+        ]
+      }
+    },
     "/api/v1/menu/modifier-groups/{group_id}/options": {
       "post": {
         "operationId": "create_option_api_v1_menu_modifier_groups__group_id__options_post",
@@ -16625,6 +16813,101 @@
           }
         },
         "summary": "Create Option",
+        "tags": [
+          "menu"
+        ]
+      }
+    },
+    "/api/v1/menu/modifier-options/{option_id}": {
+      "delete": {
+        "operationId": "delete_option_api_v1_menu_modifier_options__option_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "option_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Option Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModifierGroupOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Option",
+        "tags": [
+          "menu"
+        ]
+      },
+      "patch": {
+        "description": "Rename, reprice (menu.price.update) or mark a choice sold out; returns its whole group.",
+        "operationId": "patch_option_api_v1_menu_modifier_options__option_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "option_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Option Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModifierOptionPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModifierGroupOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Patch Option",
         "tags": [
           "menu"
         ]

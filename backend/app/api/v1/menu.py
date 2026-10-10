@@ -27,7 +27,9 @@ from app.schemas.menu import (
     ModifierGroupCreate,
     ModifierGroupList,
     ModifierGroupOut,
+    ModifierGroupPatch,
     ModifierOptionCreate,
+    ModifierOptionPatch,
     ScheduleCreate,
     ScheduleList,
     ScheduleOut,
@@ -292,3 +294,36 @@ async def create_option(
         uow, principal.tenant(request), group_id, body.model_dump(), principal.permissions
     )
     return await idem.complete(uow, 201, ModifierGroupOut.model_validate(result).model_dump(mode="json"))
+
+
+@router.patch("/menu/modifier-groups/{group_id}", response_model=ModifierGroupOut)
+async def patch_group(
+    group_id: uuid.UUID, body: ModifierGroupPatch, request: Request, uow: Uow, principal: MenuManage
+) -> dict[str, Any]:
+    changes = patch_changes(body, {"name", "min_select", "max_select"})
+    return await svc.patch_group(uow, principal.tenant(request), group_id, changes)
+
+
+@router.delete("/menu/modifier-groups/{group_id}", status_code=204)
+async def delete_group(group_id: uuid.UUID, request: Request, uow: Uow, principal: MenuManage) -> Response:
+    """Removes the group and takes it off every item; past orders keep their choices."""
+    await svc.delete_group(uow, principal.tenant(request), group_id)
+    return Response(status_code=204)
+
+
+@router.patch("/menu/modifier-options/{option_id}", response_model=ModifierGroupOut)
+async def patch_option(
+    option_id: uuid.UUID, body: ModifierOptionPatch, request: Request, uow: Uow, principal: MenuAvailability
+) -> dict[str, Any]:
+    """Rename, reprice (menu.price.update) or mark a choice sold out; returns its whole group."""
+    changes = patch_changes(body, {"name", "price_delta", "is_available", "sort_order"})
+    if set(changes) - {"is_available"} and "menu.manage" not in principal.permissions:
+        raise AppError("PERMISSION_DENIED", details={"permission": "menu.manage"})
+    return await svc.patch_option(uow, principal.tenant(request), option_id, changes, principal.permissions)
+
+
+@router.delete("/menu/modifier-options/{option_id}", response_model=ModifierGroupOut)
+async def delete_option(
+    option_id: uuid.UUID, request: Request, uow: Uow, principal: MenuManage
+) -> dict[str, Any]:
+    return await svc.delete_option(uow, principal.tenant(request), option_id)

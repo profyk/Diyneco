@@ -1709,6 +1709,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/menu/modifier-groups/{group_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Group
+         * @description Removes the group and takes it off every item; past orders keep their choices.
+         */
+        delete: operations["delete_group_api_v1_menu_modifier_groups__group_id__delete"];
+        options?: never;
+        head?: never;
+        /** Patch Group */
+        patch: operations["patch_group_api_v1_menu_modifier_groups__group_id__patch"];
+        trace?: never;
+    };
     "/api/v1/menu/modifier-groups/{group_id}/options": {
         parameters: {
             query?: never;
@@ -1724,6 +1745,27 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/menu/modifier-options/{option_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Option */
+        delete: operations["delete_option_api_v1_menu_modifier_options__option_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Patch Option
+         * @description Rename, reprice (menu.price.update) or mark a choice sold out; returns its whole group.
+         */
+        patch: operations["patch_option_api_v1_menu_modifier_options__option_id__patch"];
         trace?: never;
     };
     "/api/v1/menu/schedules": {
@@ -4841,6 +4883,15 @@ export interface components {
             /** Options */
             options: components["schemas"]["ModifierOptionOut"][];
         };
+        /** ModifierGroupPatch */
+        ModifierGroupPatch: {
+            /** Max Select */
+            max_select?: number | null;
+            /** Min Select */
+            min_select?: number | null;
+            /** Name */
+            name?: string | null;
+        };
         /** ModifierOptionCreate */
         ModifierOptionCreate: {
             /** Name */
@@ -4866,6 +4917,16 @@ export interface components {
             price_delta: components["schemas"]["Money"];
             /** Sort Order */
             sort_order: number;
+        };
+        /** ModifierOptionPatch */
+        ModifierOptionPatch: {
+            /** Is Available */
+            is_available?: boolean | null;
+            /** Name */
+            name?: string | null;
+            price_delta?: components["schemas"]["Money"] | null;
+            /** Sort Order */
+            sort_order?: number | null;
         };
         /** Money */
         Money: {
@@ -10079,6 +10140,70 @@ export interface operations {
             };
         };
     };
+    delete_group_api_v1_menu_modifier_groups__group_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                group_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_group_api_v1_menu_modifier_groups__group_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                group_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModifierGroupPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModifierGroupOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     create_option_api_v1_menu_modifier_groups__group_id__options_post: {
         parameters: {
             query?: never;
@@ -10096,6 +10221,72 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModifierGroupOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_option_api_v1_menu_modifier_options__option_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                option_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModifierGroupOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_option_api_v1_menu_modifier_options__option_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                option_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModifierOptionPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

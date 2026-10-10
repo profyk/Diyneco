@@ -552,23 +552,7 @@ function GroupsDialog({ onClose }: { onClose: () => void }) {
       ) : groups.data?.data.length ? (
         <ul className="mb-6 divide-y divide-line rounded-lg border border-line">
           {groups.data.data.map((grp) => (
-            <li key={grp.id} className="px-4 py-3">
-              <p className="font-medium text-ink">
-                {grp.name}{" "}
-                <span className="text-sm font-normal text-muted">
-                  {grp.min_select
-                    ? `choose ${grp.min_select}${grp.max_select > grp.min_select ? ` to ${grp.max_select}` : ""}`
-                    : `optional, up to ${grp.max_select}`}
-                </span>
-              </p>
-              <p className="text-sm text-muted">
-                {grp.options.length
-                  ? grp.options
-                      .map((o) => (o.price_delta.amount_minor ? `${o.name} (+${formatMoney(o.price_delta)})` : o.name))
-                      .join(", ")
-                  : "No options yet"}
-              </p>
-            </li>
+            <GroupRow key={grp.id} group={grp} />
           ))}
         </ul>
       ) : (
@@ -1009,5 +993,129 @@ function MenuImportDialog({ onClose }: { onClose: () => void }) {
       ) : null}
       {check.error || commit.error ? <ErrorNotice error={check.error ?? commit.error} className="mt-4" /> : null}
     </Dialog>
+  );
+}
+
+type OptionRow = { id: string; name: string; price_delta: { amount_minor: number; currency: string }; is_available: boolean };
+
+/** One option group with inline edits: rules, choices, prices, sold out, remove. */
+function GroupRow({
+  group,
+}: {
+  group: { id: string; name: string; min_select: number; max_select: number; options: OptionRow[] };
+}) {
+  const { api, can } = useSession();
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(group.name);
+  const [min, setMin] = useState(String(group.min_select));
+  const [max, setMax] = useState(String(group.max_select));
+  const [prices, setPrices] = useState<Record<string, string>>({});
+  const saveGroup = useAction(
+    () =>
+      ok(
+        api.PATCH("/api/v1/menu/modifier-groups/{group_id}", {
+          params: { path: { group_id: group.id } },
+          body: { name: name.trim(), min_select: Number(min), max_select: Number(max) },
+        }),
+      ),
+    { success: "Option group saved.", onDone: () => setEditing(false) },
+  );
+  const removeGroup = useAction(
+    () => ok(api.DELETE("/api/v1/menu/modifier-groups/{group_id}", { params: { path: { group_id: group.id } } })),
+    { success: `${group.name} removed from the menu.` },
+  );
+  const patchOption = useAction(
+    ({ id, body }: { id: string; body: { is_available?: boolean; price_delta?: { amount_minor: number; currency: string } } }) =>
+      ok(api.PATCH("/api/v1/menu/modifier-options/{option_id}", { params: { path: { option_id: id } }, body })),
+  );
+  const removeOption = useAction((id: string) =>
+    ok(api.DELETE("/api/v1/menu/modifier-options/{option_id}", { params: { path: { option_id: id } } })),
+  );
+  const error = saveGroup.error ?? removeGroup.error ?? patchOption.error ?? removeOption.error;
+  const rule = group.min_select
+    ? `required, choose ${group.min_select}${group.max_select > group.min_select ? ` to ${group.max_select}` : ""}`
+    : `optional, up to ${group.max_select}`;
+  return (
+    <li className="px-4 py-3">
+      {editing ? (
+        <div className="flex flex-wrap items-end gap-3">
+          <Field label="Name">{(p) => <Input {...p} value={name} onChange={(e) => setName(e.target.value)} />}</Field>
+          <Field label="At least">{(p) => <Input {...p} type="number" min={0} max={20} className="w-20" value={min} onChange={(e) => setMin(e.target.value)} />}</Field>
+          <Field label="At most">{(p) => <Input {...p} type="number" min={1} max={20} className="w-20" value={max} onChange={(e) => setMax(e.target.value)} />}</Field>
+          <Button size="sm" disabled={!name.trim() || Number(min) > Number(max)} loading={saveGroup.isPending} onClick={() => saveGroup.mutate(undefined)}>
+            Save
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>
+            Cancel
+          </Button>
+        </div>
+      ) : (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="font-medium text-ink">
+            {group.name} <span className="text-sm font-normal text-muted">({rule})</span>
+          </p>
+          {can("menu.manage") ? (
+            <div className="flex gap-1">
+              <Button size="sm" variant="ghost" onClick={() => setEditing(true)}>
+                Edit
+              </Button>
+              <Button size="sm" variant="ghost" loading={removeGroup.isPending} onClick={() => removeGroup.mutate(undefined)}>
+                Delete group
+              </Button>
+            </div>
+          ) : null}
+        </div>
+      )}
+      {group.options.length ? (
+        <ul className="mt-2 flex flex-col gap-1">
+          {group.options.map((o) => {
+            const typed = prices[o.id];
+            const minor = typed === undefined ? null : parseAmount(typed || "0");
+            return (
+              <li key={o.id} className="flex flex-wrap items-center gap-2 text-sm">
+                <span className={o.is_available ? "flex-1 text-ink" : "flex-1 text-muted line-through"}>{o.name}</span>
+                {can("menu.manage") ? (
+                  <>
+                    <Input
+                      aria-label={`Extra charge for ${o.name}`}
+                      inputMode="decimal"
+                      className="w-24"
+                      value={typed ?? (o.price_delta.amount_minor / 100).toFixed(2)}
+                      onChange={(e) => setPrices({ ...prices, [o.id]: e.target.value })}
+                    />
+                    {typed !== undefined && minor !== null && minor !== o.price_delta.amount_minor ? (
+                      <Button
+                        size="sm"
+                        onClick={() =>
+                          patchOption.mutate(
+                            { id: o.id, body: { price_delta: { amount_minor: minor, currency: o.price_delta.currency } } },
+                            { onSuccess: () => setPrices((x) => ({ ...x, [o.id]: undefined as never })) },
+                          )
+                        }
+                      >
+                        Save price
+                      </Button>
+                    ) : null}
+                  </>
+                ) : (
+                  <span className="text-muted">{o.price_delta.amount_minor ? `+${formatMoney(o.price_delta)}` : "no charge"}</span>
+                )}
+                <Button size="sm" variant="ghost" onClick={() => patchOption.mutate({ id: o.id, body: { is_available: !o.is_available } })}>
+                  {o.is_available ? "Sold out" : "Back in stock"}
+                </Button>
+                {can("menu.manage") ? (
+                  <Button size="sm" variant="ghost" aria-label={`Remove ${o.name}`} onClick={() => removeOption.mutate(o.id)}>
+                    Remove
+                  </Button>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <p className="mt-1 text-sm text-muted">No choices yet: add them below.</p>
+      )}
+      {error ? <ErrorNotice error={error} className="mt-2" /> : null}
+    </li>
   );
 }

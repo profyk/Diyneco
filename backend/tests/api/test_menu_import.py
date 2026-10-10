@@ -102,3 +102,61 @@ async def test_ingredients_and_deleting_a_category_with_its_items(client, factor
     assert gone.status_code == 204, gone.text
     assert (await client.get("/menu/items", headers=gm)).json()["data"] == []
     assert (await client.get("/menu/categories", headers=gm)).json()["data"] == []
+
+
+async def test_option_groups_and_choices_can_be_edited_sold_out_and_removed(client, factory):
+    hotel = await factory.hotel(rooms=0)
+    gm = await factory.auth(hotel, "general_manager")
+    group = (
+        await client.post(
+            "/menu/modifier-groups",
+            json={"name": "Extras", "min_select": 0, "max_select": 3},
+            headers={**gm, **idem()},
+        )
+    ).json()
+    cheese = (
+        await client.post(
+            f"/menu/modifier-groups/{group['id']}/options",
+            json={"name": "Cheese", "price_delta": {"amount_minor": 1500, "currency": "ZAR"}},
+            headers={**gm, **idem()},
+        )
+    ).json()["options"][0]
+    cat = await _category(client, gm)
+    item = await _item(client, gm, hotel, cat["id"])
+    await client.put(
+        f"/menu/items/{item['id']}/modifier-groups", json={"group_ids": [group["id"]]}, headers=gm
+    )
+
+    renamed = await client.patch(
+        f"/menu/modifier-groups/{group['id']}", json={"name": "Add-ons", "max_select": 2}, headers=gm
+    )
+    assert renamed.json()["name"] == "Add-ons" and renamed.json()["max_select"] == 2
+    bad = await client.patch(f"/menu/modifier-groups/{group['id']}", json={"min_select": 3}, headers=gm)
+    assert bad.json()["error"]["code"] == "VALIDATION_FAILED"
+
+    repriced = await client.patch(
+        f"/menu/modifier-options/{cheese['id']}",
+        json={"price_delta": {"amount_minor": 2000, "currency": "ZAR"}},
+        headers=gm,
+    )
+    assert repriced.json()["options"][0]["price_delta"]["amount_minor"] == 2000
+    # The kitchen may mark a choice sold out but not reprice it.
+    cook = await factory.auth(hotel, "kitchen_manager")
+    sold_out = await client.patch(
+        f"/menu/modifier-options/{cheese['id']}", json={"is_available": False}, headers=cook
+    )
+    assert sold_out.status_code == 200, (
+        sold_out.text and sold_out.json()["options"][0]["is_available"] is False
+    )
+    no_price = await client.patch(
+        f"/menu/modifier-options/{cheese['id']}",
+        json={"price_delta": {"amount_minor": 1, "currency": "ZAR"}},
+        headers=cook,
+    )
+    assert no_price.status_code == 403
+
+    left = await client.delete(f"/menu/modifier-options/{cheese['id']}", headers=gm)
+    assert left.json()["options"] == []
+    assert (await client.delete(f"/menu/modifier-groups/{group['id']}", headers=gm)).status_code == 204
+    after = (await client.get(f"/menu/items/{item['id']}", headers=gm)).json()
+    assert after["modifier_groups"] == []
