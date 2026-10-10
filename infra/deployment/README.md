@@ -14,7 +14,7 @@ recovery is available on it). Everything below works the same on any container h
 | Database | Supabase Postgres 15+ | Run `infra/db/bootstrap.sql` once as the Supabase `postgres` role, then `alembic upgrade head` as `diyneco_owner`. Schema `app` must never be exposed through the Supabase REST API. |
 | Storage | Supabase Storage, private buckets `hotel-assets` and `invoices` | Second, separately keyed copy in another region (operations runbook, backups). |
 | Redis | any managed Redis 7 | Rate limits across instances; required outside development. |
-| Web apps | Next.js (Merchant, Kitchen, Admin) | Static hosting or Node; they only need `NEXT_PUBLIC_API_URL`. |
+| Web apps | Next.js (Merchant, Kitchen, Admin, Guest, Room service) | Node hosting; they need `NEXT_PUBLIC_API_URL` and, when files are not on Supabase, `NEXT_PUBLIC_STORAGE_URL` (both feed the Content-Security-Policy). Set the API's `MERCHANT_APP_URL` to the Merchant app's address so account emails link to it. |
 | Mobile apps | Expo / EAS (Guest, Room service) | Build profiles `staging` and `production`, each with its API URL. |
 
 ## Environments
