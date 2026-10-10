@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, StringConstraints, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
 
 from app.schemas.common import Money, Name, StrictModel
 
@@ -67,7 +67,7 @@ class Window(StrictModel):
     days: Annotated[list[Annotated[int, Field(ge=1, le=7)]], Field(min_length=1, max_length=7)]
     from_: Annotated[HHMM, Field(alias="from")]
     to: HHMM
-    model_config = {"serialize_by_alias": True}
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True, serialize_by_alias=True)
 
     @field_validator("days")
     @classmethod
