@@ -1171,6 +1171,43 @@ export interface paths {
         patch: operations["patch_guest_api_v1_guests__guest_id__patch"];
         trace?: never;
     };
+    "/api/v1/guests/{guest_id}/anonymise": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Anonymise Guest */
+        post: operations["anonymise_guest_api_v1_guests__guest_id__anonymise_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/guests/{guest_id}/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Guest
+         * @description POPIA access request: everything held about this guest.
+         */
+        get: operations["export_guest_api_v1_guests__guest_id__export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/health": {
         parameters: {
             query?: never;
@@ -2791,6 +2828,21 @@ export interface components {
             new_hotels: number;
             /** Orders */
             orders: number;
+        };
+        /** AnonymiseOut */
+        AnonymiseOut: {
+            /** Anonymised */
+            anonymised: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+        };
+        /** AnonymiseRequest */
+        AnonymiseRequest: {
+            /** Reason */
+            reason: string;
         };
         /** ApiKeyCreate */
         ApiKeyCreate: {
@@ -8522,6 +8574,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GuestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    anonymise_guest_api_v1_guests__guest_id__anonymise_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                guest_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnonymiseRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnonymiseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_guest_api_v1_guests__guest_id__export_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                guest_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Validation Error */

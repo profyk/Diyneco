@@ -162,3 +162,12 @@ class StayDatesPatch(StrictModel):
 class StayMove(StrictModel):
     room_id: uuid.UUID
     reason: Reason | None = None
+
+
+class AnonymiseRequest(StrictModel):
+    reason: Annotated[str, StringConstraints(min_length=3, max_length=300)]
+
+
+class AnonymiseOut(BaseModel):
+    id: uuid.UUID
+    anonymised: bool

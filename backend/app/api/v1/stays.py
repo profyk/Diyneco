@@ -12,6 +12,8 @@ from app.api.deps import IdemUser, Principal, StepUp, Uow, require_permission
 from app.api.http import IfMatch, parse_if_match, patch_changes, with_etag
 from app.api.pagination import DEFAULT_LIMIT, Cursor, Limit, decode_cursor, page
 from app.schemas.stays import (
+    AnonymiseOut,
+    AnonymiseRequest,
     BillingProfileCreate,
     BillingProfileList,
     BillingProfileOut,
@@ -27,12 +29,14 @@ from app.schemas.stays import (
     StayStatus,
     WalkIn,
 )
+from app.services import privacy
 from app.services import stays as svc
 
 router = APIRouter(tags=["stays"])
 
 GuestsRead = Annotated[Principal, Depends(require_permission("guests.read"))]
 GuestsManage = Annotated[Principal, Depends(require_permission("guests.manage"))]
+PrivacyManage = Annotated[Principal, Depends(require_permission("privacy.manage"))]
 BillingManage = Annotated[Principal, Depends(require_permission("billing.manage"))]
 StaysRead = Annotated[Principal, Depends(require_permission("stays.read"))]
 StaysManage = Annotated[Principal, Depends(require_permission("stays.manage"))]
@@ -60,6 +64,28 @@ async def create_guest(
 async def get_guest(guest_id: uuid.UUID, request: Request, uow: Uow, principal: GuestsRead) -> dict[str, Any]:
     """Profile and stay history."""
     return await svc.get_guest(uow, principal.tenant(request), guest_id)
+
+
+@router.get("/guests/{guest_id}/export")
+async def export_guest(
+    guest_id: uuid.UUID, request: Request, uow: Uow, principal: PrivacyManage, _s: StepUp
+) -> dict[str, Any]:
+    """POPIA access request: everything held about this guest."""
+    return await privacy.export_guest(uow, principal.tenant(request), guest_id)
+
+
+@router.post("/guests/{guest_id}/anonymise", response_model=AnonymiseOut)
+async def anonymise_guest(
+    idem: IdemUser,
+    guest_id: uuid.UUID,
+    body: AnonymiseRequest,
+    request: Request,
+    uow: Uow,
+    principal: PrivacyManage,
+    _s: StepUp,
+) -> Response:
+    result = await privacy.anonymise_guest(uow, principal.tenant(request), guest_id, reason=body.reason)
+    return await idem.complete(uow, 200, AnonymiseOut.model_validate(result).model_dump(mode="json"))
 
 
 @router.patch("/guests/{guest_id}", response_model=GuestOut)

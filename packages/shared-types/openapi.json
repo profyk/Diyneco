@@ -619,6 +619,41 @@
         "title": "AnalyticsDay",
         "type": "object"
       },
+      "AnonymiseOut": {
+        "properties": {
+          "anonymised": {
+            "title": "Anonymised",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "anonymised"
+        ],
+        "title": "AnonymiseOut",
+        "type": "object"
+      },
+      "AnonymiseRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "reason": {
+            "maxLength": 300,
+            "minLength": 3,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "AnonymiseRequest",
+        "type": "object"
+      },
       "ApiKeyCreate": {
         "additionalProperties": false,
         "properties": {
@@ -14066,6 +14101,105 @@
           }
         },
         "summary": "Patch Guest",
+        "tags": [
+          "stays"
+        ]
+      }
+    },
+    "/api/v1/guests/{guest_id}/anonymise": {
+      "post": {
+        "operationId": "anonymise_guest_api_v1_guests__guest_id__anonymise_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "guest_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Guest Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnonymiseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnonymiseOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Anonymise Guest",
+        "tags": [
+          "stays"
+        ]
+      }
+    },
+    "/api/v1/guests/{guest_id}/export": {
+      "get": {
+        "description": "POPIA access request: everything held about this guest.",
+        "operationId": "export_guest_api_v1_guests__guest_id__export_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "guest_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Guest Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Export Guest Api V1 Guests  Guest Id  Export Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Export Guest",
         "tags": [
           "stays"
         ]

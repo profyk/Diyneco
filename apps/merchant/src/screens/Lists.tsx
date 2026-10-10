@@ -1,16 +1,35 @@
 "use client";
 
 import { formatDate, formatMoney, formatTime, ok } from "@diyneco/api-client";
-import { Badge, Card, EmptyState, ErrorNotice, Input, PageHeader, Select, Skeleton, Table, Td, Th } from "@diyneco/shared-ui";
+import {
+  Badge,
+  Button,
+  Card,
+  Dialog,
+  EmptyState,
+  ErrorNotice,
+  Field,
+  Input,
+  PageHeader,
+  Select,
+  Skeleton,
+  Table,
+  Td,
+  Textarea,
+  Th,
+  useToast,
+} from "@diyneco/shared-ui";
 import { useQuery } from "@tanstack/react-query";
 import { useDeferredValue, useState } from "react";
 
-import { isoDay, label } from "../common";
+import { isoDay, label, useAction } from "../common";
 import { useSession } from "../session";
 
 export function Guests() {
-  const { api } = useSession();
+  const { api, can } = useSession();
+  const privacy = can("privacy.manage");
   const [q, setQ] = useState("");
+  const [forgetting, setForgetting] = useState<{ id: string; name: string } | null>(null);
   const query = useDeferredValue(q.trim());
   const guests = useQuery({
     queryKey: ["guests", query],
@@ -42,6 +61,7 @@ export function Guests() {
                 <Th>Email</Th>
                 <Th>Phone</Th>
                 <Th>First stay</Th>
+                {privacy ? <Th className="text-right">Personal data</Th> : null}
               </tr>
             </thead>
             <tbody>
@@ -53,13 +73,85 @@ export function Guests() {
                   <Td className="text-muted">{g.email ?? "–"}</Td>
                   <Td className="text-muted">{g.phone ?? "–"}</Td>
                   <Td className="text-muted">{formatDate(g.created_at)}</Td>
+                  {privacy ? (
+                    <Td className="text-right whitespace-nowrap">
+                      <ExportButton guestId={g.id} />
+                      {g.anonymised ? null : (
+                        <Button variant="ghost" size="sm" onClick={() => setForgetting({ id: g.id, name: g.name })}>
+                          Anonymise
+                        </Button>
+                      )}
+                    </Td>
+                  ) : null}
                 </tr>
               ))}
             </tbody>
           </Table>
         )}
       </Card>
+      {forgetting ? <AnonymiseDialog guest={forgetting} onClose={() => setForgetting(null)} /> : null}
     </>
+  );
+}
+
+/** POPIA access request: downloads everything held on the guest as a JSON file (step-up). */
+function ExportButton({ guestId }: { guestId: string }) {
+  const { api } = useSession();
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  async function download() {
+    setBusy(true);
+    try {
+      const data = await ok(api.GET("/api/v1/guests/{guest_id}/export", { params: { path: { guest_id: guestId } } }));
+      const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `guest-data-${guestId}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      toast("crit", e instanceof Error ? e.message : "The export failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <Button variant="ghost" size="sm" loading={busy} onClick={download}>
+      Export
+    </Button>
+  );
+}
+
+function AnonymiseDialog({ guest, onClose }: { guest: { id: string; name: string }; onClose: () => void }) {
+  const { api } = useSession();
+  const [reason, setReason] = useState("");
+  const run = useAction(
+    () =>
+      ok(
+        api.POST("/api/v1/guests/{guest_id}/anonymise", {
+          params: { path: { guest_id: guest.id } },
+          body: { reason: reason.trim() },
+        }),
+      ),
+    { success: "Guest anonymised.", onDone: onClose },
+  );
+  return (
+    <Dialog
+      open
+      onClose={onClose}
+      title={`Anonymise ${guest.name}?`}
+      description="Name, email, phone, ID number and order notes are removed for good. Amounts and issued tax invoices are kept as the law requires. This cannot be undone."
+      footer={
+        <Button variant="danger" disabled={reason.trim().length < 3} loading={run.isPending} onClick={() => run.mutate(undefined)}>
+          Anonymise
+        </Button>
+      }
+    >
+      <Field label="Reason" hint="For example the guest's request by email, with the date.">
+        {(p) => <Textarea {...p} rows={3} maxLength={300} value={reason} onChange={(e) => setReason(e.target.value)} />}
+      </Field>
+      {run.error ? <ErrorNotice error={run.error} className="mt-4" /> : null}
+    </Dialog>
   );
 }
 

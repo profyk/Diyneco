@@ -33,7 +33,7 @@ from app.db.session import Database, UnitOfWork, set_tenant
 from app.models.events import IdempotencyKey
 from app.notifications.email import Mailer, build_email_provider
 from app.realtime.bus import Event, EventBus
-from app.services import daily_close_job, integrations, webhook_delivery
+from app.services import daily_close_job, integrations, privacy, webhook_delivery
 from app.services.admin import OWNER_EMAILS_SQL
 
 log = logging.getLogger("diyneco.worker")
@@ -135,6 +135,7 @@ class Worker:
                     last_maintenance = time.monotonic()
                 if self.mailer is not None and time.monotonic() - last_jobs > JOBS_EVERY_S:
                     await daily_close_job.send_daily_closes(self.db.sessionmaker, self.mailer)
+                    await privacy.run_retention(self.db.sessionmaker)
                     last_jobs = time.monotonic()
                 drained = await drain_once(self.db.sessionmaker, self.bus)
                 if self.http is not None and self.keyring is not None:
