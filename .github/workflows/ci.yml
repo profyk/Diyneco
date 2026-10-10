@@ -121,3 +121,23 @@ jobs:
       - run: pnpm gen:types
       - name: Fail if generated files changed
         run: git diff --exit-code -- packages/shared-types
+
+  web:
+    name: Web apps (type-check and production build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      NEXT_PUBLIC_API_URL: https://api.example.invalid
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Type-check shared packages and apps
+        run: pnpm -r --filter "./packages/*" --filter "./apps/*" --if-present typecheck
+      - name: Build every app
+        run: pnpm -r --filter "./apps/*" --if-present build
