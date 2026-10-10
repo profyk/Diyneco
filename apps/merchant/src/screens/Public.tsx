@@ -142,8 +142,20 @@ export function ForgotPassword() {
   );
 }
 
+/** The token from an email link, or a field to paste the code from the email. */
+function useEmailCode(): [string, ReactNode] {
+  const fromLink = useSearchParams().get("token") ?? "";
+  const [typed, setTyped] = useState("");
+  const field = fromLink ? null : (
+    <Field label="Code from the email" hint="Paste the code exactly as it appears in the email.">
+      {(p) => <Input {...p} autoComplete="one-time-code" spellCheck={false} value={typed} onChange={(e) => setTyped(e.target.value)} />}
+    </Field>
+  );
+  return [fromLink || typed.trim(), field];
+}
+
 export function ResetPassword() {
-  const token = useSearchParams().get("token") ?? "";
+  const [token, codeField] = useEmailCode();
   const [password, setPassword] = useState("");
   const s = useSubmit(() => publicPost("/auth/password/reset", { token, new_password: password }));
   return (
@@ -154,6 +166,7 @@ export function ResetPassword() {
         </p>
       ) : (
         <form onSubmit={s.submit} className="flex flex-col gap-4">
+          {codeField}
           <Field label="New password" hint="At least 12 characters.">
             {(p) => <Input {...p} type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />}
           </Field>
@@ -168,7 +181,7 @@ export function ResetPassword() {
 }
 
 export function AcceptInvite() {
-  const token = useSearchParams().get("token") ?? "";
+  const [token, codeField] = useEmailCode();
   const [f, setF] = useState({ name: "", password: "", pin: "" });
   const s = useSubmit(() => publicPost(`/auth/invitations/${encodeURIComponent(token)}/accept`, f));
   return (
@@ -179,6 +192,7 @@ export function AcceptInvite() {
         </p>
       ) : (
         <form onSubmit={s.submit} className="flex flex-col gap-4">
+          {codeField}
           <Field label="Your name">{(p) => <Input {...p} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />}</Field>
           <Field label="Password" hint="At least 12 characters.">
             {(p) => <Input {...p} type="password" autoComplete="new-password" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} />}
@@ -189,6 +203,28 @@ export function AcceptInvite() {
           {s.error ? <ErrorNotice error={s.error} /> : null}
           <Button type="submit" loading={s.busy} disabled={!token || !f.name || f.password.length < 12 || !/^\d{4,6}$/.test(f.pin)}>
             Join
+          </Button>
+        </form>
+      )}
+    </Panel>
+  );
+}
+
+export function VerifyEmail() {
+  const [token, codeField] = useEmailCode();
+  const s = useSubmit(() => publicPost("/auth/email/verify", { token }));
+  return (
+    <Panel title="Confirm your email address">
+      {s.done ? (
+        <p className="text-sm text-ink">
+          Thank you, your email address is confirmed. <a className="text-blue hover:underline" href="/">Continue</a>
+        </p>
+      ) : (
+        <form onSubmit={s.submit} className="flex flex-col gap-4">
+          {codeField ?? <p className="text-sm text-muted">Confirm the address this link was sent to.</p>}
+          {s.error ? <ErrorNotice error={s.error} /> : null}
+          <Button type="submit" loading={s.busy} disabled={!token}>
+            Confirm email
           </Button>
         </form>
       )}

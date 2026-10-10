@@ -263,7 +263,8 @@ async def invite(
         body=(
             f"{ctx.actor_label} invited you to join {hotel_name} on Diyneco as "
             f"{', '.join(r.name for r in roles)}.\n\n"
-            f"Use this invitation code within 7 days to set up your account:\n\n{token}\n\n"
+            + st.settings.merchant_link("/invite", token)
+            + f" this invitation code within 7 days to set up your account:\n\n{token}\n\n"
             "If you were not expecting this, ignore this email."
         ),
         subject_ref={"invitation_id": str(inv.id)},

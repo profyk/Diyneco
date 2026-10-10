@@ -688,7 +688,8 @@ async def forgot_password(st: AppState, uow: UnitOfWork, email: str) -> None:
         template="password_reset",
         to=user.email,
         subject="Reset your Diyneco password",
-        body=f"Use this code within 30 minutes to choose a new password:\n\n{token}\n\n"
+        body=st.settings.merchant_link("/reset-password", token)
+        + f" this code within 30 minutes to choose a new password:\n\n{token}\n\n"
         "If you did not ask for this, ignore this email.",
     )
 
@@ -743,7 +744,8 @@ async def send_verification_email(
         template="email_verify",
         to=user.email,
         subject="Confirm your email for Diyneco",
-        body=f"Use this code within 24 hours to confirm your email address:\n\n{token}\n",
+        body=st.settings.merchant_link("/verify-email", token)
+        + f" this code within 24 hours to confirm your email address:\n\n{token}\n",
     )
 
 

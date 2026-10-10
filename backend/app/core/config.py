@@ -7,6 +7,7 @@ import base64
 import json
 from functools import lru_cache
 from typing import Annotated, Literal
+from urllib.parse import quote
 
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
@@ -21,6 +22,8 @@ class Settings(BaseSettings):
     app_env: Literal["development", "staging", "production"]
     api_base_url: str
     cors_allowed_origins: Annotated[list[str], NoDecode] = Field(default_factory=list)
+    # Public address of the Merchant web app; account emails link to its pages when set.
+    merchant_app_url: str | None = None
     log_level: str = "info"
 
     # Database
@@ -57,6 +60,14 @@ class Settings(BaseSettings):
     sentry_dsn: str | None = None
     sentry_traces_sample_rate: float = 0.0
     release: str | None = None  # set by the deployment (git sha)
+
+    def merchant_link(self, path: str, token: str) -> str:
+        """The start of an email sentence: a link that fills in `token` when the app URL is set,
+        followed by "Or use" (the code still follows), else just "Use"."""
+        if not self.merchant_app_url:
+            return "Use"
+        url = f"{self.merchant_app_url.rstrip('/')}{path}?token={quote(token)}"
+        return f"Open this link:\n\n{url}\n\nOr use"
 
     @field_validator("cors_allowed_origins", mode="before")
     @classmethod

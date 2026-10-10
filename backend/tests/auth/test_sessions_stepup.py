@@ -394,3 +394,20 @@ async def test_email_verification(client, factory, mailbox, owner_engine):
             await conn.execute(text("SELECT email_verified_at FROM app.users WHERE email = :e"), {"e": email})
         ).scalar_one()
     assert verified is not None
+
+
+async def test_account_emails_link_to_the_merchant_app_when_configured(
+    client, factory, mailbox, app_state, monkeypatch
+):
+    hotel = await factory.hotel(roles=("receptionist",))
+    user = hotel.users["receptionist"]
+    monkeypatch.setattr(app_state.settings, "merchant_app_url", "https://hotel.example.com/")
+    await client.post("/auth/password/forgot", json={"email": user.email})
+    body = [m for m in mailbox.sent if m.to == user.email and m.template == "password_reset"][-1].body
+    link = next(w for w in body.split() if w.startswith("https://"))
+    assert link.startswith("https://hotel.example.com/reset-password?token=")
+    token = link.split("token=", 1)[1]
+    assert token in body.split()  # the code is still given for typing in by hand
+    new_password = f"New-Password-{secrets.token_hex(4)}"
+    r = await client.post("/auth/password/reset", json={"token": token, "new_password": new_password})
+    assert r.status_code == 204, r.text
