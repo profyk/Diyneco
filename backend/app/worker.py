@@ -26,14 +26,16 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.config import get_settings
 from app.core.crypto import LocalKms
+from app.core.jwt import JwtKeys
 from app.core.logging import configure_logging
 from app.core.monitoring import init_monitoring
 from app.core.state import Keyring
 from app.db.session import Database, UnitOfWork, set_tenant
+from app.integrations.storage import Storage, build_storage
 from app.models.events import IdempotencyKey
 from app.notifications.email import Mailer, build_email_provider
 from app.realtime.bus import Event, EventBus
-from app.services import daily_close_job, integrations, privacy, webhook_delivery
+from app.services import daily_close_job, images, integrations, privacy, webhook_delivery
 from app.services.admin import OWNER_EMAILS_SQL
 
 log = logging.getLogger("diyneco.worker")
@@ -42,6 +44,7 @@ BATCH = 100
 POLL_S = 0.5
 MAINTENANCE_EVERY_S = 3600
 JOBS_EVERY_S = 300
+IMAGES_EVERY_S = 60
 
 
 async def drain_once(
@@ -93,6 +96,8 @@ class Worker:
     keyring: Keyring | None = None
     mailer: Mailer | None = None
     http: httpx.AsyncClient | None = None
+    storage: Storage | None = None
+    assets_bucket: str = "hotel-assets"
     _stop: asyncio.Event = field(default_factory=asyncio.Event)
 
     def stop(self) -> None:
@@ -128,6 +133,7 @@ class Worker:
     async def run(self) -> None:
         last_maintenance = 0.0
         last_jobs = 0.0
+        last_images = 0.0
         while not self._stop.is_set():
             try:
                 if time.monotonic() - last_maintenance > MAINTENANCE_EVERY_S:
@@ -137,6 +143,9 @@ class Worker:
                     await daily_close_job.send_daily_closes(self.db.sessionmaker, self.mailer)
                     await privacy.run_retention(self.db.sessionmaker)
                     last_jobs = time.monotonic()
+                if self.storage is not None and time.monotonic() - last_images > IMAGES_EVERY_S:
+                    await images.process_pending(self.db.sessionmaker, self.storage, self.assets_bucket)
+                    last_images = time.monotonic()
                 drained = await drain_once(self.db.sessionmaker, self.bus)
                 if self.http is not None and self.keyring is not None:
                     await webhook_delivery.deliver_due(
@@ -169,6 +178,13 @@ async def _main() -> None:
         keyring=Keyring(kms=kms, db=db),
         mailer=Mailer(provider=provider, sender=settings.email_from),
         http=httpx.AsyncClient(),
+        storage=build_storage(
+            settings,
+            JwtKeys.from_config(
+                settings.jwt_signing_keys_json, settings.jwt_active_kid, settings.api_base_url
+            ),
+        ),
+        assets_bucket=settings.storage_bucket_assets,
     )
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGINT, signal.SIGTERM):

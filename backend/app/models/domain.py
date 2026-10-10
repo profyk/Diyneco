@@ -297,6 +297,7 @@ class MenuItem(Base):
     dietary_tags: Mapped[list[str]] = text_array()
     allergens: Mapped[list[str]] = text_array()
     image_path: Mapped[str | None]
+    image_variants: Mapped[dict[str, str] | None] = mapped_column(JSONB)
     sort_order: Mapped[int] = mapped_column(SmallInteger, server_default=text("0"))
     created_at: Mapped[datetime] = _created()
     updated_at: Mapped[datetime] = _updated()

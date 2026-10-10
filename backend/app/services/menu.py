@@ -28,6 +28,7 @@ from app.models.domain import (
 from app.realtime.outbox import emit, hotel_channel
 from app.repositories.hotels import HotelRepository
 from app.repositories.menu import MenuRepository
+from app.services import images as images_svc
 from app.services import schedules
 
 CERTIFIED_TAGS = {"halaal", "kosher"}
@@ -267,8 +268,9 @@ async def item_payloads(
     group_ids = list({g for gs in item_groups.values() for g in gs})
     groups = {g.id: g for g in await repo.groups(group_ids)}
     options = await repo.options(group_ids)
+    served = {i.id: images_svc.served_path(i.image_path, i.image_variants) for i in items}
     images = await st.storage.signed_downloads(
-        st.settings.storage_bucket_assets, [i.image_path for i in items if i.image_path]
+        st.settings.storage_bucket_assets, [p for p in served.values() if p]
     )
     out = []
     for i in items:
@@ -293,7 +295,7 @@ async def item_payloads(
                 "next_available_at": schedules.next_open(windows, local_now) if windows else None,
                 "dietary_tags": list(i.dietary_tags),
                 "allergens": list(i.allergens),
-                "image_url": images.get(i.image_path) if i.image_path else None,
+                "image_url": images.get(path) if (path := served[i.id]) else None,
                 "sort_order": i.sort_order,
                 "modifier_groups": [
                     group_payload(groups[g], options.get(g, []), i.currency)
