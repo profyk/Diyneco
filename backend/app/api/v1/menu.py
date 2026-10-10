@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, Query, Request, Response
 
 from app.api.deps import IdemUser, Principal, Uow, has_step_up, require_permission, state_of
 from app.api.http import IfMatch, parse_if_match, patch_changes, with_etag
+from app.core.errors import AppError
 from app.schemas.menu import (
     AvailabilityChange,
     CategoryCreate,
@@ -22,6 +23,7 @@ from app.schemas.menu import (
     ItemModifierGroups,
     ItemOut,
     ItemPatch,
+    MenuImportReport,
     ModifierGroupCreate,
     ModifierGroupList,
     ModifierGroupOut,
@@ -35,6 +37,7 @@ from app.schemas.menu import (
     StationPatch,
 )
 from app.services import menu as svc
+from app.services import menu_import
 
 router = APIRouter(tags=["menu"])
 
@@ -115,10 +118,41 @@ async def patch_category(
 
 @router.delete("/menu/categories/{category_id}", status_code=204)
 async def delete_category(
-    category_id: uuid.UUID, request: Request, uow: Uow, principal: MenuManage
+    category_id: uuid.UUID,
+    request: Request,
+    uow: Uow,
+    principal: MenuManage,
+    with_items: Annotated[bool, Query()] = False,
 ) -> Response:
-    await svc.delete_category(uow, principal.tenant(request), category_id)
+    """`?with_items=true` removes the category and all its items, and needs step-up."""
+    if with_items and not has_step_up(request, principal):
+        raise AppError("STEP_UP_REQUIRED", "Deleting a category with its items needs your PIN or password.")
+    await svc.delete_category(uow, principal.tenant(request), category_id, with_items=with_items)
     return Response(status_code=204)
+
+
+@router.post(
+    "/menu/items/import",
+    response_model=MenuImportReport,
+    openapi_extra={
+        "requestBody": {"required": True, "content": {"text/csv": {"schema": {"type": "string"}}}}
+    },
+)
+async def import_items(
+    idem: IdemUser,
+    request: Request,
+    uow: Uow,
+    principal: MenuManage,
+    commit: Annotated[bool, Query()] = False,
+) -> Response:
+    """Dry run by default: a per-line report. `?commit=true` imports every row or none."""
+    if not request.headers.get("content-type", "").startswith("text/csv"):
+        raise AppError("VALIDATION_FAILED", "Send the file as text/csv.")
+    report = await menu_import.import_csv(
+        uow, principal.tenant(request), await request.body(), principal.permissions, commit=commit
+    )
+    status = 201 if report["committed"] else 200
+    return await idem.complete(uow, status, MenuImportReport.model_validate(report).model_dump(mode="json"))
 
 
 # --- Items ---------------------------------------------------------------------------------

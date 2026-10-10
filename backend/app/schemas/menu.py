@@ -26,6 +26,8 @@ Allergen = Literal[
     "lupin",
     "molluscs",
 ]
+Ingredient = Annotated[str, StringConstraints(min_length=1, max_length=60, strip_whitespace=True)]
+Ingredients = Annotated[list[Ingredient], Field(max_length=40)]
 DietaryTag = Literal["vegetarian", "vegan", "halaal", "kosher", "gluten_free"]
 ChargeCategory = Literal["food", "beverage"]
 SortOrder = Annotated[int, Field(ge=-1000, le=1000, strict=True)]
@@ -132,6 +134,7 @@ class ItemCreate(StrictModel):
     schedule_id: uuid.UUID | None = None
     dietary_tags: Annotated[list[DietaryTag], Field(max_length=5)] = Field(default_factory=list)
     allergens: Annotated[list[Allergen], Field(max_length=14)] = Field(default_factory=list)
+    ingredients: Ingredients = Field(default_factory=list)
     sort_order: SortOrder = 0
 
 
@@ -146,6 +149,7 @@ class ItemPatch(StrictModel):
     schedule_id: uuid.UUID | None = None
     dietary_tags: Annotated[list[DietaryTag], Field(max_length=5)] | None = None
     allergens: Annotated[list[Allergen], Field(max_length=14)] | None = None
+    ingredients: Ingredients | None = None
     sort_order: SortOrder | None = None
 
 
@@ -189,6 +193,7 @@ class ItemOut(BaseModel):
     next_available_at: datetime | None = None
     dietary_tags: list[str]
     allergens: list[str]
+    ingredients: list[str]
     image_url: str | None
     sort_order: int
     modifier_groups: list[ModifierGroupOut]
@@ -231,3 +236,18 @@ class ImageUploadOut(BaseModel):
     headers: dict[str, str]
     expires_at: datetime
     max_bytes: int
+
+
+class MenuImportProblem(BaseModel):
+    line: int
+    field: str
+    problem: str
+
+
+class MenuImportReport(BaseModel):
+    committed: bool
+    valid: bool
+    rows: int
+    errors: list[MenuImportProblem]
+    created: int
+    new_categories: list[str]

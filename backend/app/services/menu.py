@@ -214,12 +214,29 @@ async def patch_category(
     return category_payload(category)
 
 
-async def delete_category(uow: UnitOfWork, ctx: TenantContext, category_id: uuid.UUID) -> None:
+async def delete_category(
+    uow: UnitOfWork, ctx: TenantContext, category_id: uuid.UUID, *, with_items: bool = False
+) -> None:
+    """Removes a category; `with_items` also removes its items (orders keep their snapshots)."""
     repo = MenuRepository(uow.session, ctx)
     category = await repo.category(category_id)
     if category is None:
         raise AppError("NOT_FOUND")
-    if await repo.live_items_in_category(category_id):
+    if with_items:
+        now = datetime.now(UTC)
+        items = await repo.items(category_id=category_id)
+        for item in items:
+            await repo.update_item(item.id, None, {"deleted_at": now})
+        if items:
+            await write_audit(
+                uow.session,
+                ctx,
+                "menu.item_delete",
+                "menu_category",
+                category_id,
+                old_value={"items": [i.name for i in items]},
+            )
+    elif await repo.live_items_in_category(category_id):
         raise AppError("INVALID_TRANSITION", "Move or delete this category's items first.")
     await repo.update_category(category_id, {"deleted_at": datetime.now(UTC)})
     await write_audit(
@@ -295,6 +312,7 @@ async def item_payloads(
                 "next_available_at": schedules.next_open(windows, local_now) if windows else None,
                 "dietary_tags": list(i.dietary_tags),
                 "allergens": list(i.allergens),
+                "ingredients": list(i.ingredients),
                 "image_url": images.get(path) if (path := served[i.id]) else None,
                 "sort_order": i.sort_order,
                 "modifier_groups": [
@@ -372,6 +390,7 @@ async def create_item(
         "schedule_id": body.get("schedule_id"),
         "dietary_tags": sorted(set(body.get("dietary_tags") or [])),
         "allergens": sorted(set(body.get("allergens") or [])),
+        "ingredients": list(body.get("ingredients") or []),
         "sort_order": body.get("sort_order", 0),
     }
     await _check_refs(repo, values)
@@ -440,6 +459,8 @@ async def patch_item(
     for tags in ("dietary_tags", "allergens"):
         if tags in changes:
             values[tags] = sorted(set(changes[tags] or []))
+    if "ingredients" in changes:
+        values["ingredients"] = list(changes["ingredients"] or [])
     await _check_refs(repo, values)
     old = {k: _plain(getattr(item, k)) for k in values}
     updated = await repo.update_item(item_id, expected_version, values)
