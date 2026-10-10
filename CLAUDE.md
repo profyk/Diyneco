@@ -48,8 +48,8 @@ If a spec is silent or contradictory on something that matters, stop and ask bef
 ## Stack
 
 - Backend: Python 3.12, FastAPI, Pydantic v2, SQLAlchemy 2.x (async, asyncpg), Alembic, pytest + pytest-asyncio + httpx, Ruff, mypy (strict on `app/`). Argon2id via `argon2-cffi`, EdDSA JWT via `pyjwt[crypto]` or `joserfc`, TOTP via `pyotp`.
-- Web apps (Kitchen, Merchant, Admin): Next.js (App Router), TypeScript strict, Tailwind, shadcn/ui, TanStack Query.
-- Mobile apps (Guest, Room service): Expo + Expo Router, TypeScript strict, NativeWind, TanStack Query, expo-secure-store.
+- Web apps (all five: Merchant, Kitchen, Admin, Guest, Room service): Next.js (App Router), TypeScript strict, Tailwind, shadcn/ui, TanStack Query.
+- Guest tablet and Room-service apps: Next.js web apps like the others, mobile-first (responsive, large touch targets, installable full screen). DECISIONS D58.
 - Monorepo: pnpm workspaces for TypeScript; the backend is a separate Python project under `backend/`. API types for frontends are generated from FastAPI's OpenAPI into `packages/shared-types`.
 - Use current stable releases of each library, pinned in lockfiles.
 
