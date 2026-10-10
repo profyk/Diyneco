@@ -1,0 +1,19 @@
+@import "tailwindcss";
+@import "@diyneco/shared-ui/tokens.css";
+@source "../../../packages/shared-ui/src";
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* A shared tablet: no text selection, no long-press menus, no pull-to-refresh. */
+.kiosk {
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.kiosk {
+  overscroll-behavior: none;
+  -webkit-touch-callout: none;
+}

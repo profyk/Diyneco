@@ -1,0 +1,9 @@
+{
+  "name": "Diyneco Guest",
+  "short_name": "Room",
+  "start_url": "/",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#fbfcfe",
+  "theme_color": "#0b2350"
+}

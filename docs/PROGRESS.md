@@ -1,5 +1,28 @@
 # Progress
 
+## 2026-10-10: Front ends (all five web apps) and currencies
+
+### Done
+
+- Shared packages: `@diyneco/api-client` (typed client, refresh, step-up retry, stable
+  idempotency keys, realtime client, currency-agnostic money formatting) and
+  `@diyneco/shared-ui` (design tokens, components, PIN step-up dialog).
+- Kitchen display, Merchant app, Admin panel, Room-service app (mobile-first) and Guest
+  tablet (mobile-first, kiosk) as Next.js web apps (D58). All type-check; the kitchen
+  display also completed a production build on this machine.
+- Currencies chosen, never assumed (D57): hotel currency at signup and in settings, plan
+  billing currency in the Admin panel, MRR per currency, no database default.
+- API additions for the apps: `/auth/me`, staff order quote, adjustment queue, charge
+  categories, currency catalogue, plan editing.
+
+### Next
+
+- Browser end-to-end tests (Playwright) against a seeded API, and production builds of every
+  app in CI.
+- Before production: hosting and Supabase region, production KMS, SMTP provider and email
+  domain, legal and tax reviews, final plan prices, penetration and load tests.
+
+
 ## 2026-10-10: Phase 9 (Hardening and launch), backend
 
 ### Done
