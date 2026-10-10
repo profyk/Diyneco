@@ -49,6 +49,9 @@ class Settings(BaseSettings):
     email_provider: str = "console"
     email_provider_key: str | None = None
     email_from: str = "Diyneco <no-reply@diyneco.com>"
+    # smtp: "smtp://user@host:587" (STARTTLS) or "smtps://user@host:465"; the password is
+    # EMAIL_PROVIDER_KEY so the secret stays in one variable (DECISIONS D52).
+    email_smtp_url: str | None = None
 
     # Monitoring
     sentry_dsn: str | None = None
@@ -87,6 +90,8 @@ class Settings(BaseSettings):
             )
             if self.email_provider != "console":
                 required["EMAIL_PROVIDER_KEY"] = self.email_provider_key
+        if self.email_provider == "smtp":
+            required["EMAIL_SMTP_URL"] = self.email_smtp_url
         for name, value in required.items():
             if not value or PLACEHOLDER in value:
                 missing.append(name)

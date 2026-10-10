@@ -1,5 +1,6 @@
-"""Background worker: drains the event outbox to the in-process bus, keeps monthly partitions
-ahead, and deletes expired idempotency keys and old published events.
+"""Background worker: drains the event outbox to the in-process bus and queues webhook
+deliveries, delivers due webhooks, emails each hotel's daily close after 06:00 local time,
+keeps monthly partitions ahead, and deletes expired idempotency keys and old published events.
 
     uv run python -m app.worker
 
@@ -15,22 +16,31 @@ import contextlib
 import logging
 import signal
 import time
+import uuid
 from dataclasses import dataclass, field
+from typing import Any
 
+import httpx
 from sqlalchemy import CursorResult, delete, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.config import get_settings
+from app.core.crypto import LocalKms
 from app.core.logging import configure_logging
-from app.db.session import Database
+from app.core.state import Keyring
+from app.db.session import Database, UnitOfWork, set_tenant
 from app.models.events import IdempotencyKey
+from app.notifications.email import Mailer, build_email_provider
 from app.realtime.bus import Event, EventBus
+from app.services import daily_close_job, integrations, webhook_delivery
+from app.services.admin import OWNER_EMAILS_SQL
 
 log = logging.getLogger("diyneco.worker")
 
 BATCH = 100
 POLL_S = 0.5
 MAINTENANCE_EVERY_S = 3600
+JOBS_EVERY_S = 300
 
 
 async def drain_once(
@@ -55,6 +65,7 @@ async def drain_once(
                     data=dict(r["payload"]),
                 )
             )
+        await webhook_delivery.enqueue(s, ordered)
         await s.execute(text("SELECT app.outbox_mark_published(:ids)"), {"ids": [r["id"] for r in ordered]})
         return len(ordered)
 
@@ -78,19 +89,57 @@ async def maintenance(sessionmaker: async_sessionmaker[AsyncSession]) -> dict[st
 class Worker:
     db: Database
     bus: EventBus = field(default_factory=EventBus)
+    keyring: Keyring | None = None
+    mailer: Mailer | None = None
+    http: httpx.AsyncClient | None = None
     _stop: asyncio.Event = field(default_factory=asyncio.Event)
 
     def stop(self) -> None:
         self._stop.set()
 
+    async def _decrypt(self, hotel_id: uuid.UUID, webhook_id: uuid.UUID, secret_enc: bytes) -> str:
+        assert self.keyring is not None  # noqa: S101 - set in _main
+        plain = await self.keyring.decrypt(str(hotel_id), secret_enc, integrations.secret_context(webhook_id))
+        return plain.decode()
+
+    async def _webhook_disabled(self, hotel_id: uuid.UUID, hook: Any) -> None:
+        if self.mailer is None:
+            return
+        async with self.db.sessionmaker() as s:
+            uow = UnitOfWork(session=s, sessionmaker=self.db.sessionmaker)
+            async with s.begin():
+                await set_tenant(s, hotel_id)
+                for email in (await s.execute(OWNER_EMAILS_SQL, {"h": hotel_id})).scalars():
+                    await self.mailer.queue(
+                        uow,
+                        hotel_id=hotel_id,
+                        template="webhook_disabled",
+                        to=str(email),
+                        subject="A Diyneco webhook was turned off",
+                        body=(
+                            f"Deliveries to {hook.url} failed for 24 hours, so the webhook was turned off. "
+                            "Fix the endpoint, then turn it back on in Settings > Integrations."
+                        ),
+                        subject_ref={"webhook_id": str(hook.id)},
+                    )
+            await uow.run_after_commit()
+
     async def run(self) -> None:
         last_maintenance = 0.0
+        last_jobs = 0.0
         while not self._stop.is_set():
             try:
                 if time.monotonic() - last_maintenance > MAINTENANCE_EVERY_S:
                     await maintenance(self.db.sessionmaker)
                     last_maintenance = time.monotonic()
+                if self.mailer is not None and time.monotonic() - last_jobs > JOBS_EVERY_S:
+                    await daily_close_job.send_daily_closes(self.db.sessionmaker, self.mailer)
+                    last_jobs = time.monotonic()
                 drained = await drain_once(self.db.sessionmaker, self.bus)
+                if self.http is not None and self.keyring is not None:
+                    await webhook_delivery.deliver_due(
+                        self.db.sessionmaker, self.http, self._decrypt, notify_disabled=self._webhook_disabled
+                    )
             except Exception:
                 log.exception("worker iteration failed")
                 drained = 0
@@ -104,7 +153,20 @@ async def _main() -> None:
     configure_logging(settings.log_level)
     if not settings.worker_database_url:
         raise SystemExit("WORKER_DATABASE_URL is not set")
-    worker = Worker(Database(settings.worker_database_url, "diyneco-worker"))
+    db = Database(settings.worker_database_url, "diyneco-worker")
+    kms = LocalKms(settings.kms_local_master_key or "", settings.kms_master_key_id)
+    provider = build_email_provider(
+        settings.email_provider,
+        smtp_url=settings.email_smtp_url,
+        key=settings.email_provider_key,
+        echo=settings.is_development,
+    )
+    worker = Worker(
+        db,
+        keyring=Keyring(kms=kms, db=db),
+        mailer=Mailer(provider=provider, sender=settings.email_from),
+        http=httpx.AsyncClient(),
+    )
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGINT, signal.SIGTERM):
         try:
@@ -115,6 +177,8 @@ async def _main() -> None:
     try:
         await worker.run()
     finally:
+        if worker.http is not None:
+            await worker.http.aclose()
         await worker.db.dispose()
         log.info("worker stopped")
 

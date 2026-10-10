@@ -21,6 +21,7 @@ from app.api.v1 import (
     kitchen,
     menu,
     orders,
+    reports,
     room_service,
     rooms,
     staff,
@@ -36,7 +37,7 @@ from app.core.ratelimit import build_rate_limiter
 from app.core.state import AppState, Keyring
 from app.db.session import Database
 from app.integrations.storage import LocalStorage, build_storage
-from app.notifications.email import ConsoleEmailProvider, EmailProvider, Mailer
+from app.notifications.email import EmailProvider, Mailer, build_email_provider
 from app.realtime.gateway import Hub, serve
 from app.services.idempotency import IdempotentReplay, replay_response
 
@@ -49,9 +50,12 @@ def build_state(settings: Settings, email_provider: EmailProvider | None = None)
         raise RuntimeError(f"KMS provider {settings.kms_provider!r} is not implemented yet")
     kms = LocalKms(settings.kms_local_master_key or "", settings.kms_master_key_id)
     if email_provider is None:
-        if settings.email_provider != "console":
-            raise RuntimeError(f"email provider {settings.email_provider!r} is not implemented yet")
-        email_provider = ConsoleEmailProvider(echo=settings.is_development)
+        email_provider = build_email_provider(
+            settings.email_provider,
+            smtp_url=settings.email_smtp_url,
+            key=settings.email_provider_key,
+            echo=settings.is_development,
+        )
     jwt = JwtKeys.from_config(settings.jwt_signing_keys_json, settings.jwt_active_kid, settings.api_base_url)
     return AppState(
         settings=settings,
@@ -110,6 +114,8 @@ def create_app(settings: Settings | None = None, state: AppState | None = None) 
     api.include_router(billing.router)
     api.include_router(admin.router)
     api.include_router(admin.hotel_router)
+    api.include_router(reports.router)
+    api.include_router(reports.admin_router)
     if isinstance(app_state.storage, LocalStorage):
         api.include_router(dev_storage.router)  # development only (build_storage refuses elsewhere)
     app.include_router(api)

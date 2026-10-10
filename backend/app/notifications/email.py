@@ -7,10 +7,16 @@ them to stderr (bypassing the redacting logger, so links with tokens stay usable
 
 from __future__ import annotations
 
+import asyncio
+import smtplib
+import ssl
 import sys
 import uuid
 from dataclasses import dataclass, field
+from email.message import EmailMessage as MimeMessage
+from email.utils import make_msgid, parseaddr
 from typing import Any, Protocol
+from urllib.parse import unquote, urlsplit
 
 from sqlalchemy import insert, text
 
@@ -48,6 +54,60 @@ class ConsoleEmailProvider:
                 file=sys.stderr,
             )
         return f"console-{uuid.uuid4()}"
+
+
+@dataclass
+class SmtpEmailProvider:
+    """Any SMTP service (Amazon SES, Postmark, Mailgun, Microsoft 365, ...). STARTTLS on
+    smtp://, implicit TLS on smtps://; certificates are always verified."""
+
+    url: str
+    password: str | None
+    timeout_s: float = 15.0
+
+    async def send(self, message: EmailMessage) -> str:
+        return await asyncio.to_thread(self._send, message)
+
+    def _send(self, message: EmailMessage) -> str:
+        parts = urlsplit(self.url)
+        if parts.scheme not in ("smtp", "smtps") or not parts.hostname:
+            raise ValueError("EMAIL_SMTP_URL must be smtp:// or smtps://")
+        msg = MimeMessage()
+        msg["From"] = message.sender
+        msg["To"] = message.to
+        msg["Subject"] = message.subject
+        message_id = make_msgid(domain=parseaddr(message.sender)[1].split("@")[-1] or None)
+        msg["Message-ID"] = message_id
+        msg.set_content(message.body)
+        for filename, content, media_type in message.attachments:
+            main, _, sub = media_type.partition("/")
+            msg.add_attachment(content, maintype=main, subtype=sub or "octet-stream", filename=filename)
+        context = ssl.create_default_context()
+        user = unquote(parts.username) if parts.username else None
+        if parts.scheme == "smtps":
+            with smtplib.SMTP_SSL(
+                parts.hostname, parts.port or 465, timeout=self.timeout_s, context=context
+            ) as c:
+                if user:
+                    c.login(user, self.password or "")
+                c.send_message(msg)
+        else:
+            with smtplib.SMTP(parts.hostname, parts.port or 587, timeout=self.timeout_s) as c:
+                c.starttls(context=context)
+                if user:
+                    c.login(user, self.password or "")
+                c.send_message(msg)
+        return message_id
+
+
+def build_email_provider(
+    provider: str, *, smtp_url: str | None, key: str | None, echo: bool
+) -> EmailProvider:
+    if provider == "console":
+        return ConsoleEmailProvider(echo=echo)
+    if provider == "smtp" and smtp_url:
+        return SmtpEmailProvider(url=smtp_url, password=key)
+    raise RuntimeError(f"email provider {provider!r} is not supported")
 
 
 @dataclass(frozen=True)

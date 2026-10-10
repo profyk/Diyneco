@@ -52,6 +52,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/analytics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Analytics */
+        get: operations["analytics_api_v1_admin_analytics_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/feature-flags": {
         parameters: {
             query?: never;
@@ -218,6 +235,58 @@ export interface paths {
         put?: never;
         /** Create Plan */
         post: operations["create_plan_api_v1_admin_plans_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/api-keys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Keys */
+        get: operations["list_keys_api_v1_api_keys_get"];
+        put?: never;
+        /** Create Key */
+        post: operations["create_key_api_v1_api_keys_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/api-keys/{key_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revoke Key */
+        delete: operations["revoke_key_api_v1_api_keys__key_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/audit-logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Audit Logs */
+        get: operations["audit_logs_api_v1_audit_logs_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1644,6 +1713,176 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/reports/daily-close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Daily Close */
+        get: operations["daily_close_api_v1_reports_daily_close_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/daily-close/{day}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Put Daily Close */
+        put: operations["put_daily_close_api_v1_reports_daily_close__day__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Items */
+        get: operations["items_api_v1_reports_items_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/kitchen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Kitchen */
+        get: operations["kitchen_api_v1_reports_kitchen_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/occupancy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Occupancy */
+        get: operations["occupancy_api_v1_reports_occupancy_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/open-balances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Open Balances */
+        get: operations["open_balances_api_v1_reports_open_balances_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Orders */
+        get: operations["orders_api_v1_reports_orders_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Payments */
+        get: operations["payments_api_v1_reports_payments_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/revenue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Revenue */
+        get: operations["revenue_api_v1_reports_revenue_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/room-service": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Room Service */
+        get: operations["room_service_api_v1_reports_room_service_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/roles": {
         parameters: {
             query?: never;
@@ -2131,6 +2370,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/subscription": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Subscription */
+        get: operations["get_subscription_api_v1_subscription_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/subscription/change-request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Change Request */
+        post: operations["change_request_api_v1_subscription_change_request_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/support-access": {
         parameters: {
             query?: never;
@@ -2159,6 +2432,75 @@ export interface paths {
         put?: never;
         /** Revoke Grant */
         post: operations["revoke_grant_api_v1_support_access__grant_id__revoke_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/webhooks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Webhooks */
+        get: operations["list_webhooks_api_v1_webhooks_get"];
+        put?: never;
+        /** Create Webhook */
+        post: operations["create_webhook_api_v1_webhooks_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/webhooks/{webhook_id}/deliveries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Webhook Deliveries */
+        get: operations["webhook_deliveries_api_v1_webhooks__webhook_id__deliveries_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/webhooks/{webhook_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Webhook Status */
+        post: operations["webhook_status_api_v1_webhooks__webhook_id__status_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/webhooks/{webhook_id}/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Test Webhook */
+        post: operations["test_webhook_api_v1_webhooks__webhook_id__test_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2284,6 +2626,114 @@ export interface components {
             /** Next Cursor */
             next_cursor?: string | null;
         };
+        /** Analytics */
+        Analytics: {
+            /** Days */
+            days: components["schemas"]["AnalyticsDay"][];
+        };
+        /** AnalyticsDay */
+        AnalyticsDay: {
+            /** Checkins */
+            checkins: number;
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            /** New Hotels */
+            new_hotels: number;
+            /** Orders */
+            orders: number;
+        };
+        /** ApiKeyCreate */
+        ApiKeyCreate: {
+            /**
+             * Environment
+             * @enum {string}
+             */
+            environment: "sandbox" | "production";
+            /** Name */
+            name: string;
+            /** Scopes */
+            scopes: string[];
+        };
+        /** ApiKeyCreated */
+        ApiKeyCreated: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Created By
+             * Format: uuid
+             */
+            created_by: string;
+            /** Environment */
+            environment: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Last Used At */
+            last_used_at: string | null;
+            /** Name */
+            name: string;
+            /** Prefix */
+            prefix: string;
+            /** Revoked At */
+            revoked_at: string | null;
+            /** Scopes */
+            scopes: string[];
+            /** Secret */
+            secret: string;
+            /** Status */
+            status: string;
+            /** Usage Count */
+            usage_count: number;
+        };
+        /** ApiKeyList */
+        ApiKeyList: {
+            /** Data */
+            data: components["schemas"]["ApiKeyOut"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+        };
+        /** ApiKeyOut */
+        ApiKeyOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Created By
+             * Format: uuid
+             */
+            created_by: string;
+            /** Environment */
+            environment: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Last Used At */
+            last_used_at: string | null;
+            /** Name */
+            name: string;
+            /** Prefix */
+            prefix: string;
+            /** Revoked At */
+            revoked_at: string | null;
+            /** Scopes */
+            scopes: string[];
+            /** Status */
+            status: string;
+            /** Usage Count */
+            usage_count: number;
+        };
         /** AssignRequest */
         AssignRequest: {
             /**
@@ -2291,6 +2741,49 @@ export interface components {
              * Format: uuid
              */
             user_id: string;
+        };
+        /** AuditEntry */
+        AuditEntry: {
+            /** Action */
+            action: string;
+            /** Actor Id */
+            actor_id: string | null;
+            /** Actor Label */
+            actor_label: string | null;
+            /** Actor Type */
+            actor_type: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Device Id */
+            device_id: string | null;
+            /** Entity Id */
+            entity_id: string | null;
+            /** Entity Type */
+            entity_type: string;
+            /** Id */
+            id: number;
+            /** Ip */
+            ip: string | null;
+            /** New Value */
+            new_value: {
+                [key: string]: unknown;
+            } | null;
+            /** Old Value */
+            old_value: {
+                [key: string]: unknown;
+            } | null;
+            /** Reason */
+            reason: string | null;
+        };
+        /** AuditList */
+        AuditList: {
+            /** Data */
+            data: components["schemas"]["AuditEntry"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
         };
         /** AvailabilityChange */
         AvailabilityChange: {
@@ -2417,6 +2910,23 @@ export interface components {
             /** Sort Order */
             sort_order?: number | null;
         };
+        /** ChangeRequest */
+        ChangeRequest: {
+            /** Note */
+            note?: string | null;
+            /** Plan Code */
+            plan_code: string;
+        };
+        /** ChangeRequestOut */
+        ChangeRequestOut: {
+            /** Requested Plan */
+            requested_plan: string;
+            /**
+             * Status
+             * @constant
+             */
+            status: "received";
+        };
         /** ChargeRequest */
         ChargeRequest: {
             amount: components["schemas"]["Money"];
@@ -2500,47 +3010,66 @@ export interface components {
             /** Reason */
             reason: string;
         };
-        /** DeliveryList */
-        DeliveryList: {
-            /** Data */
-            data: components["schemas"]["DeliveryOut"][];
-            /** Next Cursor */
-            next_cursor?: string | null;
+        /** DailyClosePut */
+        DailyClosePut: {
+            cash_counted?: components["schemas"]["Money"] | null;
+            /**
+             * Mark Reviewed
+             * @default false
+             */
+            mark_reviewed: boolean;
+            /** Notes */
+            notes?: string | null;
+            terminal_batch_total?: components["schemas"]["Money"] | null;
         };
-        /** DeliveryOut */
-        DeliveryOut: {
-            amount_due: components["schemas"]["Money"];
-            /** Assigned At */
-            assigned_at: string | null;
-            /** Assigned To */
-            assigned_to: {
-                [key: string]: unknown;
-            } | null;
-            /** Delivered At */
-            delivered_at: string | null;
-            /** Items */
-            items: {
+        /** DailyCloseReport */
+        DailyCloseReport: {
+            /** Adjustments */
+            adjustments: {
                 [key: string]: unknown;
             }[];
-            /** Number */
-            number: number;
+            /** Card */
+            card: {
+                [key: string]: unknown;
+            };
+            /** Cash */
+            cash: {
+                [key: string]: unknown;
+            };
             /**
-             * Order Id
-             * Format: uuid
+             * Date
+             * Format: date
              */
-            order_id: string;
-            /** Paid */
-            paid: boolean;
-            /** Picked Up At */
-            picked_up_at: string | null;
-            /** Ready At */
-            ready_at: string | null;
-            /** Room */
-            room: string;
-            /** Special Instructions */
-            special_instructions: string | null;
-            /** Status */
-            status: string;
+            date: string;
+            /** Discounts */
+            discounts: {
+                [key: string]: unknown;
+            }[];
+            /** Flags */
+            flags: string[];
+            /** Late Entries */
+            late_entries: {
+                [key: string]: unknown;
+            }[];
+            /** Notes */
+            notes: string | null;
+            /** Overrides */
+            overrides: {
+                [key: string]: unknown;
+            }[];
+            /** Payments */
+            payments: {
+                [key: string]: unknown;
+            };
+            revenue: components["schemas"]["RevenueRow"];
+            /** Reviewed At */
+            reviewed_at: string | null;
+            /** Reviewed By */
+            reviewed_by: string | null;
+            /** Tips By Staff */
+            tips_by_staff: {
+                [key: string]: unknown;
+            }[];
         };
         /** DeviceInfo */
         DeviceInfo: {
@@ -3096,6 +3625,34 @@ export interface components {
             /** Status Reason */
             status_reason: string | null;
         };
+        /** HotelSubscription */
+        HotelSubscription: {
+            /** Limits */
+            limits: {
+                [key: string]: unknown;
+            };
+            /** Plan */
+            plan: {
+                [key: string]: unknown;
+            } | null;
+            /** Renews On */
+            renews_on: string | null;
+            /** Starts On */
+            starts_on: string | null;
+            /** Status */
+            status: string | null;
+            /** Usage */
+            usage: {
+                [key: string]: components["schemas"]["Usage"];
+            };
+        };
+        /** HourCount */
+        HourCount: {
+            /** Hour */
+            hour: number;
+            /** Orders */
+            orders: number;
+        };
         /** ImageUploadOut */
         ImageUploadOut: {
             /**
@@ -3347,6 +3904,16 @@ export interface components {
             /** Vat Rate Bp */
             vat_rate_bp?: number | null;
         };
+        /** ItemLine */
+        ItemLine: {
+            /** Menu Item Id */
+            menu_item_id: string | null;
+            /** Name */
+            name: string;
+            /** Quantity */
+            quantity: number;
+            revenue: components["schemas"]["SignedMoney"];
+        };
         /** ItemList */
         ItemList: {
             /** Data */
@@ -3438,6 +4005,21 @@ export interface components {
             /** Vat Rate Bp */
             vat_rate_bp?: number | null;
         };
+        /** ItemsReport */
+        ItemsReport: {
+            /**
+             * From
+             * Format: date
+             */
+            from: string;
+            /** Items */
+            items: components["schemas"]["ItemLine"][];
+            /**
+             * To
+             * Format: date
+             */
+            to: string;
+        };
         /** KitchenBoard */
         KitchenBoard: {
             /** Data */
@@ -3496,6 +4078,21 @@ export interface components {
             special_instructions: string | null;
             /** Status */
             status: string;
+        };
+        /** KitchenReport */
+        KitchenReport: {
+            /**
+             * From
+             * Format: date
+             */
+            from: string;
+            /** Stations */
+            stations: components["schemas"]["StationTimes"][];
+            /**
+             * To
+             * Format: date
+             */
+            to: string;
         };
         /** KitchenSession */
         KitchenSession: {
@@ -3737,6 +4334,53 @@ export interface components {
             /** Currency */
             currency: string;
         };
+        /** OccupancyNight */
+        OccupancyNight: {
+            /** Available */
+            available: number;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Occupancy Bp */
+            occupancy_bp: number;
+            /** Occupied */
+            occupied: number;
+            /** Out Of Service */
+            out_of_service: number;
+            /** Rooms */
+            rooms: number;
+        };
+        /** OccupancyReport */
+        OccupancyReport: {
+            /**
+             * From
+             * Format: date
+             */
+            from: string;
+            /** Nights */
+            nights: components["schemas"]["OccupancyNight"][];
+            /**
+             * To
+             * Format: date
+             */
+            to: string;
+            total: components["schemas"]["OccupancyTotal"];
+        };
+        /** OccupancyTotal */
+        OccupancyTotal: {
+            /** Available */
+            available: number;
+            /** Occupancy Bp */
+            occupancy_bp: number;
+            /** Occupied */
+            occupied: number;
+            /** Out Of Service */
+            out_of_service: number;
+            /** Rooms */
+            rooms: number;
+        };
         /** OnboardingOut */
         OnboardingOut: {
             /** Completed */
@@ -3756,6 +4400,31 @@ export interface components {
             key: string;
             /** Title */
             title: string;
+        };
+        /** OpenBalance */
+        OpenBalance: {
+            balance: components["schemas"]["SignedMoney"];
+            /** Bill To */
+            bill_to: string;
+            /** Billing Type */
+            billing_type: string;
+            /** Checked Out At */
+            checked_out_at: string | null;
+            /** Override Reason */
+            override_reason: string | null;
+            /** Room */
+            room: string;
+            /**
+             * Stay Id
+             * Format: uuid
+             */
+            stay_id: string;
+        };
+        /** OpenBalances */
+        OpenBalances: {
+            /** Data */
+            data: components["schemas"]["OpenBalance"][];
+            total: components["schemas"]["SignedMoney"];
         };
         /** OpenOrder */
         OpenOrder: {
@@ -3885,6 +4554,31 @@ export interface components {
             total: components["schemas"]["Money"];
             vat_included: components["schemas"]["Money"];
         };
+        /** OrdersReport */
+        OrdersReport: {
+            average_order_value: components["schemas"]["SignedMoney"];
+            /** By Hour */
+            by_hour: components["schemas"]["HourCount"][];
+            /** Cancelled */
+            cancelled: number;
+            /** Completed Or Open */
+            completed_or_open: number;
+            /** Declined */
+            declined: number;
+            /**
+             * From
+             * Format: date
+             */
+            from: string;
+            /** Orders */
+            orders: number;
+            /**
+             * To
+             * Format: date
+             */
+            to: string;
+            value: components["schemas"]["SignedMoney"];
+        };
         /** PairRequest */
         PairRequest: {
             /** Code */
@@ -3940,6 +4634,38 @@ export interface components {
             expires_at: string;
             /** Qr Payload */
             qr_payload: string;
+        };
+        /** PaymentByMethod */
+        PaymentByMethod: {
+            amount: components["schemas"]["SignedMoney"];
+            /** Count */
+            count: number;
+            /** Method */
+            method: string;
+            received: components["schemas"]["SignedMoney"];
+            tips: components["schemas"]["SignedMoney"];
+        };
+        /** PaymentByStaff */
+        PaymentByStaff: {
+            amount: components["schemas"]["SignedMoney"];
+            /** Count */
+            count: number;
+            /** Late */
+            late: number;
+            /** Name */
+            name: string;
+            received: components["schemas"]["SignedMoney"];
+            /** Staff Id */
+            staff_id: string | null;
+            tips: components["schemas"]["SignedMoney"];
+        };
+        /** PaymentLine */
+        PaymentLine: {
+            amount: components["schemas"]["SignedMoney"];
+            /** Count */
+            count: number;
+            received: components["schemas"]["SignedMoney"];
+            tips: components["schemas"]["SignedMoney"];
         };
         /** PaymentList */
         PaymentList: {
@@ -4032,6 +4758,24 @@ export interface components {
             stay_id?: string | null;
             /** Terminal Reference */
             terminal_reference?: string | null;
+        };
+        /** PaymentsReport */
+        PaymentsReport: {
+            /** By Method */
+            by_method: components["schemas"]["PaymentByMethod"][];
+            /** By Staff */
+            by_staff: components["schemas"]["PaymentByStaff"][];
+            /**
+             * From
+             * Format: date
+             */
+            from: string;
+            /**
+             * To
+             * Format: date
+             */
+            to: string;
+            total: components["schemas"]["PaymentLine"];
         };
         /** PermissionList */
         PermissionList: {
@@ -4174,6 +4918,38 @@ export interface components {
             new_password: string;
             /** Token */
             token: string;
+        };
+        /** RevenueReport */
+        RevenueReport: {
+            /** Days */
+            days: components["schemas"]["RevenueRow"][];
+            /**
+             * From
+             * Format: date
+             */
+            from: string;
+            /**
+             * To
+             * Format: date
+             */
+            to: string;
+            total: components["schemas"]["RevenueRow"];
+        };
+        /** RevenueRow */
+        RevenueRow: {
+            accommodation: components["schemas"]["SignedMoney"];
+            adjustments: components["schemas"]["SignedMoney"];
+            /** Date */
+            date?: string | null;
+            discounts: components["schemas"]["SignedMoney"];
+            fnb: components["schemas"]["SignedMoney"];
+            other: components["schemas"]["SignedMoney"];
+            payments: components["schemas"]["SignedMoney"];
+            revenue: components["schemas"]["SignedMoney"];
+            revenue_excluding_vat: components["schemas"]["SignedMoney"];
+            reversals: components["schemas"]["SignedMoney"];
+            tips: components["schemas"]["SignedMoney"];
+            vat_included: components["schemas"]["SignedMoney"];
         };
         /** RoleCreate */
         RoleCreate: {
@@ -4336,6 +5112,21 @@ export interface components {
             id: string;
             /** Number */
             number: string;
+        };
+        /** RoomServiceReport */
+        RoomServiceReport: {
+            /**
+             * From
+             * Format: date
+             */
+            from: string;
+            /** Staff */
+            staff: components["schemas"]["StaffTimes"][];
+            /**
+             * To
+             * Format: date
+             */
+            to: string;
         };
         /** RoomStatusChange */
         RoomStatusChange: {
@@ -4674,6 +5465,17 @@ export interface components {
             /** Role Ids */
             role_ids: string[];
         };
+        /** StaffTimes */
+        StaffTimes: {
+            /** Deliveries */
+            deliveries: number;
+            /** Median Seconds */
+            median_seconds: number;
+            /** Name */
+            name: string | null;
+            /** Staff Id */
+            staff_id: string | null;
+        };
         /** StationCreate */
         StationCreate: {
             /** Name */
@@ -4713,6 +5515,22 @@ export interface components {
             name?: string | null;
             /** Sort Order */
             sort_order?: number | null;
+        };
+        /** StationTimes */
+        StationTimes: {
+            /** Items */
+            items: number;
+            /** Median Seconds */
+            median_seconds: number;
+            /** Name */
+            name: string;
+            /** P90 Seconds */
+            p90_seconds: number;
+            /**
+             * Station Id
+             * Format: uuid
+             */
+            station_id: string;
         };
         /** StayCreate */
         StayCreate: {
@@ -4980,6 +5798,13 @@ export interface components {
             token_type: "Bearer";
             user: components["schemas"]["UserOut"];
         };
+        /** Usage */
+        Usage: {
+            /** Limit */
+            limit: number | null;
+            /** Used */
+            used: number;
+        };
         /** UserOut */
         UserOut: {
             /** Email */
@@ -5029,6 +5854,84 @@ export interface components {
              */
             training: boolean;
         };
+        /** WebhookCreate */
+        WebhookCreate: {
+            /** Events */
+            events: string[];
+            /** Url */
+            url: string;
+        };
+        /** WebhookCreated */
+        WebhookCreated: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Events */
+            events: string[];
+            /** Failure Count */
+            failure_count: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Signing Secret */
+            signing_secret: string;
+            /** Status */
+            status: string;
+            /** Url */
+            url: string;
+        };
+        /** WebhookList */
+        WebhookList: {
+            /** Data */
+            data: components["schemas"]["WebhookOut"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+        };
+        /** WebhookOut */
+        WebhookOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Events */
+            events: string[];
+            /** Failure Count */
+            failure_count: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Status */
+            status: string;
+            /** Url */
+            url: string;
+        };
+        /** WebhookStatusChange */
+        WebhookStatusChange: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "active" | "disabled";
+        };
+        /** WebhookTestOut */
+        WebhookTestOut: {
+            /** Queued */
+            queued: boolean;
+            /** Seq */
+            seq: number;
+            /**
+             * Webhook Id
+             * Format: uuid
+             */
+            webhook_id: string;
+        };
         /** Window */
         Window: {
             /** Days */
@@ -5069,6 +5972,83 @@ export interface components {
             name: string;
             /** Subscription Status */
             subscription_status: string;
+        };
+        /** DeliveryList */
+        app__schemas__reports__DeliveryList: {
+            /** Data */
+            data: components["schemas"]["app__schemas__reports__DeliveryOut"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+        };
+        /** DeliveryOut */
+        app__schemas__reports__DeliveryOut: {
+            /** Attempt */
+            attempt: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Error */
+            error: string | null;
+            /**
+             * Event Id
+             * Format: uuid
+             */
+            event_id: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Next Attempt At */
+            next_attempt_at: string | null;
+            /** State */
+            state: string;
+            /** Status Code */
+            status_code: number | null;
+        };
+        /** DeliveryList */
+        app__schemas__room_service__DeliveryList: {
+            /** Data */
+            data: components["schemas"]["app__schemas__room_service__DeliveryOut"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+        };
+        /** DeliveryOut */
+        app__schemas__room_service__DeliveryOut: {
+            amount_due: components["schemas"]["Money"];
+            /** Assigned At */
+            assigned_at: string | null;
+            /** Assigned To */
+            assigned_to: {
+                [key: string]: unknown;
+            } | null;
+            /** Delivered At */
+            delivered_at: string | null;
+            /** Items */
+            items: {
+                [key: string]: unknown;
+            }[];
+            /** Number */
+            number: number;
+            /**
+             * Order Id
+             * Format: uuid
+             */
+            order_id: string;
+            /** Paid */
+            paid: boolean;
+            /** Picked Up At */
+            picked_up_at: string | null;
+            /** Ready At */
+            ready_at: string | null;
+            /** Room */
+            room: string;
+            /** Special Instructions */
+            special_instructions: string | null;
+            /** Status */
+            status: string;
         };
     };
     responses: never;
@@ -5165,6 +6145,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdjustmentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    analytics_api_v1_admin_analytics_get: {
+        parameters: {
+            query?: {
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Analytics"];
                 };
             };
             /** @description Validation Error */
@@ -5498,6 +6509,125 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["app__schemas__admin__PlanOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_keys_api_v1_api_keys_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiKeyList"];
+                };
+            };
+        };
+    };
+    create_key_api_v1_api_keys_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApiKeyCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiKeyCreated"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    revoke_key_api_v1_api_keys__key_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    audit_logs_api_v1_audit_logs_get: {
+        parameters: {
+            query?: {
+                actor_id?: string | null;
+                action?: string | null;
+                entity_type?: string | null;
+                from?: string | null;
+                to?: string | null;
+                limit?: number;
+                cursor?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditList"];
                 };
             };
             /** @description Validation Error */
@@ -6006,7 +7136,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeliveryList"];
+                    "application/json": components["schemas"]["app__schemas__room_service__DeliveryList"];
                 };
             };
             /** @description Validation Error */
@@ -6041,7 +7171,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeliveryOut"];
+                    "application/json": components["schemas"]["app__schemas__room_service__DeliveryOut"];
                 };
             };
             /** @description Validation Error */
@@ -6072,7 +7202,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeliveryOut"];
+                    "application/json": components["schemas"]["app__schemas__room_service__DeliveryOut"];
                 };
             };
             /** @description Validation Error */
@@ -6103,7 +7233,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeliveryOut"];
+                    "application/json": components["schemas"]["app__schemas__room_service__DeliveryOut"];
                 };
             };
             /** @description Validation Error */
@@ -6134,7 +7264,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeliveryOut"];
+                    "application/json": components["schemas"]["app__schemas__room_service__DeliveryOut"];
                 };
             };
             /** @description Validation Error */
@@ -6165,7 +7295,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeliveryOut"];
+                    "application/json": components["schemas"]["app__schemas__room_service__DeliveryOut"];
                 };
             };
             /** @description Validation Error */
@@ -6196,7 +7326,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeliveryOut"];
+                    "application/json": components["schemas"]["app__schemas__room_service__DeliveryOut"];
                 };
             };
             /** @description Validation Error */
@@ -8473,6 +9603,316 @@ export interface operations {
             };
         };
     };
+    daily_close_api_v1_reports_daily_close_get: {
+        parameters: {
+            query?: {
+                date?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DailyCloseReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_daily_close_api_v1_reports_daily_close__day__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                day: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DailyClosePut"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DailyCloseReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    items_api_v1_reports_items_get: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ItemsReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    kitchen_api_v1_reports_kitchen_get: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KitchenReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    occupancy_api_v1_reports_occupancy_get: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OccupancyReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    open_balances_api_v1_reports_open_balances_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenBalances"];
+                };
+            };
+        };
+    };
+    orders_api_v1_reports_orders_get: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrdersReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    payments_api_v1_reports_payments_get: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentsReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    revenue_api_v1_reports_revenue_get: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevenueReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    room_service_api_v1_reports_room_service_get: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomServiceReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_roles_api_v1_roles_get: {
         parameters: {
             query?: never;
@@ -9612,6 +11052,59 @@ export interface operations {
             };
         };
     };
+    get_subscription_api_v1_subscription_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HotelSubscription"];
+                };
+            };
+        };
+    };
+    change_request_api_v1_subscription_change_request_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChangeRequestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     hotel_grants_api_v1_support_access_get: {
         parameters: {
             query?: never;
@@ -9650,6 +11143,156 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SupportGrantOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_webhooks_api_v1_webhooks_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookList"];
+                };
+            };
+        };
+    };
+    create_webhook_api_v1_webhooks_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WebhookCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookCreated"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    webhook_deliveries_api_v1_webhooks__webhook_id__deliveries_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                webhook_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["app__schemas__reports__DeliveryList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    webhook_status_api_v1_webhooks__webhook_id__status_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                webhook_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WebhookStatusChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    test_webhook_api_v1_webhooks__webhook_id__test_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                webhook_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookTestOut"];
                 };
             };
             /** @description Validation Error */

@@ -1,5 +1,23 @@
 # Progress
 
+## 2026-10-10: Phase 8 (Reports and API), backend
+
+### Done
+
+- Reports from folio entries and payments: revenue by day and group (discounts, adjustments,
+  reversals, VAT, tips apart), payments by method and staff, orders by hour, top items,
+  kitchen accept-to-ready times by station, room-service ready-to-delivered by staff,
+  occupancy, open balances (accounts receivable), audit log.
+- Daily close: report, finance entry of terminal batch total and cash count, review,
+  mismatch and override flags; emailed by the worker after 06:00 hotel time.
+- API keys (scoped, sandbox read-only, plan-gated production keys, usage tracking) and
+  webhooks (HMAC-signed, retried 1 m to 12 h, disabled after a day with owners emailed,
+  internal addresses refused), subscription view and plan change requests, admin analytics.
+- SMTP email provider.
+- Exit criterion covered by a test: the revenue and payments reports reconcile to folio
+  entries to the cent, day by day and in total.
+
+
 ## 2026-10-10: Phase 7 (Admin panel), backend
 
 ### Done

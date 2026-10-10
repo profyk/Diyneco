@@ -410,6 +410,288 @@
         "title": "AdminHotelList",
         "type": "object"
       },
+      "Analytics": {
+        "properties": {
+          "days": {
+            "items": {
+              "$ref": "#/components/schemas/AnalyticsDay"
+            },
+            "title": "Days",
+            "type": "array"
+          }
+        },
+        "required": [
+          "days"
+        ],
+        "title": "Analytics",
+        "type": "object"
+      },
+      "AnalyticsDay": {
+        "properties": {
+          "checkins": {
+            "title": "Checkins",
+            "type": "integer"
+          },
+          "day": {
+            "format": "date",
+            "title": "Day",
+            "type": "string"
+          },
+          "new_hotels": {
+            "title": "New Hotels",
+            "type": "integer"
+          },
+          "orders": {
+            "title": "Orders",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "day",
+          "orders",
+          "new_hotels",
+          "checkins"
+        ],
+        "title": "AnalyticsDay",
+        "type": "object"
+      },
+      "ApiKeyCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "environment": {
+            "enum": [
+              "sandbox",
+              "production"
+            ],
+            "title": "Environment",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "scopes": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 40,
+            "minItems": 1,
+            "title": "Scopes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "environment",
+          "scopes"
+        ],
+        "title": "ApiKeyCreate",
+        "type": "object"
+      },
+      "ApiKeyCreated": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "format": "uuid",
+            "title": "Created By",
+            "type": "string"
+          },
+          "environment": {
+            "title": "Environment",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "last_used_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Used At"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "prefix": {
+            "title": "Prefix",
+            "type": "string"
+          },
+          "revoked_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revoked At"
+          },
+          "scopes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Scopes",
+            "type": "array"
+          },
+          "secret": {
+            "title": "Secret",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "usage_count": {
+            "title": "Usage Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "environment",
+          "prefix",
+          "scopes",
+          "created_by",
+          "created_at",
+          "last_used_at",
+          "usage_count",
+          "status",
+          "revoked_at",
+          "secret"
+        ],
+        "title": "ApiKeyCreated",
+        "type": "object"
+      },
+      "ApiKeyList": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/ApiKeyOut"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "ApiKeyList",
+        "type": "object"
+      },
+      "ApiKeyOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "format": "uuid",
+            "title": "Created By",
+            "type": "string"
+          },
+          "environment": {
+            "title": "Environment",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "last_used_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Used At"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "prefix": {
+            "title": "Prefix",
+            "type": "string"
+          },
+          "revoked_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revoked At"
+          },
+          "scopes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Scopes",
+            "type": "array"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "usage_count": {
+            "title": "Usage Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "environment",
+          "prefix",
+          "scopes",
+          "created_by",
+          "created_at",
+          "last_used_at",
+          "usage_count",
+          "status",
+          "revoked_at"
+        ],
+        "title": "ApiKeyOut",
+        "type": "object"
+      },
       "AssignRequest": {
         "additionalProperties": false,
         "properties": {
@@ -423,6 +705,168 @@
           "user_id"
         ],
         "title": "AssignRequest",
+        "type": "object"
+      },
+      "AuditEntry": {
+        "properties": {
+          "action": {
+            "title": "Action",
+            "type": "string"
+          },
+          "actor_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Id"
+          },
+          "actor_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Label"
+          },
+          "actor_type": {
+            "title": "Actor Type",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "device_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Id"
+          },
+          "entity_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entity Id"
+          },
+          "entity_type": {
+            "title": "Entity Type",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "ip": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ip"
+          },
+          "new_value": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New Value"
+          },
+          "old_value": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Old Value"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "id",
+          "actor_type",
+          "actor_id",
+          "actor_label",
+          "action",
+          "entity_type",
+          "entity_id",
+          "old_value",
+          "new_value",
+          "reason",
+          "ip",
+          "device_id",
+          "created_at"
+        ],
+        "title": "AuditEntry",
+        "type": "object"
+      },
+      "AuditList": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/AuditEntry"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "AuditList",
         "type": "object"
       },
       "AvailabilityChange": {
@@ -850,6 +1294,52 @@
         "title": "CategoryPatch",
         "type": "object"
       },
+      "ChangeRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "plan_code": {
+            "pattern": "^[a-z][a-z0-9_]{1,40}$",
+            "title": "Plan Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "plan_code"
+        ],
+        "title": "ChangeRequest",
+        "type": "object"
+      },
+      "ChangeRequestOut": {
+        "properties": {
+          "requested_plan": {
+            "title": "Requested Plan",
+            "type": "string"
+          },
+          "status": {
+            "const": "received",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "requested_plan",
+          "status"
+        ],
+        "title": "ChangeRequestOut",
+        "type": "object"
+      },
       "ChargeRequest": {
         "additionalProperties": false,
         "properties": {
@@ -1070,96 +1560,126 @@
         "title": "CreditNoteRequest",
         "type": "object"
       },
-      "DeliveryList": {
+      "DailyClosePut": {
+        "additionalProperties": false,
         "properties": {
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/DeliveryOut"
-            },
-            "title": "Data",
-            "type": "array"
-          },
-          "next_cursor": {
+          "cash_counted": {
             "anyOf": [
               {
+                "$ref": "#/components/schemas/Money"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "mark_reviewed": {
+            "default": false,
+            "title": "Mark Reviewed",
+            "type": "boolean"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
                 "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Next Cursor"
+            "title": "Notes"
+          },
+          "terminal_batch_total": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Money"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
-        "required": [
-          "data"
-        ],
-        "title": "DeliveryList",
+        "title": "DailyClosePut",
         "type": "object"
       },
-      "DeliveryOut": {
+      "DailyCloseReport": {
         "properties": {
-          "amount_due": {
-            "$ref": "#/components/schemas/Money"
-          },
-          "assigned_at": {
-            "anyOf": [
-              {
-                "format": "date-time",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Assigned At"
-          },
-          "assigned_to": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Assigned To"
-          },
-          "delivered_at": {
-            "anyOf": [
-              {
-                "format": "date-time",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Delivered At"
-          },
-          "items": {
+          "adjustments": {
             "items": {
               "additionalProperties": true,
               "type": "object"
             },
-            "title": "Items",
+            "title": "Adjustments",
             "type": "array"
           },
-          "number": {
-            "title": "Number",
-            "type": "integer"
+          "card": {
+            "additionalProperties": true,
+            "title": "Card",
+            "type": "object"
           },
-          "order_id": {
-            "format": "uuid",
-            "title": "Order Id",
+          "cash": {
+            "additionalProperties": true,
+            "title": "Cash",
+            "type": "object"
+          },
+          "date": {
+            "format": "date",
+            "title": "Date",
             "type": "string"
           },
-          "paid": {
-            "title": "Paid",
-            "type": "boolean"
+          "discounts": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Discounts",
+            "type": "array"
           },
-          "picked_up_at": {
+          "flags": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Flags",
+            "type": "array"
+          },
+          "late_entries": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Late Entries",
+            "type": "array"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "overrides": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Overrides",
+            "type": "array"
+          },
+          "payments": {
+            "additionalProperties": true,
+            "title": "Payments",
+            "type": "object"
+          },
+          "revenue": {
+            "$ref": "#/components/schemas/RevenueRow"
+          },
+          "reviewed_at": {
             "anyOf": [
               {
                 "format": "date-time",
@@ -1169,56 +1689,46 @@
                 "type": "null"
               }
             ],
-            "title": "Picked Up At"
+            "title": "Reviewed At"
           },
-          "ready_at": {
+          "reviewed_by": {
             "anyOf": [
               {
-                "format": "date-time",
+                "format": "uuid",
                 "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Ready At"
+            "title": "Reviewed By"
           },
-          "room": {
-            "title": "Room",
-            "type": "string"
-          },
-          "special_instructions": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Special Instructions"
-          },
-          "status": {
-            "title": "Status",
-            "type": "string"
+          "tips_by_staff": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Tips By Staff",
+            "type": "array"
           }
         },
         "required": [
-          "order_id",
-          "number",
-          "status",
-          "room",
-          "special_instructions",
-          "items",
-          "amount_due",
-          "paid",
-          "assigned_to",
-          "ready_at",
-          "assigned_at",
-          "picked_up_at",
-          "delivered_at"
+          "date",
+          "revenue",
+          "payments",
+          "tips_by_staff",
+          "card",
+          "cash",
+          "adjustments",
+          "discounts",
+          "overrides",
+          "late_entries",
+          "flags",
+          "notes",
+          "reviewed_at",
+          "reviewed_by"
         ],
-        "title": "DeliveryOut",
+        "title": "DailyCloseReport",
         "type": "object"
       },
       "DeviceInfo": {
@@ -2898,6 +3408,97 @@
         "title": "HotelStatusOut",
         "type": "object"
       },
+      "HotelSubscription": {
+        "properties": {
+          "limits": {
+            "additionalProperties": true,
+            "title": "Limits",
+            "type": "object"
+          },
+          "plan": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plan"
+          },
+          "renews_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Renews On"
+          },
+          "starts_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Starts On"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "usage": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Usage"
+            },
+            "title": "Usage",
+            "type": "object"
+          }
+        },
+        "required": [
+          "plan",
+          "status",
+          "starts_on",
+          "renews_on",
+          "limits",
+          "usage"
+        ],
+        "title": "HotelSubscription",
+        "type": "object"
+      },
+      "HourCount": {
+        "properties": {
+          "hour": {
+            "title": "Hour",
+            "type": "integer"
+          },
+          "orders": {
+            "title": "Orders",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "hour",
+          "orders"
+        ],
+        "title": "HourCount",
+        "type": "object"
+      },
       "ImageUploadOut": {
         "properties": {
           "expires_at": {
@@ -3583,6 +4184,41 @@
         "title": "ItemCreate",
         "type": "object"
       },
+      "ItemLine": {
+        "properties": {
+          "menu_item_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Menu Item Id"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "quantity": {
+            "title": "Quantity",
+            "type": "integer"
+          },
+          "revenue": {
+            "$ref": "#/components/schemas/SignedMoney"
+          }
+        },
+        "required": [
+          "menu_item_id",
+          "name",
+          "quantity",
+          "revenue"
+        ],
+        "title": "ItemLine",
+        "type": "object"
+      },
       "ItemList": {
         "properties": {
           "data": {
@@ -3956,6 +4592,34 @@
         "title": "ItemPatch",
         "type": "object"
       },
+      "ItemsReport": {
+        "properties": {
+          "from": {
+            "format": "date",
+            "title": "From",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ItemLine"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "to": {
+            "format": "date",
+            "title": "To",
+            "type": "string"
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "items"
+        ],
+        "title": "ItemsReport",
+        "type": "object"
+      },
       "KitchenBoard": {
         "properties": {
           "data": {
@@ -4109,6 +4773,34 @@
           "items"
         ],
         "title": "KitchenOrder",
+        "type": "object"
+      },
+      "KitchenReport": {
+        "properties": {
+          "from": {
+            "format": "date",
+            "title": "From",
+            "type": "string"
+          },
+          "stations": {
+            "items": {
+              "$ref": "#/components/schemas/StationTimes"
+            },
+            "title": "Stations",
+            "type": "array"
+          },
+          "to": {
+            "format": "date",
+            "title": "To",
+            "type": "string"
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "stations"
+        ],
+        "title": "KitchenReport",
         "type": "object"
       },
       "KitchenSession": {
@@ -4716,6 +5408,110 @@
         "title": "Money",
         "type": "object"
       },
+      "OccupancyNight": {
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "integer"
+          },
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "occupancy_bp": {
+            "title": "Occupancy Bp",
+            "type": "integer"
+          },
+          "occupied": {
+            "title": "Occupied",
+            "type": "integer"
+          },
+          "out_of_service": {
+            "title": "Out Of Service",
+            "type": "integer"
+          },
+          "rooms": {
+            "title": "Rooms",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "date",
+          "rooms",
+          "occupied",
+          "out_of_service",
+          "available",
+          "occupancy_bp"
+        ],
+        "title": "OccupancyNight",
+        "type": "object"
+      },
+      "OccupancyReport": {
+        "properties": {
+          "from": {
+            "format": "date",
+            "title": "From",
+            "type": "string"
+          },
+          "nights": {
+            "items": {
+              "$ref": "#/components/schemas/OccupancyNight"
+            },
+            "title": "Nights",
+            "type": "array"
+          },
+          "to": {
+            "format": "date",
+            "title": "To",
+            "type": "string"
+          },
+          "total": {
+            "$ref": "#/components/schemas/OccupancyTotal"
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "nights",
+          "total"
+        ],
+        "title": "OccupancyReport",
+        "type": "object"
+      },
+      "OccupancyTotal": {
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "integer"
+          },
+          "occupancy_bp": {
+            "title": "Occupancy Bp",
+            "type": "integer"
+          },
+          "occupied": {
+            "title": "Occupied",
+            "type": "integer"
+          },
+          "out_of_service": {
+            "title": "Out Of Service",
+            "type": "integer"
+          },
+          "rooms": {
+            "title": "Rooms",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "rooms",
+          "occupied",
+          "out_of_service",
+          "available",
+          "occupancy_bp"
+        ],
+        "title": "OccupancyTotal",
+        "type": "object"
+      },
       "OnboardingOut": {
         "properties": {
           "completed": {
@@ -4775,6 +5571,84 @@
           "done"
         ],
         "title": "OnboardingStep",
+        "type": "object"
+      },
+      "OpenBalance": {
+        "properties": {
+          "balance": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "bill_to": {
+            "title": "Bill To",
+            "type": "string"
+          },
+          "billing_type": {
+            "title": "Billing Type",
+            "type": "string"
+          },
+          "checked_out_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checked Out At"
+          },
+          "override_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Override Reason"
+          },
+          "room": {
+            "title": "Room",
+            "type": "string"
+          },
+          "stay_id": {
+            "format": "uuid",
+            "title": "Stay Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "stay_id",
+          "room",
+          "bill_to",
+          "billing_type",
+          "checked_out_at",
+          "override_reason",
+          "balance"
+        ],
+        "title": "OpenBalance",
+        "type": "object"
+      },
+      "OpenBalances": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/OpenBalance"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "total": {
+            "$ref": "#/components/schemas/SignedMoney"
+          }
+        },
+        "required": [
+          "data",
+          "total"
+        ],
+        "title": "OpenBalances",
         "type": "object"
       },
       "OpenOrder": {
@@ -5096,6 +5970,62 @@
         "title": "OrderPlaced",
         "type": "object"
       },
+      "OrdersReport": {
+        "properties": {
+          "average_order_value": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "by_hour": {
+            "items": {
+              "$ref": "#/components/schemas/HourCount"
+            },
+            "title": "By Hour",
+            "type": "array"
+          },
+          "cancelled": {
+            "title": "Cancelled",
+            "type": "integer"
+          },
+          "completed_or_open": {
+            "title": "Completed Or Open",
+            "type": "integer"
+          },
+          "declined": {
+            "title": "Declined",
+            "type": "integer"
+          },
+          "from": {
+            "format": "date",
+            "title": "From",
+            "type": "string"
+          },
+          "orders": {
+            "title": "Orders",
+            "type": "integer"
+          },
+          "to": {
+            "format": "date",
+            "title": "To",
+            "type": "string"
+          },
+          "value": {
+            "$ref": "#/components/schemas/SignedMoney"
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "orders",
+          "completed_or_open",
+          "cancelled",
+          "declined",
+          "value",
+          "average_order_value",
+          "by_hour"
+        ],
+        "title": "OrdersReport",
+        "type": "object"
+      },
       "PairRequest": {
         "additionalProperties": false,
         "properties": {
@@ -5258,6 +6188,109 @@
           "expires_at"
         ],
         "title": "PairingOut",
+        "type": "object"
+      },
+      "PaymentByMethod": {
+        "properties": {
+          "amount": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "method": {
+            "title": "Method",
+            "type": "string"
+          },
+          "received": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "tips": {
+            "$ref": "#/components/schemas/SignedMoney"
+          }
+        },
+        "required": [
+          "count",
+          "amount",
+          "received",
+          "tips",
+          "method"
+        ],
+        "title": "PaymentByMethod",
+        "type": "object"
+      },
+      "PaymentByStaff": {
+        "properties": {
+          "amount": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "late": {
+            "title": "Late",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "received": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "staff_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Staff Id"
+          },
+          "tips": {
+            "$ref": "#/components/schemas/SignedMoney"
+          }
+        },
+        "required": [
+          "count",
+          "amount",
+          "received",
+          "tips",
+          "staff_id",
+          "name",
+          "late"
+        ],
+        "title": "PaymentByStaff",
+        "type": "object"
+      },
+      "PaymentLine": {
+        "properties": {
+          "amount": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "received": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "tips": {
+            "$ref": "#/components/schemas/SignedMoney"
+          }
+        },
+        "required": [
+          "count",
+          "amount",
+          "received",
+          "tips"
+        ],
+        "title": "PaymentLine",
         "type": "object"
       },
       "PaymentList": {
@@ -5552,6 +6585,46 @@
           "amount_received"
         ],
         "title": "PaymentRequest",
+        "type": "object"
+      },
+      "PaymentsReport": {
+        "properties": {
+          "by_method": {
+            "items": {
+              "$ref": "#/components/schemas/PaymentByMethod"
+            },
+            "title": "By Method",
+            "type": "array"
+          },
+          "by_staff": {
+            "items": {
+              "$ref": "#/components/schemas/PaymentByStaff"
+            },
+            "title": "By Staff",
+            "type": "array"
+          },
+          "from": {
+            "format": "date",
+            "title": "From",
+            "type": "string"
+          },
+          "to": {
+            "format": "date",
+            "title": "To",
+            "type": "string"
+          },
+          "total": {
+            "$ref": "#/components/schemas/PaymentLine"
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "by_method",
+          "by_staff",
+          "total"
+        ],
+        "title": "PaymentsReport",
         "type": "object"
       },
       "PermissionList": {
@@ -5975,6 +7048,102 @@
           "new_password"
         ],
         "title": "ResetPasswordRequest",
+        "type": "object"
+      },
+      "RevenueReport": {
+        "properties": {
+          "days": {
+            "items": {
+              "$ref": "#/components/schemas/RevenueRow"
+            },
+            "title": "Days",
+            "type": "array"
+          },
+          "from": {
+            "format": "date",
+            "title": "From",
+            "type": "string"
+          },
+          "to": {
+            "format": "date",
+            "title": "To",
+            "type": "string"
+          },
+          "total": {
+            "$ref": "#/components/schemas/RevenueRow"
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "days",
+          "total"
+        ],
+        "title": "RevenueReport",
+        "type": "object"
+      },
+      "RevenueRow": {
+        "properties": {
+          "accommodation": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "adjustments": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date"
+          },
+          "discounts": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "fnb": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "other": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "payments": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "revenue": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "revenue_excluding_vat": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "reversals": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "tips": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "vat_included": {
+            "$ref": "#/components/schemas/SignedMoney"
+          }
+        },
+        "required": [
+          "accommodation",
+          "fnb",
+          "other",
+          "revenue",
+          "vat_included",
+          "revenue_excluding_vat",
+          "discounts",
+          "adjustments",
+          "reversals",
+          "payments",
+          "tips"
+        ],
+        "title": "RevenueRow",
         "type": "object"
       },
       "RoleCreate": {
@@ -6495,6 +7664,34 @@
           "number"
         ],
         "title": "RoomRef",
+        "type": "object"
+      },
+      "RoomServiceReport": {
+        "properties": {
+          "from": {
+            "format": "date",
+            "title": "From",
+            "type": "string"
+          },
+          "staff": {
+            "items": {
+              "$ref": "#/components/schemas/StaffTimes"
+            },
+            "title": "Staff",
+            "type": "array"
+          },
+          "to": {
+            "format": "date",
+            "title": "To",
+            "type": "string"
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "staff"
+        ],
+        "title": "RoomServiceReport",
         "type": "object"
       },
       "RoomStatusChange": {
@@ -7602,6 +8799,49 @@
         "title": "StaffRoles",
         "type": "object"
       },
+      "StaffTimes": {
+        "properties": {
+          "deliveries": {
+            "title": "Deliveries",
+            "type": "integer"
+          },
+          "median_seconds": {
+            "title": "Median Seconds",
+            "type": "number"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "staff_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Staff Id"
+          }
+        },
+        "required": [
+          "staff_id",
+          "name",
+          "deliveries",
+          "median_seconds"
+        ],
+        "title": "StaffTimes",
+        "type": "object"
+      },
       "StationCreate": {
         "additionalProperties": false,
         "properties": {
@@ -7723,6 +8963,40 @@
           }
         },
         "title": "StationPatch",
+        "type": "object"
+      },
+      "StationTimes": {
+        "properties": {
+          "items": {
+            "title": "Items",
+            "type": "integer"
+          },
+          "median_seconds": {
+            "title": "Median Seconds",
+            "type": "number"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "p90_seconds": {
+            "title": "P90 Seconds",
+            "type": "number"
+          },
+          "station_id": {
+            "format": "uuid",
+            "title": "Station Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "station_id",
+          "name",
+          "items",
+          "median_seconds",
+          "p90_seconds"
+        ],
+        "title": "StationTimes",
         "type": "object"
       },
       "StayCreate": {
@@ -8450,6 +9724,31 @@
         "title": "TokenResponse",
         "type": "object"
       },
+      "Usage": {
+        "properties": {
+          "limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit"
+          },
+          "used": {
+            "title": "Used",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "used",
+          "limit"
+        ],
+        "title": "Usage",
+        "type": "object"
+      },
       "UserOut": {
         "properties": {
           "email": {
@@ -8603,6 +9902,192 @@
         "title": "WalkIn",
         "type": "object"
       },
+      "WebhookCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "events": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 40,
+            "minItems": 1,
+            "title": "Events",
+            "type": "array"
+          },
+          "url": {
+            "maxLength": 500,
+            "pattern": "^https://[^\\s/?#]+[^\\s]*$",
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "events"
+        ],
+        "title": "WebhookCreate",
+        "type": "object"
+      },
+      "WebhookCreated": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "events": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Events",
+            "type": "array"
+          },
+          "failure_count": {
+            "title": "Failure Count",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "signing_secret": {
+            "title": "Signing Secret",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "url",
+          "events",
+          "status",
+          "failure_count",
+          "created_at",
+          "signing_secret"
+        ],
+        "title": "WebhookCreated",
+        "type": "object"
+      },
+      "WebhookList": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/WebhookOut"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "WebhookList",
+        "type": "object"
+      },
+      "WebhookOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "events": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Events",
+            "type": "array"
+          },
+          "failure_count": {
+            "title": "Failure Count",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "url",
+          "events",
+          "status",
+          "failure_count",
+          "created_at"
+        ],
+        "title": "WebhookOut",
+        "type": "object"
+      },
+      "WebhookStatusChange": {
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "enum": [
+              "active",
+              "disabled"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "WebhookStatusChange",
+        "type": "object"
+      },
+      "WebhookTestOut": {
+        "properties": {
+          "queued": {
+            "title": "Queued",
+            "type": "boolean"
+          },
+          "seq": {
+            "title": "Seq",
+            "type": "integer"
+          },
+          "webhook_id": {
+            "format": "uuid",
+            "title": "Webhook Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "webhook_id",
+          "queued",
+          "seq"
+        ],
+        "title": "WebhookTestOut",
+        "type": "object"
+      },
       "Window": {
         "additionalProperties": false,
         "properties": {
@@ -8702,6 +10187,257 @@
           "subscription_status"
         ],
         "title": "PlanOut",
+        "type": "object"
+      },
+      "app__schemas__reports__DeliveryList": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/app__schemas__reports__DeliveryOut"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "DeliveryList",
+        "type": "object"
+      },
+      "app__schemas__reports__DeliveryOut": {
+        "properties": {
+          "attempt": {
+            "title": "Attempt",
+            "type": "integer"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "event_id": {
+            "format": "uuid",
+            "title": "Event Id",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "next_attempt_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Attempt At"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          },
+          "status_code": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Code"
+          }
+        },
+        "required": [
+          "id",
+          "event_id",
+          "attempt",
+          "status_code",
+          "error",
+          "next_attempt_at",
+          "created_at",
+          "state"
+        ],
+        "title": "DeliveryOut",
+        "type": "object"
+      },
+      "app__schemas__room_service__DeliveryList": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/app__schemas__room_service__DeliveryOut"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "DeliveryList",
+        "type": "object"
+      },
+      "app__schemas__room_service__DeliveryOut": {
+        "properties": {
+          "amount_due": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "assigned_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assigned At"
+          },
+          "assigned_to": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assigned To"
+          },
+          "delivered_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivered At"
+          },
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "number": {
+            "title": "Number",
+            "type": "integer"
+          },
+          "order_id": {
+            "format": "uuid",
+            "title": "Order Id",
+            "type": "string"
+          },
+          "paid": {
+            "title": "Paid",
+            "type": "boolean"
+          },
+          "picked_up_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picked Up At"
+          },
+          "ready_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ready At"
+          },
+          "room": {
+            "title": "Room",
+            "type": "string"
+          },
+          "special_instructions": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Special Instructions"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "order_id",
+          "number",
+          "status",
+          "room",
+          "special_instructions",
+          "items",
+          "amount_due",
+          "paid",
+          "assigned_to",
+          "ready_at",
+          "assigned_at",
+          "picked_up_at",
+          "delivered_at"
+        ],
+        "title": "DeliveryOut",
         "type": "object"
       }
     }
@@ -8846,6 +10582,51 @@
         "summary": "Reject Adjustment",
         "tags": [
           "billing"
+        ]
+      }
+    },
+    "/api/v1/admin/analytics": {
+      "get": {
+        "operationId": "analytics_api_v1_admin_analytics_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 366,
+              "minimum": 1,
+              "title": "Days",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Analytics"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Analytics",
+        "tags": [
+          "admin"
         ]
       }
     },
@@ -9274,6 +11055,249 @@
         "summary": "Create Plan",
         "tags": [
           "admin"
+        ]
+      }
+    },
+    "/api/v1/api-keys": {
+      "get": {
+        "operationId": "list_keys_api_v1_api_keys_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKeyList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Keys",
+        "tags": [
+          "reports"
+        ]
+      },
+      "post": {
+        "operationId": "create_key_api_v1_api_keys_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiKeyCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKeyCreated"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Key",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
+    "/api/v1/api-keys/{key_id}": {
+      "delete": {
+        "operationId": "revoke_key_api_v1_api_keys__key_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "key_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Key Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Revoke Key",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
+    "/api/v1/audit-logs": {
+      "get": {
+        "operationId": "audit_logs_api_v1_audit_logs_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "actor_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Actor Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "action",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 80,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Action"
+            }
+          },
+          {
+            "in": "query",
+            "name": "entity_type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 80,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Entity Type"
+            }
+          },
+          {
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "To"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 512,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Audit Logs",
+        "tags": [
+          "reports"
         ]
       }
     },
@@ -9911,7 +11935,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DeliveryList"
+                  "$ref": "#/components/schemas/app__schemas__room_service__DeliveryList"
                 }
               }
             },
@@ -9964,7 +11988,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DeliveryOut"
+                  "$ref": "#/components/schemas/app__schemas__room_service__DeliveryOut"
                 }
               }
             },
@@ -10007,7 +12031,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DeliveryOut"
+                  "$ref": "#/components/schemas/app__schemas__room_service__DeliveryOut"
                 }
               }
             },
@@ -10050,7 +12074,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DeliveryOut"
+                  "$ref": "#/components/schemas/app__schemas__room_service__DeliveryOut"
                 }
               }
             },
@@ -10093,7 +12117,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DeliveryOut"
+                  "$ref": "#/components/schemas/app__schemas__room_service__DeliveryOut"
                 }
               }
             },
@@ -10136,7 +12160,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DeliveryOut"
+                  "$ref": "#/components/schemas/app__schemas__room_service__DeliveryOut"
                 }
               }
             },
@@ -10179,7 +12203,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DeliveryOut"
+                  "$ref": "#/components/schemas/app__schemas__room_service__DeliveryOut"
                 }
               }
             },
@@ -13533,6 +15557,501 @@
         ]
       }
     },
+    "/api/v1/reports/daily-close": {
+      "get": {
+        "operationId": "daily_close_api_v1_reports_daily_close_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "date",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DailyCloseReport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Daily Close",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
+    "/api/v1/reports/daily-close/{day}": {
+      "put": {
+        "operationId": "put_daily_close_api_v1_reports_daily_close__day__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "day",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "title": "Day",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DailyClosePut"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DailyCloseReport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Put Daily Close",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
+    "/api/v1/reports/items": {
+      "get": {
+        "operationId": "items_api_v1_reports_items_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "title": "From",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "title": "To",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemsReport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Items",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
+    "/api/v1/reports/kitchen": {
+      "get": {
+        "operationId": "kitchen_api_v1_reports_kitchen_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "title": "From",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "title": "To",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KitchenReport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Kitchen",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
+    "/api/v1/reports/occupancy": {
+      "get": {
+        "operationId": "occupancy_api_v1_reports_occupancy_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "title": "From",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "title": "To",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OccupancyReport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Occupancy",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
+    "/api/v1/reports/open-balances": {
+      "get": {
+        "operationId": "open_balances_api_v1_reports_open_balances_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenBalances"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Open Balances",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
+    "/api/v1/reports/orders": {
+      "get": {
+        "operationId": "orders_api_v1_reports_orders_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "title": "From",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "title": "To",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrdersReport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Orders",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
+    "/api/v1/reports/payments": {
+      "get": {
+        "operationId": "payments_api_v1_reports_payments_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "title": "From",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "title": "To",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentsReport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Payments",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
+    "/api/v1/reports/revenue": {
+      "get": {
+        "operationId": "revenue_api_v1_reports_revenue_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "title": "From",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "title": "To",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevenueReport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Revenue",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
+    "/api/v1/reports/room-service": {
+      "get": {
+        "operationId": "room_service_api_v1_reports_room_service_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "title": "From",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "title": "To",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoomServiceReport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Room Service",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
     "/api/v1/roles": {
       "get": {
         "operationId": "list_roles_api_v1_roles_get",
@@ -15272,6 +17791,68 @@
         ]
       }
     },
+    "/api/v1/subscription": {
+      "get": {
+        "operationId": "get_subscription_api_v1_subscription_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HotelSubscription"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Subscription",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
+    "/api/v1/subscription/change-request": {
+      "post": {
+        "operationId": "change_request_api_v1_subscription_change_request_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangeRequestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Request",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
     "/api/v1/support-access": {
       "get": {
         "operationId": "hotel_grants_api_v1_support_access_get",
@@ -15333,6 +17914,205 @@
         "summary": "Revoke Grant",
         "tags": [
           "support-access"
+        ]
+      }
+    },
+    "/api/v1/webhooks": {
+      "get": {
+        "operationId": "list_webhooks_api_v1_webhooks_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Webhooks",
+        "tags": [
+          "reports"
+        ]
+      },
+      "post": {
+        "operationId": "create_webhook_api_v1_webhooks_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookCreated"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Webhook",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
+    "/api/v1/webhooks/{webhook_id}/deliveries": {
+      "get": {
+        "operationId": "webhook_deliveries_api_v1_webhooks__webhook_id__deliveries_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "webhook_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Webhook Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/app__schemas__reports__DeliveryList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Webhook Deliveries",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
+    "/api/v1/webhooks/{webhook_id}/status": {
+      "post": {
+        "operationId": "webhook_status_api_v1_webhooks__webhook_id__status_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "webhook_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Webhook Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookStatusChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Webhook Status",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
+    "/api/v1/webhooks/{webhook_id}/test": {
+      "post": {
+        "operationId": "test_webhook_api_v1_webhooks__webhook_id__test_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "webhook_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Webhook Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookTestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Test Webhook",
+        "tags": [
+          "reports"
         ]
       }
     }

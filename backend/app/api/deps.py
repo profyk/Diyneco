@@ -15,16 +15,19 @@ from typing import Annotated, Any, Literal
 
 from fastapi import Depends, Request
 from fastapi.dependencies.models import Dependant
-from sqlalchemy import select, text
+from sqlalchemy import select, text, update
 
+from app.core import crypto
 from app.core.crypto import CARD_FIELD_NAMES, looks_like_card_number
 from app.core.errors import AppError
 from app.core.logging import request_id_var, security_event
 from app.core.state import AppState
 from app.db.session import TenantContext, UnitOfWork, set_tenant
+from app.models.events import ApiKey
 from app.models.tenancy import Hotel, HotelUser, Role, RolePermission, Session, SupportGrant, User, UserRole
 from app.services.devices import check_device
 from app.services.idempotency import IdempotencyClaim, claim, parse_key, request_fingerprint
+from app.services.integrations import key_scopes
 
 PrincipalKind = Literal["staff", "platform", "device", "kitchen_session", "api_key", "support"]
 
@@ -187,6 +190,7 @@ class Principal:
     role_names: tuple[str, ...]
     device_id: uuid.UUID | None = None
     mfa_pending: bool = False
+    api_key_id: uuid.UUID | None = None
 
     @property
     def uid(self) -> uuid.UUID:
@@ -209,6 +213,8 @@ class Principal:
     def idempotency_key(self) -> str:
         if self.kind in ("device",):
             return f"device:{self.device_id}"
+        if self.kind == "api_key":
+            return f"api_key:{self.api_key_id}"
         return f"user:{self.user_id}"
 
     def platform_actor(self, request: Request) -> dict[str, Any]:
@@ -238,13 +244,16 @@ class Principal:
     def tenant(self, request: Request) -> TenantContext:
         if self.hotel_id is None:
             raise AppError("PERMISSION_DENIED")
-        actor_type = {"platform": "platform", "support": "platform", "device": "device"}.get(
-            self.kind, "user"
-        )
+        actor_types = {
+            "platform": "platform",
+            "support": "platform",
+            "device": "device",
+            "api_key": "api_key",
+        }
         return TenantContext(
             hotel_id=self.hotel_id,
-            actor_type=actor_type,
-            actor_id=self.user_id,
+            actor_type=actor_types.get(self.kind, "user"),
+            actor_id=self.api_key_id if self.kind == "api_key" else self.user_id,
             actor_label=self.label,
             device_id=self.device_id,
             ip=client_ip(request),
@@ -262,7 +271,59 @@ def bearer_token(request: Request) -> str:
     return match.group(1)
 
 
+_API_KEY = re.compile(r"^dyk_(live|test)_[0-9A-Za-z]{43}$")
+
+
+async def _api_key_principal(request: Request, uow: UnitOfWork) -> Principal:
+    """A hotel integration (X-Api-Key): the key's scopes only, read-only for sandbox keys,
+    under its hotel's context (DECISIONS D50)."""
+    secret = request.headers.get("x-api-key", "")
+    s = uow.session
+    found = None
+    if _API_KEY.match(secret):
+        found = (
+            await s.execute(text("SELECT * FROM app.api_key_lookup(:h)"), {"h": crypto.sha256(secret)})
+        ).first()
+    if found is None:
+        await _limit(request, "auth_ip", f"ip:{client_ip(request)}")
+        raise AppError("UNAUTHENTICATED", "That API key is not valid.")
+    key_id, hotel_id = found
+    await set_tenant(s, hotel_id)
+    key = (await s.execute(select(ApiKey).where(ApiKey.id == key_id))).scalar_one()
+    hotel_status = (await s.execute(select(Hotel.status).where(Hotel.id == hotel_id))).scalar_one()
+    if hotel_status in ("suspended", "closed") and request.method not in SAFE_METHODS:
+        raise AppError("HOTEL_SUSPENDED", "This hotel's account is suspended. Data can still be viewed.")
+    if hotel_status == "pending_approval":
+        raise AppError("PERMISSION_DENIED", "This hotel is not approved yet.")
+    await _limit(request, "staff", f"api_key:{key_id}")
+    await s.execute(
+        update(ApiKey)
+        .where(ApiKey.id == key_id)
+        .values(last_used_at=text("now()"), usage_count=ApiKey.usage_count + 1)
+    )
+    principal = Principal(
+        kind="api_key",
+        user_id=None,
+        session_id=None,
+        hotel_id=hotel_id,
+        hotel_user_id=None,
+        permissions=key_scopes(key.environment, key.scopes),
+        amr=(),
+        name=f"API key {key.name}",
+        role_names=(),
+        api_key_id=key_id,
+    )
+    request.state.principal = principal
+    return principal
+
+
 async def _resolve_principal(request: Request, uow: UnitOfWork, *, allow_mfa_pending: bool) -> Principal:
+    if "x-api-key" in request.headers and "authorization" not in request.headers:
+        return await _api_key_principal(request, uow)
+    return await _token_principal(request, uow, allow_mfa_pending=allow_mfa_pending)
+
+
+async def _token_principal(request: Request, uow: UnitOfWork, *, allow_mfa_pending: bool) -> Principal:
     st = state_of(request)
     claims = st.jwt.verify(bearer_token(request), "access")
     kind = claims.get("kind")

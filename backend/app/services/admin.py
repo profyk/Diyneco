@@ -102,6 +102,19 @@ async def hotels(uow: UnitOfWork) -> list[dict[str, Any]]:
     ]
 
 
+async def analytics(uow: UnitOfWork, days: int) -> list[dict[str, Any]]:
+    rows = (await uow.session.execute(text("SELECT * FROM app.admin_analytics(:d)"), {"d": days})).mappings()
+    return [
+        {
+            "day": r["day"],
+            "orders": int(r["orders"]),
+            "new_hotels": int(r["new_hotels"]),
+            "checkins": int(r["checkins"]),
+        }
+        for r in rows
+    ]
+
+
 async def health(st: AppState, uow: UnitOfWork, realtime: Any) -> dict[str, Any]:
     checks: dict[str, dict[str, Any]] = {"api": {"status": "ok"}}
     started = time.perf_counter()
