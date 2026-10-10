@@ -80,6 +80,20 @@ jobs:
         run: uv run python scripts/check_routes.py
       - name: Tests
         run: uv run pytest -q -ra --junitxml=pytest-report.xml
+      - name: Restore drill (dump the test database, restore into an isolated one, verify)
+        run: |
+          psql -v ON_ERROR_STOP=1 -d postgres -c "CREATE DATABASE diyneco_restore OWNER diyneco_owner"
+          psql -v ON_ERROR_STOP=1 -d diyneco_restore -c "
+            CREATE SCHEMA extensions AUTHORIZATION diyneco_owner;
+            GRANT USAGE ON SCHEMA extensions TO diyneco_api, diyneco_worker;
+            CREATE EXTENSION pgcrypto WITH SCHEMA extensions;
+            CREATE EXTENSION citext WITH SCHEMA extensions;
+            CREATE EXTENSION pg_trgm WITH SCHEMA extensions;
+            CREATE EXTENSION btree_gin WITH SCHEMA extensions;"
+          uv run python scripts/restore_drill.py \
+            --source-url "postgresql://diyneco_owner:$OWNER_PW@localhost:5432/diyneco_test" \
+            --target-url "postgresql://diyneco_owner:$OWNER_PW@localhost:5432/diyneco_restore" \
+            --docker "${{ job.services.postgres.id }}"
       - name: Upload test report
         if: always()
         uses: actions/upload-artifact@v4

@@ -27,6 +27,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from app.core.config import get_settings
 from app.core.crypto import LocalKms
 from app.core.logging import configure_logging
+from app.core.monitoring import init_monitoring
 from app.core.state import Keyring
 from app.db.session import Database, UnitOfWork, set_tenant
 from app.models.events import IdempotencyKey
@@ -151,6 +152,7 @@ class Worker:
 async def _main() -> None:
     settings = get_settings()
     configure_logging(settings.log_level)
+    init_monitoring(settings, "worker")
     if not settings.worker_database_url:
         raise SystemExit("WORKER_DATABASE_URL is not set")
     db = Database(settings.worker_database_url, "diyneco-worker")

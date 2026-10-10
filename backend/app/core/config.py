@@ -55,6 +55,8 @@ class Settings(BaseSettings):
 
     # Monitoring
     sentry_dsn: str | None = None
+    sentry_traces_sample_rate: float = 0.0
+    release: str | None = None  # set by the deployment (git sha)
 
     @field_validator("cors_allowed_origins", mode="before")
     @classmethod

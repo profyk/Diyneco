@@ -1,5 +1,30 @@
 # Progress
 
+## 2026-10-10: Phase 9 (Hardening and launch), backend
+
+### Done
+
+- Security suite for build spec section 71 (`tests/security/test_section_71.py`): hotel
+  access, cross-tenant requests, device credentials, expired and revoked sessions, privilege
+  escalation, checkout, bill changes, discounts, payment changes, replays, duplicate payments
+  and duplicate orders, all at the API and, where it matters, the database.
+- Restore drill script, run in CI after the tests (D53).
+- Sentry monitoring with personal data scrubbed; release tagging.
+- Load test (Locust) for the hot paths; provider-neutral deployment and launch guide.
+- Exit criteria covered: restore drill succeeds; section 71 security tests pass.
+
+### Next
+
+- The five front-end apps (Merchant, Kitchen, Admin on Next.js; Guest and Room service on
+  Expo) on top of the finished API.
+
+### Open before production
+
+- Hosting provider and Supabase region; production KMS; email domain and SMTP provider.
+- Legal (POPIA) and tax (VAT, invoicing) reviews; final plan prices.
+- External penetration test and a staging load test.
+
+
 ## 2026-10-10: Phase 8 (Reports and API), backend
 
 ### Done

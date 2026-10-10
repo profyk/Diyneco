@@ -33,6 +33,7 @@ from app.core.errors import install_error_handlers
 from app.core.jwt import JwtKeys
 from app.core.logging import configure_logging
 from app.core.middleware import RequestContextMiddleware
+from app.core.monitoring import init_monitoring
 from app.core.ratelimit import build_rate_limiter
 from app.core.state import AppState, Keyring
 from app.db.session import Database
@@ -71,6 +72,7 @@ def build_state(settings: Settings, email_provider: EmailProvider | None = None)
 def create_app(settings: Settings | None = None, state: AppState | None = None) -> FastAPI:
     settings = settings or get_settings()
     configure_logging(settings.log_level)
+    init_monitoring(settings, "api")
     app_state = state or build_state(settings)
 
     hub = Hub(app_state)
