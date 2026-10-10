@@ -113,6 +113,22 @@ class FeatureFlag(Base):
     updated_by: Mapped[uuid.UUID | None]
 
 
+class SupportGrant(Base):
+    """Time-boxed (max 60 minutes), ticketed read access for platform support; visible to the
+    hotel and audited (DECISIONS D48)."""
+
+    __tablename__ = "support_grants"
+    id: Mapped[uuid.UUID] = _pk()
+    hotel_id: Mapped[uuid.UUID]
+    platform_user_id: Mapped[uuid.UUID]
+    ticket_reference: Mapped[str]
+    reason: Mapped[str | None]
+    starts_at: Mapped[datetime] = mapped_column(server_default=text("now()"))
+    expires_at: Mapped[datetime]
+    revoked_at: Mapped[datetime | None]
+    revoked_by: Mapped[uuid.UUID | None]
+
+
 class User(Base):
     __tablename__ = "users"
     id: Mapped[uuid.UUID] = _pk()

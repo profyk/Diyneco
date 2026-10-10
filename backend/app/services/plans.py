@@ -32,7 +32,8 @@ async def ensure_capacity(uow: UnitOfWork, ctx: TenantContext, resource: Resourc
     plan = await HotelRepository(uow.session, ctx).current_plan()
     if plan is None:
         raise AppError("PLAN_LIMIT_REACHED", "This hotel has no active plan.", details={"resource": resource})
-    limit = plan[0].limits.get(resource)
+    limits = {**plan[0].limits, **(plan[1].limit_overrides or {})}  # platform overrides win
+    limit = limits.get(resource)
     if limit is None:
         return  # no limit configured for this resource
     current = int((await uow.session.execute(text(_COUNT_SQL[resource]), {"h": ctx.hotel_id})).scalar_one())

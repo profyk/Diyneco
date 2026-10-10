@@ -10,6 +10,11 @@ Handshake: {"op":"auth","token":...} within 5 s -> {"op":"ready","channels":[...
 {"op":"subscribe","channels":[...],"since_seq":N} replays the last 24 h after N, then live.
 Close codes: 4401 not authenticated, 4403 channel not allowed, 4409 device rebound or
 revoked, 4410 hotel suspended, 4429 too many connections (5 per principal).
+
+The `platform` channel (platform tokens with MFA) is read through app.admin_platform_events,
+because platform principals see no hotel's rows. Its events keep their hotel's `seq` and add
+`hotel_id`; platform clients dedupe by `event_id`, and `since_seq` is ignored there: the
+admin panel refetches its figures when it (re)subscribes (DECISIONS D49).
 """
 
 from __future__ import annotations
@@ -21,6 +26,7 @@ import uuid
 from collections import defaultdict
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from sqlalchemy import select, text
@@ -40,6 +46,8 @@ PING_EVERY_S = 25
 REVALIDATE_EVERY_S = 30
 POLL_EVERY_S = 0.5
 MAX_CONNECTIONS = 5
+PLATFORM = uuid.UUID(int=0)  # hub key for the platform channel
+PLATFORM_LOOKBACK = timedelta(seconds=10)  # rows can commit slightly out of time order
 
 
 class Close(Exception):
@@ -70,7 +78,45 @@ async def authenticate(st: AppState, token: str) -> WsPrincipal:
         return await _device_principal(st, claims)
     if kind == "staff":
         return await _staff_principal(st, claims)
-    raise Close(4401, "unsupported principal")  # platform channel arrives with the admin panel
+    if kind == "platform":
+        return await _platform_principal(st, claims)
+    raise Close(4401, "unsupported principal")
+
+
+async def _platform_principal(st: AppState, claims: dict[str, Any]) -> WsPrincipal:
+    try:
+        user_id = uuid.UUID(str(claims["sub"]))
+        session_id = uuid.UUID(str(claims["sid"]))
+    except (KeyError, ValueError) as exc:
+        raise Close(4401) from exc
+    if claims.get("mfa_pending") or "mfa" not in (claims.get("amr") or ()):
+        raise Close(4401, "mfa required")
+
+    async def load() -> set[str]:
+        async with st.db.sessionmaker() as s, s.begin():
+            await set_tenant(s, None, user_id)
+            live = (
+                await s.execute(
+                    select(Session.id).where(
+                        Session.id == session_id,
+                        Session.user_id == user_id,
+                        Session.revoked_at.is_(None),
+                        Session.expires_at > text("now()"),
+                    )
+                )
+            ).first()
+            user = (await s.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+            if live is None or user is None or user.status != "active" or not user.is_platform:
+                raise Close(4401, "session ended")
+            return {"platform"}
+
+    principal = WsPrincipal(key=f"user:{user_id}", hotel_id=PLATFORM, allowed=await load(), revalidate=_noop)
+
+    async def revalidate() -> None:
+        principal.allowed = await load()
+
+    principal.revalidate = revalidate
+    return principal
 
 
 async def _device_principal(st: AppState, claims: dict[str, Any]) -> WsPrincipal:
@@ -201,15 +247,18 @@ class Subscriber:
 
 
 def envelope(row: Any, channel: str) -> dict[str, Any]:
-    return {
+    event = {
         "op": "event",
-        "seq": int(row.seq),
+        "seq": int(row.seq or 0),
         "event_id": str(row.id),
         "type": row.type,
         "channel": channel,
         "occurred_at": row.created_at.isoformat().replace("+00:00", "Z"),
         "data": row.payload,
     }
+    if channel == "platform":
+        event["hotel_id"] = str(row.hotel_id) if row.hotel_id else None
+    return event
 
 
 class Hub:
@@ -219,6 +268,8 @@ class Hub:
         self.last_seq: dict[uuid.UUID, int] = {}
         self.connections: dict[str, int] = defaultdict(int)
         self._task: asyncio.Task[None] | None = None
+        self.platform_since = datetime.now(UTC)
+        self.platform_seen: dict[uuid.UUID, datetime] = {}
 
     def start(self) -> None:
         if self._task is None or self._task.done():
@@ -231,6 +282,9 @@ class Hub:
                 await self._task
 
     async def current_seq(self, hotel_id: uuid.UUID) -> int:
+        if hotel_id == PLATFORM:
+            self.platform_since = datetime.now(UTC)
+            return 0
         async with self.st.db.sessionmaker() as s, s.begin():
             await set_tenant(s, hotel_id)
             return int(
@@ -275,8 +329,31 @@ class Hub:
             self.subscribers.pop(hotel, None)
             self.last_seq.pop(hotel, None)
 
+    async def poll_platform(self) -> None:
+        async with self.st.db.sessionmaker() as s, s.begin():
+            await set_tenant(s, None)
+            rows = (
+                await s.execute(
+                    text("SELECT * FROM app.admin_platform_events(:since)"),
+                    {"since": self.platform_since - PLATFORM_LOOKBACK},
+                )
+            ).all()
+        for row in rows:
+            if row.id in self.platform_seen:
+                continue
+            self.platform_seen[row.id] = row.created_at
+            for sub in list(self.subscribers.get(PLATFORM, ())):
+                with contextlib.suppress(asyncio.QueueFull):
+                    sub.queue.put_nowait(envelope(row, "platform"))
+            self.platform_since = max(self.platform_since, row.created_at)
+        horizon = self.platform_since - 2 * PLATFORM_LOOKBACK
+        self.platform_seen = {k: v for k, v in self.platform_seen.items() if v >= horizon}
+
     async def poll_once(self) -> None:
         for hotel in list(self.subscribers):
+            if hotel == PLATFORM:
+                await self.poll_platform()
+                continue
             since = self.last_seq.get(hotel, 0)
             async with self.st.db.sessionmaker() as s, s.begin():
                 await set_tenant(s, hotel)
@@ -410,7 +487,7 @@ async def _subscribe(
     sub = Subscriber(principal=principal, channels=wanted)
     live_from = await hub.add(sub)
     since = msg.get("since_seq")
-    if isinstance(since, int) and 0 <= since < live_from:
+    if isinstance(since, int) and 0 <= since < live_from and principal.hotel_id != PLATFORM:
         for event in await hub.replay(principal.hotel_id, wanted, since, live_from):
             await ws.send_json(event)
     await ws.send_json({"op": "subscribed", "channels": sorted(wanted), "seq": live_from})

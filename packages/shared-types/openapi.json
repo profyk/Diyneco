@@ -282,6 +282,134 @@
         "title": "AdjustmentRequest",
         "type": "object"
       },
+      "AdminHotel": {
+        "properties": {
+          "counts": {
+            "$ref": "#/components/schemas/HotelCounts"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "last_activity": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Activity"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "plan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plan"
+          },
+          "renews_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Renews On"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "status_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Reason"
+          },
+          "subscription_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subscription Status"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "status",
+          "status_reason",
+          "created_at",
+          "plan",
+          "subscription_status",
+          "renews_on",
+          "counts",
+          "last_activity"
+        ],
+        "title": "AdminHotel",
+        "type": "object"
+      },
+      "AdminHotelList": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/AdminHotel"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "AdminHotelList",
+        "type": "object"
+      },
       "AssignRequest": {
         "additionalProperties": false,
         "properties": {
@@ -1393,6 +1521,134 @@
         "title": "DiscountRequest",
         "type": "object"
       },
+      "FlagChange": {
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "hotel_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hotel Id"
+          },
+          "key": {
+            "pattern": "^[a-z][a-z0-9_.]{1,60}$",
+            "title": "Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "enabled"
+        ],
+        "title": "FlagChange",
+        "type": "object"
+      },
+      "FlagList": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/FlagOut"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "FlagList",
+        "type": "object"
+      },
+      "FlagOut": {
+        "properties": {
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "hotel_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hotel Id"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "updated_by": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated By"
+          }
+        },
+        "required": [
+          "key",
+          "hotel_id",
+          "enabled",
+          "updated_at",
+          "updated_by"
+        ],
+        "title": "FlagOut",
+        "type": "object"
+      },
+      "FlagPatch": {
+        "additionalProperties": false,
+        "properties": {
+          "changes": {
+            "items": {
+              "$ref": "#/components/schemas/FlagChange"
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Changes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "changes"
+        ],
+        "title": "FlagPatch",
+        "type": "object"
+      },
       "FolioEntryOut": {
         "properties": {
           "amount": {
@@ -2197,6 +2453,47 @@
         "title": "HTTPValidationError",
         "type": "object"
       },
+      "Health": {
+        "properties": {
+          "checked_at": {
+            "format": "date-time",
+            "title": "Checked At",
+            "type": "string"
+          },
+          "checks": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/HealthCheck"
+            },
+            "title": "Checks",
+            "type": "object"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "checks",
+          "checked_at"
+        ],
+        "title": "Health",
+        "type": "object"
+      },
+      "HealthCheck": {
+        "additionalProperties": true,
+        "properties": {
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "HealthCheck",
+        "type": "object"
+      },
       "HeartbeatRequest": {
         "additionalProperties": false,
         "properties": {
@@ -2322,6 +2619,39 @@
         "title": "HistoryOut",
         "type": "object"
       },
+      "HotelCounts": {
+        "properties": {
+          "active_stays": {
+            "title": "Active Stays",
+            "type": "integer"
+          },
+          "connected_devices": {
+            "title": "Connected Devices",
+            "type": "integer"
+          },
+          "devices": {
+            "title": "Devices",
+            "type": "integer"
+          },
+          "rooms": {
+            "title": "Rooms",
+            "type": "integer"
+          },
+          "staff": {
+            "title": "Staff",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "rooms",
+          "devices",
+          "connected_devices",
+          "staff",
+          "active_stays"
+        ],
+        "title": "HotelCounts",
+        "type": "object"
+      },
       "HotelMembershipOut": {
         "properties": {
           "id": {
@@ -2426,7 +2756,7 @@
           "plan": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/PlanOut"
+                "$ref": "#/components/schemas/app__schemas__hotel__PlanOut"
               },
               {
                 "type": "null"
@@ -2530,6 +2860,42 @@
           }
         },
         "title": "HotelPatch",
+        "type": "object"
+      },
+      "HotelStatusOut": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "status_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Reason"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "status",
+          "status_reason"
+        ],
+        "title": "HotelStatusOut",
         "type": "object"
       },
       "ImageUploadOut": {
@@ -3956,6 +4322,84 @@
         "title": "LogoUploadRequest",
         "type": "object"
       },
+      "Metrics": {
+        "properties": {
+          "active_hotels": {
+            "title": "Active Hotels",
+            "type": "integer"
+          },
+          "active_stays": {
+            "title": "Active Stays",
+            "type": "integer"
+          },
+          "active_subscriptions": {
+            "title": "Active Subscriptions",
+            "type": "integer"
+          },
+          "as_of": {
+            "format": "date-time",
+            "title": "As Of",
+            "type": "string"
+          },
+          "cancelled_this_month": {
+            "title": "Cancelled This Month",
+            "type": "integer"
+          },
+          "churn_bp": {
+            "title": "Churn Bp",
+            "type": "integer"
+          },
+          "connected_devices": {
+            "title": "Connected Devices",
+            "type": "integer"
+          },
+          "hotels": {
+            "title": "Hotels",
+            "type": "integer"
+          },
+          "mrr": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "orders_this_month": {
+            "title": "Orders This Month",
+            "type": "integer"
+          },
+          "orders_today": {
+            "title": "Orders Today",
+            "type": "integer"
+          },
+          "pending_hotels": {
+            "title": "Pending Hotels",
+            "type": "integer"
+          },
+          "rooms": {
+            "title": "Rooms",
+            "type": "integer"
+          },
+          "suspended_hotels": {
+            "title": "Suspended Hotels",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "as_of",
+          "hotels",
+          "active_hotels",
+          "pending_hotels",
+          "suspended_hotels",
+          "rooms",
+          "connected_devices",
+          "active_stays",
+          "orders_today",
+          "orders_this_month",
+          "mrr",
+          "active_subscriptions",
+          "cancelled_this_month",
+          "churn_bp"
+        ],
+        "title": "Metrics",
+        "type": "object"
+      },
       "MfaChallengeResponse": {
         "properties": {
           "mfa_required": {
@@ -5201,27 +5645,82 @@
         "title": "PlaceOrder",
         "type": "object"
       },
-      "PlanOut": {
+      "PlanCreate": {
+        "additionalProperties": false,
         "properties": {
           "code": {
+            "pattern": "^[a-z][a-z0-9_]{1,40}$",
             "title": "Code",
             "type": "string"
           },
-          "name": {
-            "title": "Name",
-            "type": "string"
+          "features": {
+            "patternProperties": {
+              "^[a-z][a-z0-9_.]{1,60}$": {
+                "type": "boolean"
+              }
+            },
+            "title": "Features",
+            "type": "object"
           },
-          "subscription_status": {
-            "title": "Subscription Status",
+          "limits": {
+            "additionalProperties": {
+              "minimum": 0.0,
+              "type": "integer"
+            },
+            "propertyNames": {
+              "enum": [
+                "rooms",
+                "devices",
+                "staff",
+                "api_keys"
+              ]
+            },
+            "title": "Limits",
+            "type": "object"
+          },
+          "monthly_price": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "name": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Name",
             "type": "string"
           }
         },
         "required": [
           "code",
           "name",
-          "subscription_status"
+          "monthly_price"
         ],
-        "title": "PlanOut",
+        "title": "PlanCreate",
+        "type": "object"
+      },
+      "PlanList": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/app__schemas__admin__PlanOut"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "PlanList",
         "type": "object"
       },
       "Quote": {
@@ -7593,6 +8092,312 @@
         "title": "StepUpResponse",
         "type": "object"
       },
+      "SubscriptionOut": {
+        "properties": {
+          "cancelled_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelled At"
+          },
+          "hotel_id": {
+            "format": "uuid",
+            "title": "Hotel Id",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "limit_overrides": {
+            "additionalProperties": true,
+            "title": "Limit Overrides",
+            "type": "object"
+          },
+          "limits": {
+            "additionalProperties": true,
+            "title": "Limits",
+            "type": "object"
+          },
+          "plan": {
+            "$ref": "#/components/schemas/app__schemas__admin__PlanOut"
+          },
+          "renews_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Renews On"
+          },
+          "starts_on": {
+            "format": "date",
+            "title": "Starts On",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "hotel_id",
+          "plan",
+          "status",
+          "starts_on",
+          "renews_on",
+          "cancelled_at",
+          "limits",
+          "limit_overrides"
+        ],
+        "title": "SubscriptionOut",
+        "type": "object"
+      },
+      "SubscriptionPut": {
+        "additionalProperties": false,
+        "properties": {
+          "limit_overrides": {
+            "additionalProperties": {
+              "minimum": 0.0,
+              "type": "integer"
+            },
+            "propertyNames": {
+              "enum": [
+                "rooms",
+                "devices",
+                "staff",
+                "api_keys"
+              ]
+            },
+            "title": "Limit Overrides",
+            "type": "object"
+          },
+          "plan_id": {
+            "format": "uuid",
+            "title": "Plan Id",
+            "type": "string"
+          },
+          "renews_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Renews On"
+          },
+          "starts_on": {
+            "format": "date",
+            "title": "Starts On",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "trialing",
+              "active",
+              "past_due",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "plan_id",
+          "status",
+          "starts_on"
+        ],
+        "title": "SubscriptionPut",
+        "type": "object"
+      },
+      "SupportAccessOut": {
+        "properties": {
+          "access_token": {
+            "title": "Access Token",
+            "type": "string"
+          },
+          "grant": {
+            "$ref": "#/components/schemas/SupportGrantOut"
+          },
+          "token_type": {
+            "title": "Token Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "grant",
+          "access_token",
+          "token_type"
+        ],
+        "title": "SupportAccessOut",
+        "type": "object"
+      },
+      "SupportGrantList": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/SupportGrantOut"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "SupportGrantList",
+        "type": "object"
+      },
+      "SupportGrantOut": {
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "boolean"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "hotel_id": {
+            "format": "uuid",
+            "title": "Hotel Id",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "platform_user_id": {
+            "format": "uuid",
+            "title": "Platform User Id",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "revoked_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revoked At"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          },
+          "ticket_reference": {
+            "title": "Ticket Reference",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "hotel_id",
+          "platform_user_id",
+          "ticket_reference",
+          "reason",
+          "starts_at",
+          "expires_at",
+          "revoked_at",
+          "active"
+        ],
+        "title": "SupportGrantOut",
+        "type": "object"
+      },
+      "SupportRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "minutes": {
+            "default": 30,
+            "maximum": 60.0,
+            "minimum": 1.0,
+            "title": "Minutes",
+            "type": "integer"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "ticket_reference": {
+            "maxLength": 60,
+            "minLength": 3,
+            "title": "Ticket Reference",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ticket_reference"
+        ],
+        "title": "SupportRequest",
+        "type": "object"
+      },
+      "SuspendRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "minLength": 3,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "SuspendRequest",
+        "type": "object"
+      },
       "TokenResponse": {
         "properties": {
           "access_token": {
@@ -7830,6 +8635,74 @@
         ],
         "title": "Window",
         "type": "object"
+      },
+      "app__schemas__admin__PlanOut": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "features": {
+            "additionalProperties": true,
+            "title": "Features",
+            "type": "object"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "is_active": {
+            "title": "Is Active",
+            "type": "boolean"
+          },
+          "limits": {
+            "additionalProperties": true,
+            "title": "Limits",
+            "type": "object"
+          },
+          "monthly_price": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "monthly_price",
+          "limits",
+          "features",
+          "is_active"
+        ],
+        "title": "PlanOut",
+        "type": "object"
+      },
+      "app__schemas__hotel__PlanOut": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "subscription_status": {
+            "title": "Subscription Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "subscription_status"
+        ],
+        "title": "PlanOut",
+        "type": "object"
       }
     }
   },
@@ -7973,6 +8846,434 @@
         "summary": "Reject Adjustment",
         "tags": [
           "billing"
+        ]
+      }
+    },
+    "/api/v1/admin/feature-flags": {
+      "get": {
+        "operationId": "flags_api_v1_admin_feature_flags_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlagList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Flags",
+        "tags": [
+          "admin"
+        ]
+      },
+      "patch": {
+        "operationId": "set_flags_api_v1_admin_feature_flags_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FlagPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlagList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Flags",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/health": {
+      "get": {
+        "operationId": "health_api_v1_admin_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Health",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/hotels": {
+      "get": {
+        "operationId": "hotels_api_v1_admin_hotels_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminHotelList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Hotels",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/hotels/{hotel_id}/approve": {
+      "post": {
+        "operationId": "approve_api_v1_admin_hotels__hotel_id__approve_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "hotel_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Hotel Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HotelStatusOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Approve",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/hotels/{hotel_id}/reactivate": {
+      "post": {
+        "operationId": "reactivate_api_v1_admin_hotels__hotel_id__reactivate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "hotel_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Hotel Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HotelStatusOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reactivate",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/hotels/{hotel_id}/subscription": {
+      "put": {
+        "operationId": "put_subscription_api_v1_admin_hotels__hotel_id__subscription_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "hotel_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Hotel Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionPut"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Put Subscription",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/hotels/{hotel_id}/support-access": {
+      "post": {
+        "operationId": "support_access_api_v1_admin_hotels__hotel_id__support_access_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "hotel_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Hotel Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SupportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportAccessOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Support Access",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/hotels/{hotel_id}/suspend": {
+      "post": {
+        "operationId": "suspend_api_v1_admin_hotels__hotel_id__suspend_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "hotel_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Hotel Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SuspendRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HotelStatusOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Suspend",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/metrics": {
+      "get": {
+        "operationId": "metrics_api_v1_admin_metrics_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Metrics"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Metrics",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/plans": {
+      "get": {
+        "operationId": "plans_api_v1_admin_plans_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Plans",
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "operationId": "create_plan_api_v1_admin_plans_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/app__schemas__admin__PlanOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Plan",
+        "tags": [
+          "admin"
         ]
       }
     },
@@ -13968,6 +15269,70 @@
         "summary": "Unblock Charges",
         "tags": [
           "stays"
+        ]
+      }
+    },
+    "/api/v1/support-access": {
+      "get": {
+        "operationId": "hotel_grants_api_v1_support_access_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportGrantList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Hotel Grants",
+        "tags": [
+          "support-access"
+        ]
+      }
+    },
+    "/api/v1/support-access/{grant_id}/revoke": {
+      "post": {
+        "operationId": "revoke_grant_api_v1_support_access__grant_id__revoke_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "grant_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Grant Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportGrantOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Revoke Grant",
+        "tags": [
+          "support-access"
         ]
       }
     }

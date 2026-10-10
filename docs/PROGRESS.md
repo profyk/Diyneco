@@ -1,5 +1,24 @@
 # Progress
 
+## 2026-10-10: Phase 7 (Admin panel), backend
+
+### Done
+
+- Platform admin under `/admin` (platform token with MFA): metrics (hotels, rooms,
+  connected devices, active stays, orders today and this month, MRR, churn), hotel list
+  with counts and last activity, approve / suspend (step-up, reason) / reactivate, hotel
+  subscriptions with limit overrides, plan catalogue, global and per-hotel feature flags,
+  health (database, queue, realtime, email).
+- Cross-hotel reads only through aggregate definer functions; platform requests see no
+  tenant rows (D48). Writes to one hotel are audited in that hotel's log.
+- Support access: ticketed, time-boxed (max 60 minutes), step-up, read-only token without
+  guest data, owners emailed, listed and revocable by the hotel.
+- `platform` realtime channel (D49).
+- Exit criterion covered by a test: every GET route, called with a platform token and with a
+  support token, returns no guest name, email or phone.
+- CI fix: the card-data guard no longer mistakes UUIDs for card numbers.
+
+
 ## 2026-10-10: Phase 6 (Billing and checkout), backend
 
 ### Done

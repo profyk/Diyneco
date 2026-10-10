@@ -22,11 +22,31 @@ from app.core.errors import AppError
 from app.core.logging import request_id_var, security_event
 from app.core.state import AppState
 from app.db.session import TenantContext, UnitOfWork, set_tenant
-from app.models.tenancy import Hotel, HotelUser, Role, RolePermission, Session, User, UserRole
+from app.models.tenancy import Hotel, HotelUser, Role, RolePermission, Session, SupportGrant, User, UserRole
 from app.services.devices import check_device
 from app.services.idempotency import IdempotencyClaim, claim, parse_key, request_fingerprint
 
-PrincipalKind = Literal["staff", "platform", "device", "kitchen_session", "api_key"]
+PrincipalKind = Literal["staff", "platform", "device", "kitchen_session", "api_key", "support"]
+
+# What a platform support grant may read inside a hotel (DECISIONS D48): GET only, and only
+# permissions whose endpoints never return guest personal data. Guests, stays, folios,
+# invoices and audit logs are left out.
+SUPPORT_PERMISSIONS = frozenset(
+    {
+        "hotel.read",
+        "settings.read",
+        "rooms.read",
+        "devices.read",
+        "staff.read",
+        "menu.read",
+        "kitchen.view",
+        "orders.read",
+        "deliveries.view",
+        "payments.read",
+        "reports.read",
+        "subscription.read",
+    }
+)
 SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
 
 
@@ -191,10 +211,36 @@ class Principal:
             return f"device:{self.device_id}"
         return f"user:{self.user_id}"
 
+    def platform_actor(self, request: Request) -> dict[str, Any]:
+        """Actor fields for platform-level audit entries (hotel_id NULL)."""
+        return {
+            "actor_type": "platform",
+            "actor_id": self.user_id,
+            "actor_label": self.label,
+            "ip": client_ip(request),
+            "request_id": request_id_var.get(),
+        }
+
+    def for_hotel(self, request: Request, hotel_id: uuid.UUID) -> TenantContext:
+        """A platform user acting on one hotel: the write runs and is audited in its context."""
+        if self.kind != "platform":
+            raise AppError("PERMISSION_DENIED")
+        return TenantContext(
+            hotel_id=hotel_id,
+            actor_type="platform",
+            actor_id=self.user_id,
+            actor_label=self.label,
+            device_id=None,
+            ip=client_ip(request),
+            request_id=request_id_var.get(),
+        )
+
     def tenant(self, request: Request) -> TenantContext:
         if self.hotel_id is None:
             raise AppError("PERMISSION_DENIED")
-        actor_type = {"platform": "platform", "device": "device"}.get(self.kind, "user")
+        actor_type = {"platform": "platform", "support": "platform", "device": "device"}.get(
+            self.kind, "user"
+        )
         return TenantContext(
             hotel_id=self.hotel_id,
             actor_type=actor_type,
@@ -220,7 +266,7 @@ async def _resolve_principal(request: Request, uow: UnitOfWork, *, allow_mfa_pen
     st = state_of(request)
     claims = st.jwt.verify(bearer_token(request), "access")
     kind = claims.get("kind")
-    if kind not in ("staff", "platform", "kitchen_session"):
+    if kind not in ("staff", "platform", "kitchen_session", "support"):
         raise AppError("UNAUTHENTICATED")  # device tokens use the device dependencies
     try:
         user_id = uuid.UUID(str(claims["sub"]))
@@ -233,7 +279,7 @@ async def _resolve_principal(request: Request, uow: UnitOfWork, *, allow_mfa_pen
     if mfa_pending and not allow_mfa_pending:
         raise AppError("MFA_REQUIRED", "Set up two-step sign-in to continue.", details={"next": "mfa_enroll"})
 
-    if kind in ("staff", "kitchen_session") and hotel_id is None:
+    if kind in ("staff", "kitchen_session", "support") and hotel_id is None:
         raise AppError("UNAUTHENTICATED")
     header_hotel = request.headers.get("x-hotel-id")
     if header_hotel and (hotel_id is None or header_hotel.lower() != str(hotel_id)):
@@ -259,6 +305,9 @@ async def _resolve_principal(request: Request, uow: UnitOfWork, *, allow_mfa_pen
 
     if kind == "platform":
         principal = await _platform_principal(s, user, session_id, amr, mfa_pending)
+    elif kind == "support":
+        assert hotel_id is not None  # noqa: S101 - checked above
+        principal = await _support_principal(request, s, user, claims, hotel_id, session_id, amr)
     else:
         membership = (
             await s.execute(
@@ -340,6 +389,51 @@ async def _platform_principal(
         name=user.name,
         role_names=tuple(sorted({r[0] for r in rows})),
         mfa_pending=mfa_pending,
+    )
+
+
+async def _support_principal(
+    request: Request,
+    s: Any,
+    user: User,
+    claims: dict[str, Any],
+    hotel_id: uuid.UUID,
+    session_id: uuid.UUID,
+    amr: tuple[str, ...],
+) -> Principal:
+    """A platform user inside one hotel through an active support grant: read-only, limited
+    to SUPPORT_PERMISSIONS, and only until the grant expires or the hotel revokes it."""
+    if not user.is_platform or "mfa" not in amr:
+        raise AppError("UNAUTHENTICATED")
+    try:
+        grant_id = uuid.UUID(str(claims["gid"]))
+    except (KeyError, ValueError) as exc:
+        raise AppError("UNAUTHENTICATED") from exc
+    active = (
+        await s.execute(
+            select(SupportGrant.id).where(
+                SupportGrant.id == grant_id,
+                SupportGrant.hotel_id == hotel_id,
+                SupportGrant.platform_user_id == user.id,
+                SupportGrant.revoked_at.is_(None),
+                SupportGrant.expires_at > text("now()"),
+            )
+        )
+    ).first()
+    if active is None:
+        raise AppError("UNAUTHENTICATED", "Support access has ended.", details={"reason": "support_ended"})
+    if request.method not in SAFE_METHODS:
+        raise AppError("PERMISSION_DENIED", "Support access is read-only.")
+    return Principal(
+        kind="support",
+        user_id=user.id,
+        session_id=session_id,
+        hotel_id=hotel_id,
+        hotel_user_id=None,
+        permissions=SUPPORT_PERMISSIONS,
+        amr=amr,
+        name=user.name,
+        role_names=("Diyneco Support",),
     )
 
 

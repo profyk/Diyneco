@@ -52,6 +52,178 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/feature-flags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Flags */
+        get: operations["flags_api_v1_admin_feature_flags_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Set Flags */
+        patch: operations["set_flags_api_v1_admin_feature_flags_patch"];
+        trace?: never;
+    };
+    "/api/v1/admin/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Health */
+        get: operations["health_api_v1_admin_health_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/hotels": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Hotels */
+        get: operations["hotels_api_v1_admin_hotels_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/hotels/{hotel_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve */
+        post: operations["approve_api_v1_admin_hotels__hotel_id__approve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/hotels/{hotel_id}/reactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reactivate */
+        post: operations["reactivate_api_v1_admin_hotels__hotel_id__reactivate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/hotels/{hotel_id}/subscription": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Put Subscription */
+        put: operations["put_subscription_api_v1_admin_hotels__hotel_id__subscription_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/hotels/{hotel_id}/support-access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Support Access */
+        post: operations["support_access_api_v1_admin_hotels__hotel_id__support_access_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/hotels/{hotel_id}/suspend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Suspend */
+        post: operations["suspend_api_v1_admin_hotels__hotel_id__suspend_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Metrics */
+        get: operations["metrics_api_v1_admin_metrics_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Plans */
+        get: operations["plans_api_v1_admin_plans_get"];
+        put?: never;
+        /** Create Plan */
+        post: operations["create_plan_api_v1_admin_plans_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/email/verify": {
         parameters: {
             query?: never;
@@ -1959,6 +2131,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/support-access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Hotel Grants */
+        get: operations["hotel_grants_api_v1_support_access_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/support-access/{grant_id}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Revoke Grant */
+        post: operations["revoke_grant_api_v1_support_access__grant_id__revoke_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2040,6 +2246,43 @@ export interface components {
             order_id?: string | null;
             /** Reason */
             reason: string;
+        };
+        /** AdminHotel */
+        AdminHotel: {
+            counts: components["schemas"]["HotelCounts"];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Last Activity */
+            last_activity: string | null;
+            /** Name */
+            name: string;
+            /** Plan */
+            plan: string | null;
+            /** Renews On */
+            renews_on: string | null;
+            /** Slug */
+            slug: string;
+            /** Status */
+            status: string;
+            /** Status Reason */
+            status_reason: string | null;
+            /** Subscription Status */
+            subscription_status: string | null;
+        };
+        /** AdminHotelList */
+        AdminHotelList: {
+            /** Data */
+            data: components["schemas"]["AdminHotel"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
         };
         /** AssignRequest */
         AssignRequest: {
@@ -2397,6 +2640,43 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /** FlagChange */
+        FlagChange: {
+            /** Enabled */
+            enabled: boolean;
+            /** Hotel Id */
+            hotel_id?: string | null;
+            /** Key */
+            key: string;
+        };
+        /** FlagList */
+        FlagList: {
+            /** Data */
+            data: components["schemas"]["FlagOut"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+        };
+        /** FlagOut */
+        FlagOut: {
+            /** Enabled */
+            enabled: boolean;
+            /** Hotel Id */
+            hotel_id: string | null;
+            /** Key */
+            key: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Updated By */
+            updated_by: string | null;
+        };
+        /** FlagPatch */
+        FlagPatch: {
+            /** Changes */
+            changes: components["schemas"]["FlagChange"][];
+        };
         /** FolioEntryOut */
         FolioEntryOut: {
             amount: components["schemas"]["SignedMoney"];
@@ -2668,6 +2948,27 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+        /** Health */
+        Health: {
+            /**
+             * Checked At
+             * Format: date-time
+             */
+            checked_at: string;
+            /** Checks */
+            checks: {
+                [key: string]: components["schemas"]["HealthCheck"];
+            };
+            /** Status */
+            status: string;
+        };
+        /** HealthCheck */
+        HealthCheck: {
+            /** Status */
+            status: string;
+        } & {
+            [key: string]: unknown;
+        };
         /** HeartbeatRequest */
         HeartbeatRequest: {
             /** App Version */
@@ -2705,6 +3006,19 @@ export interface components {
             from_status: string | null;
             /** To Status */
             to_status: string;
+        };
+        /** HotelCounts */
+        HotelCounts: {
+            /** Active Stays */
+            active_stays: number;
+            /** Connected Devices */
+            connected_devices: number;
+            /** Devices */
+            devices: number;
+            /** Rooms */
+            rooms: number;
+            /** Staff */
+            staff: number;
         };
         /** HotelMembershipOut */
         HotelMembershipOut: {
@@ -2748,7 +3062,7 @@ export interface components {
             name: string;
             /** Phone */
             phone: string | null;
-            plan: components["schemas"]["PlanOut"] | null;
+            plan: components["schemas"]["app__schemas__hotel__PlanOut"] | null;
             /** Slug */
             slug: string;
             /** Status */
@@ -2767,6 +3081,20 @@ export interface components {
             name?: string | null;
             /** Phone */
             phone?: string | null;
+        };
+        /** HotelStatusOut */
+        HotelStatusOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Status */
+            status: string;
+            /** Status Reason */
+            status_reason: string | null;
         };
         /** ImageUploadOut */
         ImageUploadOut: {
@@ -3253,6 +3581,39 @@ export interface components {
             /** Size Bytes */
             size_bytes: number;
         };
+        /** Metrics */
+        Metrics: {
+            /** Active Hotels */
+            active_hotels: number;
+            /** Active Stays */
+            active_stays: number;
+            /** Active Subscriptions */
+            active_subscriptions: number;
+            /**
+             * As Of
+             * Format: date-time
+             */
+            as_of: string;
+            /** Cancelled This Month */
+            cancelled_this_month: number;
+            /** Churn Bp */
+            churn_bp: number;
+            /** Connected Devices */
+            connected_devices: number;
+            /** Hotels */
+            hotels: number;
+            mrr: components["schemas"]["SignedMoney"];
+            /** Orders This Month */
+            orders_this_month: number;
+            /** Orders Today */
+            orders_today: number;
+            /** Pending Hotels */
+            pending_hotels: number;
+            /** Rooms */
+            rooms: number;
+            /** Suspended Hotels */
+            suspended_hotels: number;
+        };
         /** MfaChallengeResponse */
         MfaChallengeResponse: {
             /**
@@ -3702,14 +4063,28 @@ export interface components {
             /** Special Instructions */
             special_instructions?: string | null;
         };
-        /** PlanOut */
-        PlanOut: {
+        /** PlanCreate */
+        PlanCreate: {
             /** Code */
             code: string;
+            /** Features */
+            features?: {
+                [key: string]: boolean;
+            };
+            /** Limits */
+            limits?: {
+                [key: string]: number;
+            };
+            monthly_price: components["schemas"]["Money"];
             /** Name */
             name: string;
-            /** Subscription Status */
-            subscription_status: string;
+        };
+        /** PlanList */
+        PlanList: {
+            /** Data */
+            data: components["schemas"]["app__schemas__admin__PlanOut"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
         };
         /** Quote */
         Quote: {
@@ -4457,6 +4832,131 @@ export interface components {
             /** Step Up Token */
             step_up_token: string;
         };
+        /** SubscriptionOut */
+        SubscriptionOut: {
+            /** Cancelled At */
+            cancelled_at: string | null;
+            /**
+             * Hotel Id
+             * Format: uuid
+             */
+            hotel_id: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Limit Overrides */
+            limit_overrides: {
+                [key: string]: unknown;
+            };
+            /** Limits */
+            limits: {
+                [key: string]: unknown;
+            };
+            plan: components["schemas"]["app__schemas__admin__PlanOut"];
+            /** Renews On */
+            renews_on: string | null;
+            /**
+             * Starts On
+             * Format: date
+             */
+            starts_on: string;
+            /** Status */
+            status: string;
+        };
+        /** SubscriptionPut */
+        SubscriptionPut: {
+            /** Limit Overrides */
+            limit_overrides?: {
+                [key: string]: number;
+            };
+            /**
+             * Plan Id
+             * Format: uuid
+             */
+            plan_id: string;
+            /** Renews On */
+            renews_on?: string | null;
+            /**
+             * Starts On
+             * Format: date
+             */
+            starts_on: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "trialing" | "active" | "past_due" | "cancelled";
+        };
+        /** SupportAccessOut */
+        SupportAccessOut: {
+            /** Access Token */
+            access_token: string;
+            grant: components["schemas"]["SupportGrantOut"];
+            /** Token Type */
+            token_type: string;
+        };
+        /** SupportGrantList */
+        SupportGrantList: {
+            /** Data */
+            data: components["schemas"]["SupportGrantOut"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+        };
+        /** SupportGrantOut */
+        SupportGrantOut: {
+            /** Active */
+            active: boolean;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /**
+             * Hotel Id
+             * Format: uuid
+             */
+            hotel_id: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Platform User Id
+             * Format: uuid
+             */
+            platform_user_id: string;
+            /** Reason */
+            reason: string | null;
+            /** Revoked At */
+            revoked_at: string | null;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /** Ticket Reference */
+            ticket_reference: string;
+        };
+        /** SupportRequest */
+        SupportRequest: {
+            /**
+             * Minutes
+             * @default 30
+             */
+            minutes: number;
+            /** Reason */
+            reason?: string | null;
+            /** Ticket Reference */
+            ticket_reference: string;
+        };
+        /** SuspendRequest */
+        SuspendRequest: {
+            /** Reason */
+            reason: string;
+        };
         /** TokenResponse */
         TokenResponse: {
             /** Access Token */
@@ -4537,6 +5037,38 @@ export interface components {
             from: string;
             /** To */
             to: string;
+        };
+        /** PlanOut */
+        app__schemas__admin__PlanOut: {
+            /** Code */
+            code: string;
+            /** Features */
+            features: {
+                [key: string]: unknown;
+            };
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Is Active */
+            is_active: boolean;
+            /** Limits */
+            limits: {
+                [key: string]: unknown;
+            };
+            monthly_price: components["schemas"]["SignedMoney"];
+            /** Name */
+            name: string;
+        };
+        /** PlanOut */
+        app__schemas__hotel__PlanOut: {
+            /** Code */
+            code: string;
+            /** Name */
+            name: string;
+            /** Subscription Status */
+            subscription_status: string;
         };
     };
     responses: never;
@@ -4633,6 +5165,339 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdjustmentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    flags_api_v1_admin_feature_flags_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FlagList"];
+                };
+            };
+        };
+    };
+    set_flags_api_v1_admin_feature_flags_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FlagPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FlagList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    health_api_v1_admin_health_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Health"];
+                };
+            };
+        };
+    };
+    hotels_api_v1_admin_hotels_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminHotelList"];
+                };
+            };
+        };
+    };
+    approve_api_v1_admin_hotels__hotel_id__approve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                hotel_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HotelStatusOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reactivate_api_v1_admin_hotels__hotel_id__reactivate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                hotel_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HotelStatusOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_subscription_api_v1_admin_hotels__hotel_id__subscription_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                hotel_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubscriptionPut"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscriptionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    support_access_api_v1_admin_hotels__hotel_id__support_access_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                hotel_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SupportRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupportAccessOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    suspend_api_v1_admin_hotels__hotel_id__suspend_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                hotel_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SuspendRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HotelStatusOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    metrics_api_v1_admin_metrics_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Metrics"];
+                };
+            };
+        };
+    };
+    plans_api_v1_admin_plans_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanList"];
+                };
+            };
+        };
+    };
+    create_plan_api_v1_admin_plans_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlanCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["app__schemas__admin__PlanOut"];
                 };
             };
             /** @description Validation Error */
@@ -8734,6 +9599,57 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StayOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    hotel_grants_api_v1_support_access_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupportGrantList"];
+                };
+            };
+        };
+    };
+    revoke_grant_api_v1_support_access__grant_id__revoke_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                grant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupportGrantOut"];
                 };
             };
             /** @description Validation Error */

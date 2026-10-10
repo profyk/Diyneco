@@ -102,7 +102,11 @@ async def test_catalogue_seeds(owner_engine):
     async with owner_engine.connect() as conn:
         plans = (
             await conn.execute(
-                text("SELECT code, monthly_price_minor, features FROM app.plans ORDER BY code")
+                # Other tests may add plans through the admin API; check the seeded ones.
+                text(
+                    "SELECT code, monthly_price_minor, features FROM app.plans "
+                    "WHERE code IN ('starter', 'professional', 'enterprise') ORDER BY code"
+                )
             )
         ).all()
         cats = (

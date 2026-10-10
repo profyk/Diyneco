@@ -2,7 +2,9 @@
 "Static check fails CI if a router function takes hotel_id as input").
 
 The hotel comes from the principal. The only exceptions are the two auth routes where a
-signed-in user picks which of their own memberships to use; the server checks membership.
+signed-in user picks which of their own memberships to use (the server checks membership),
+and the platform admin router (/admin), which only platform tokens can call and where a
+hotel is the object being administered, not the caller's tenant.
 
     uv run python scripts/check_routes.py
 """
@@ -16,6 +18,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+PLATFORM_PREFIX = "/api/v1/admin/"
 FORBIDDEN = {"hotel_id", "hid", "hotelid", "hotel"}
 ALLOWED = {
     ("POST", "/api/v1/auth/login"): {"hotel_id"},
@@ -44,6 +47,8 @@ def check(spec: dict[str, Any]) -> list[str]:
             if body:
                 names |= {n.lower() for n in _schema_props(spec, body)}
             names |= {seg.strip("{}").lower() for seg in path.split("/") if seg.startswith("{")}
+            if path.startswith(PLATFORM_PREFIX):
+                continue
             bad = (names & FORBIDDEN) - ALLOWED.get((method.upper(), path), set())
             if bad:
                 problems.append(f"{method.upper()} {path} accepts {sorted(bad)}")
