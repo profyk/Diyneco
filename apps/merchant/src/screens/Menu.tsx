@@ -44,7 +44,7 @@ const IMAGE_MAX_BYTES = 5 * 1024 * 1024;
 
 export function Menu() {
   const { api, can } = useSession();
-  const [dialog, setDialog] = useState<null | "category" | "station" | "groups" | "hours" | { item: string | null }>(null);
+  const [dialog, setDialog] = useState<null | "category" | "station" | "groups" | "hours" | "import" | { item: string | null }>(null);
   const [editCategory, setEditCategory] = useState<string | null>(null);
   const schedules = useQuery({ queryKey: ["menu", "schedules"], queryFn: () => ok(api.GET("/api/v1/menu/schedules")) });
   const categories = useQuery({ queryKey: ["menu", "categories"], queryFn: () => ok(api.GET("/api/v1/menu/categories")) });
@@ -75,6 +75,9 @@ export function Menu() {
               </Button>
               <Button variant="secondary" onClick={() => setDialog("hours")}>
                 Serving hours
+              </Button>
+              <Button variant="secondary" onClick={() => setDialog("import")}>
+                Import CSV
               </Button>
               <Button onClick={() => setDialog({ item: null })}>Add item</Button>
             </>
@@ -153,6 +156,7 @@ export function Menu() {
       {dialog === "station" ? <NameDialog kind="station" onClose={() => setDialog(null)} /> : null}
       {dialog === "groups" ? <GroupsDialog onClose={() => setDialog(null)} /> : null}
       {dialog === "hours" ? <HoursDialog onClose={() => setDialog(null)} /> : null}
+      {dialog === "import" ? <MenuImportDialog onClose={() => setDialog(null)} /> : null}
       {editCategory && categories.data ? (
         <CategoryDialog
           category={categories.data.data.find((c) => c.id === editCategory)!}
@@ -231,7 +235,9 @@ function ItemDialog({
     allergens?: string[];
     groups?: string[];
     schedule_id?: string;
+    ingredients?: string;
   }>({});
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const schedules = useQuery({ queryKey: ["menu", "schedules"], queryFn: () => ok(api.GET("/api/v1/menu/schedules")) });
   const groups = useQuery({ queryKey: ["menu", "modifier-groups"], queryFn: () => ok(api.GET("/api/v1/menu/modifier-groups")) });
   const v = {
@@ -245,7 +251,13 @@ function ItemDialog({
     allergens: form.allergens ?? item?.allergens ?? [],
     groups: form.groups ?? item?.modifier_groups.map((g) => g.id) ?? [],
     schedule_id: form.schedule_id ?? item?.schedule_id ?? "",
+    ingredients: form.ingredients ?? item?.ingredients.join(", ") ?? "",
   };
+  const ingredients = v.ingredients
+    .split(/[,;\n]/)
+    .map((x) => x.trim())
+    .filter(Boolean);
+  const ingredientsOk = ingredients.length <= 40 && ingredients.every((x) => x.length <= 60);
   const minor = parseAmount(v.price);
   const body = {
     name: v.name.trim(),
@@ -258,6 +270,7 @@ function ItemDialog({
     allergens: v.allergens as (typeof ALLERGENS)[number][],
     sort_order: item?.sort_order ?? 0,
     schedule_id: v.schedule_id || null,
+    ingredients,
   };
   const groupsChanged = form.groups !== undefined;
   const save = useAction(
@@ -283,6 +296,10 @@ function ItemDialog({
     { success: itemId ? "Item updated." : "Item added.", onDone: onClose },
   );
   const set = (patch: Partial<typeof form>) => setForm((f) => ({ ...f, ...patch }));
+  const remove = useAction(
+    () => ok(api.DELETE("/api/v1/menu/items/{item_id}", { params: { path: { item_id: itemId! } } })),
+    { success: "Item removed from the menu. Past orders keep it.", onDone: onClose },
+  );
 
   return (
     <Dialog
@@ -292,9 +309,26 @@ function ItemDialog({
       title={itemId ? "Edit item" : "Add item"}
       description="Price changes are recorded with your name. A price change may ask for your PIN."
       footer={
-        <Button disabled={!v.name.trim() || minor === null || !v.category_id || !v.station_id} loading={save.isPending} onClick={() => save.mutate(undefined)}>
-          Save
-        </Button>
+        <>
+          {itemId ? (
+            confirmDelete ? (
+              <Button variant="danger" loading={remove.isPending} onClick={() => remove.mutate(undefined)}>
+                Yes, delete item
+              </Button>
+            ) : (
+              <Button variant="ghost" onClick={() => setConfirmDelete(true)}>
+                Delete item
+              </Button>
+            )
+          ) : null}
+          <Button
+            disabled={!v.name.trim() || minor === null || !v.category_id || !v.station_id || !ingredientsOk}
+            loading={save.isPending}
+            onClick={() => save.mutate(undefined)}
+          >
+            Save
+          </Button>
+        </>
       }
     >
       {itemId && !item ? (
@@ -351,6 +385,22 @@ function ItemDialog({
             )}
           </Field>
           <Chips legend="Dietary" all={DIETARY} value={v.dietary} onChange={(dietary) => set({ dietary })} />
+          <Field
+            label="Ingredients"
+            hint="Separated by commas. Guests see them on the tablet."
+            error={ingredientsOk ? undefined : "At most 40 ingredients of up to 60 characters each."}
+            className="sm:col-span-2"
+          >
+            {(p) => (
+              <Textarea
+                {...p}
+                rows={2}
+                placeholder="beef, potato, rosemary, garlic butter"
+                value={v.ingredients}
+                onChange={(e) => set({ ingredients: e.target.value })}
+              />
+            )}
+          </Field>
           <Chips legend="Contains allergens" all={ALLERGENS} value={v.allergens} onChange={(allergens) => set({ allergens })} />
           {groups.data?.data.length ? (
             <fieldset className="sm:col-span-2">
@@ -373,7 +423,7 @@ function ItemDialog({
           {itemId && item ? <ImageField itemId={itemId} imageUrl={item.image_url} /> : null}
         </div>
       )}
-      {save.error ? <ErrorNotice error={save.error} className="mt-4" /> : null}
+      {save.error || remove.error ? <ErrorNotice error={save.error ?? remove.error} className="mt-4" /> : null}
     </Dialog>
   );
 }
@@ -496,6 +546,7 @@ function GroupsDialog({ onClose }: { onClose: () => void }) {
       title="Options"
       description="Choices guests make when ordering, such as cooking preference or a side. Tick a group on an item to offer it."
     >
+      <Presets existing={(groups.data?.data ?? []).map((x) => x.name.toLowerCase())} />
       {groups.isLoading ? (
         <Skeleton className="h-24" />
       ) : groups.data?.data.length ? (
@@ -619,9 +670,15 @@ function CategoryDialog({
       ),
     { success: "Category saved.", onDone: onClose },
   );
+  const [withItems, setWithItems] = useState(false);
   const remove = useAction(
-    () => ok(api.DELETE("/api/v1/menu/categories/{category_id}", { params: { path: { category_id: category.id } } })),
-    { success: "Category deleted.", onDone: onClose },
+    () =>
+      ok(
+        api.DELETE("/api/v1/menu/categories/{category_id}", {
+          params: { path: { category_id: category.id }, query: { with_items: withItems } },
+        }),
+      ),
+    { success: withItems ? "Category and its items deleted." : "Category deleted.", onDone: onClose },
   );
   return (
     <Dialog
@@ -659,7 +716,13 @@ function CategoryDialog({
           )}
         </Field>
       </div>
-      <p className="mt-4 text-sm text-muted">A category can be deleted only when it has no items.</p>
+      <label className="mt-4 flex items-start gap-2 text-sm text-ink">
+        <input type="checkbox" className="mt-1" checked={withItems} onChange={(e) => setWithItems(e.target.checked)} />
+        <span>
+          Also delete every item in this category (asks for your PIN). Past orders and bills keep their items. Without this, a
+          category can be deleted only when it is empty.
+        </span>
+      </label>
       {save.error || remove.error ? <ErrorNotice error={save.error ?? remove.error} className="mt-4" /> : null}
     </Dialog>
   );
@@ -748,6 +811,203 @@ function HoursDialog({ onClose }: { onClose: () => void }) {
         </div>
         {add.error ? <ErrorNotice error={add.error} /> : null}
       </form>
+    </Dialog>
+  );
+}
+
+const PRESETS: { name: string; min: number; max: number; hint: string; options: string[] }[] = [
+  { name: "Steak temperature", min: 1, max: 1, hint: "Required: one choice", options: ["Rare", "Medium rare", "Medium", "Medium well", "Well done"] },
+  { name: "Sauce", min: 0, max: 2, hint: "Optional, up to 2", options: ["Pepper sauce", "Mushroom sauce", "Cheese sauce", "Garlic butter", "Monkey gland sauce"] },
+  { name: "Side", min: 1, max: 1, hint: "Required: one choice", options: ["Chips", "Side salad", "Mashed potato", "Seasonal vegetables", "Rice"] },
+  { name: "Extras", min: 0, max: 5, hint: "Optional, up to 5", options: ["Extra cheese", "Bacon", "Avocado", "Fried egg", "Jalapeños"] },
+  { name: "Egg style", min: 1, max: 1, hint: "Required: one choice", options: ["Fried", "Scrambled", "Poached", "Boiled"] },
+  { name: "Milk", min: 0, max: 1, hint: "Optional", options: ["Full cream", "Low fat", "Oat milk", "Almond milk"] },
+];
+
+/** One-click option groups with their usual choices; prices are set before creating. */
+function Presets({ existing }: { existing: string[] }) {
+  const { api } = useSession();
+  const currency = useCurrency();
+  const [chosen, setChosen] = useState<number | null>(null);
+  const [prices, setPrices] = useState<Record<string, string>>({});
+  const [skip, setSkip] = useState<string[]>([]);
+  const preset = chosen === null ? null : PRESETS[chosen]!;
+  const options = preset ? preset.options.filter((o) => !skip.includes(o)) : [];
+  const valid = options.length > 0 && options.every((o) => parseAmount(prices[o] || "0") !== null);
+  const create = useAction(
+    async () => {
+      const group = await ok(
+        api.POST("/api/v1/menu/modifier-groups", {
+          body: { name: preset!.name, min_select: preset!.min, max_select: Math.min(preset!.max, options.length) },
+        }),
+      );
+      for (const [n, o] of options.entries()) {
+        await ok(
+          api.POST("/api/v1/menu/modifier-groups/{group_id}/options", {
+            params: { path: { group_id: group.id } },
+            body: { name: o, price_delta: { amount_minor: parseAmount(prices[o] || "0") ?? 0, currency }, sort_order: n },
+          }),
+        );
+      }
+      return group;
+    },
+    {
+      success: (g) => `${g.name} added. Tick it on the items that offer it.`,
+      onDone: () => {
+        setChosen(null);
+        setPrices({});
+        setSkip([]);
+      },
+    },
+  );
+  return (
+    <div className="mb-6 rounded-lg border border-line p-4">
+      <p className="text-sm font-semibold text-ink">Quick start</p>
+      <div className="mt-2 flex flex-wrap gap-2">
+        {PRESETS.map((x, i) => (
+          <Button
+            key={x.name}
+            size="sm"
+            variant={chosen === i ? "primary" : "secondary"}
+            disabled={existing.includes(x.name.toLowerCase())}
+            onClick={() => {
+              setChosen(chosen === i ? null : i);
+              setSkip([]);
+            }}
+          >
+            {x.name}
+          </Button>
+        ))}
+      </div>
+      {preset ? (
+        <div className="mt-4">
+          <p className="mb-2 text-sm text-muted">
+            {preset.hint}. Untick choices you do not offer and set any extra charge ({currencySymbol(currency)}).
+          </p>
+          <ul className="grid gap-2 sm:grid-cols-2">
+            {preset.options.map((o) => (
+              <li key={o} className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  aria-label={`Offer ${o}`}
+                  checked={!skip.includes(o)}
+                  onChange={(e) => setSkip(e.target.checked ? skip.filter((x) => x !== o) : [...skip, o])}
+                />
+                <span className="flex-1 text-sm">{o}</span>
+                <Input
+                  aria-label={`Extra charge for ${o}`}
+                  inputMode="decimal"
+                  className="w-24"
+                  placeholder="0.00"
+                  value={prices[o] ?? ""}
+                  onChange={(e) => setPrices({ ...prices, [o]: e.target.value })}
+                />
+              </li>
+            ))}
+          </ul>
+          {create.error ? <ErrorNotice error={create.error} className="mt-3" /> : null}
+          <Button className="mt-3" disabled={!valid} loading={create.isPending} onClick={() => create.mutate(undefined)}>
+            Add {preset.name.toLowerCase()}
+          </Button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+const MENU_TEMPLATE =
+  "category,name,description,price,type,station,dietary,allergens,ingredients,options\n" +
+  'Grill,Rump steak 300 g,Flame-grilled with chips,245.00,food,,,,"beef;potato;salt;pepper","Steak temperature;Sauce"\n' +
+  'Breakfast,Full English,"Eggs, bacon, sausage, beans and toast",165.00,food,,,"egg;gluten","egg;bacon;pork sausage;beans;bread",Egg style\n' +
+  "Drinks,Fresh orange juice,,45.00,beverage,,vegan,,orange,\n";
+
+/** Upload a whole menu from a spreadsheet: checked line by line, then imported all or nothing. */
+function MenuImportDialog({ onClose }: { onClose: () => void }) {
+  const { api } = useSession();
+  const [csv, setCsv] = useState("");
+  const [fileName, setFileName] = useState("");
+  const send = (commit: boolean) =>
+    ok(
+      api.POST("/api/v1/menu/items/import", {
+        params: { query: { commit } },
+        body: csv as never,
+        bodySerializer: (b: unknown) => b as string,
+        headers: { "Content-Type": "text/csv" },
+      }),
+    );
+  const check = useAction(() => send(false));
+  const commit = useAction(() => send(true), {
+    success: (r) => `${r.created} items imported${r.new_categories.length ? ` into ${r.new_categories.length} new categories` : ""}.`,
+    onDone: onClose,
+  });
+  const report = check.data;
+  return (
+    <Dialog
+      open
+      onClose={onClose}
+      size="lg"
+      title="Import a menu from a spreadsheet"
+      description="Columns: category, name, description, price (like 185.00), type (food or beverage), station (empty for the first), dietary, allergens, ingredients and options (option group names). Separate several values with semicolons. Missing categories are created."
+      footer={
+        <>
+          <Button variant="secondary" disabled={!csv} loading={check.isPending} onClick={() => check.mutate(undefined)}>
+            Check file
+          </Button>
+          <Button disabled={!report?.valid} loading={commit.isPending} onClick={() => commit.mutate(undefined)}>
+            Import {report?.valid ? `${report.rows} items` : ""}
+          </Button>
+        </>
+      }
+    >
+      <div className="flex flex-wrap items-center gap-3">
+        <input
+          type="file"
+          accept=".csv,text/csv"
+          aria-label="Choose a CSV file"
+          className="text-sm"
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            setFileName(file.name);
+            setCsv(await file.text());
+            check.reset();
+          }}
+        />
+        <a className="text-sm text-blue hover:underline" href={`data:text/csv;charset=utf-8,${encodeURIComponent(MENU_TEMPLATE)}`} download="diyneco-menu-template.csv">
+          Download a template
+        </a>
+      </div>
+      {fileName ? <p className="mt-2 text-sm text-muted">{fileName}</p> : null}
+      {report ? (
+        report.valid ? (
+          <p className="mt-4 rounded-lg bg-good/10 p-3 text-sm text-ink">
+            All {report.rows} items are ready.
+            {report.new_categories.length ? ` New categories: ${report.new_categories.join(", ")}.` : ""}
+          </p>
+        ) : (
+          <div className="mt-4 max-h-64 overflow-auto rounded-lg border border-line">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-muted">
+                  <th className="px-3 py-2">Line</th>
+                  <th className="px-3 py-2">Column</th>
+                  <th className="px-3 py-2">Problem</th>
+                </tr>
+              </thead>
+              <tbody>
+                {report.errors.map((x, i) => (
+                  <tr key={i} className="border-t border-line">
+                    <td className="px-3 py-2">{x.line}</td>
+                    <td className="px-3 py-2">{x.field}</td>
+                    <td className="px-3 py-2">{x.problem}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )
+      ) : null}
+      {check.error || commit.error ? <ErrorNotice error={check.error ?? commit.error} className="mt-4" /> : null}
     </Dialog>
   );
 }
