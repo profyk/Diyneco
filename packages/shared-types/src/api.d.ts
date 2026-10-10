@@ -378,6 +378,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Me */
+        get: operations["me_api_v1_auth_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/mfa/enroll": {
         parameters: {
             query?: never;
@@ -4049,7 +4066,7 @@ export interface components {
             /** Quantity */
             quantity: number;
             /** Ready At */
-            ready_at: unknown;
+            ready_at: string | null;
             /** Station */
             station: {
                 [key: string]: unknown;
@@ -4058,9 +4075,12 @@ export interface components {
         /** KitchenOrder */
         KitchenOrder: {
             /** Accepted At */
-            accepted_at: unknown;
-            /** Created At */
-            created_at: unknown;
+            accepted_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
             /**
              * Id
              * Format: uuid
@@ -4071,7 +4091,7 @@ export interface components {
             /** Number */
             number: number;
             /** Ready At */
-            ready_at: unknown;
+            ready_at: string | null;
             /** Room */
             room: string;
             /** Special Instructions */
@@ -4177,6 +4197,37 @@ export interface components {
             content_type: "image/png" | "image/jpeg" | "image/svg+xml";
             /** Size Bytes */
             size_bytes: number;
+        };
+        /** MeHotel */
+        MeHotel: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Status */
+            status: string;
+        };
+        /**
+         * MeOut
+         * @description Who is signed in and what they may do, so apps show only usable actions. The server
+         *     still checks every permission on every request.
+         */
+        MeOut: {
+            hotel: components["schemas"]["MeHotel"] | null;
+            /** Kind */
+            kind: string;
+            /** Mfa */
+            mfa: boolean;
+            /** Mfa Pending */
+            mfa_pending: boolean;
+            /** Permissions */
+            permissions: string[];
+            /** Roles */
+            roles: string[];
+            user: components["schemas"]["UserOut"] | null;
         };
         /** Metrics */
         Metrics: {
@@ -6788,6 +6839,26 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    me_api_v1_auth_me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeOut"];
+                };
             };
         };
     };

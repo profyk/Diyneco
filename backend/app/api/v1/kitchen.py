@@ -8,6 +8,7 @@ token with `kitchen.view`. Actions need a person: a kitchen session or staff tok
 from __future__ import annotations
 
 import uuid
+from datetime import datetime
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Request, Response
@@ -69,7 +70,7 @@ class KitchenItem(BaseModel):
     modifiers: list[dict[str, str]]
     station: dict[str, Any]
     prep_status: str
-    ready_at: Any
+    ready_at: datetime | None
     mine: bool
 
 
@@ -79,9 +80,9 @@ class KitchenOrder(BaseModel):
     status: str
     room: str
     special_instructions: str | None
-    created_at: Any
-    accepted_at: Any
-    ready_at: Any
+    created_at: datetime
+    accepted_at: datetime | None
+    ready_at: datetime | None
     items: list[KitchenItem]
 
 

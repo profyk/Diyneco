@@ -30,6 +30,7 @@ from app.schemas.auth import (
     ForgotPasswordRequest,
     InvitationAcceptedResponse,
     LoginRequest,
+    MeOut,
     MfaChallengeResponse,
     MfaConfirmResponse,
     MfaEnrollResponse,
@@ -152,6 +153,20 @@ async def logout(uow: Uow, principal: PendingPrincipal) -> Response:
     response = Response(status_code=204)
     response.delete_cookie(REFRESH_COOKIE, path="/", secure=True, httponly=True, samesite="strict")
     return response
+
+
+@router.get("/me", response_model=MeOut)
+async def me(uow: Uow, principal: PendingPrincipal) -> dict[str, Any]:
+    return await auth_service.me(
+        uow,
+        kind=principal.kind,
+        user_id=principal.user_id,
+        hotel_id=principal.hotel_id,
+        roles=principal.role_names,
+        permissions=principal.permissions,
+        amr=principal.amr,
+        mfa_pending=principal.mfa_pending,
+    )
 
 
 @router.get("/sessions", response_model=SessionList)

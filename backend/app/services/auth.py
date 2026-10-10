@@ -26,6 +26,7 @@ from app.core.passwords import check_password, check_pin
 from app.core.state import AppState
 from app.db.session import TenantContext, UnitOfWork, set_tenant
 from app.models.tenancy import (
+    Hotel,
     HotelUser,
     MfaFactor,
     MfaRecoveryCode,
@@ -743,3 +744,39 @@ async def send_verification_email(
         subject="Confirm your email for Diyneco",
         body=f"Use this code within 24 hours to confirm your email address:\n\n{token}\n",
     )
+
+
+async def me(
+    uow: UnitOfWork,
+    *,
+    kind: str,
+    user_id: uuid.UUID | None,
+    hotel_id: uuid.UUID | None,
+    roles: tuple[str, ...],
+    permissions: frozenset[str],
+    amr: tuple[str, ...],
+    mfa_pending: bool,
+) -> dict[str, Any]:
+    s = uow.session
+    user = (await s.execute(select(User).where(User.id == user_id))).scalar_one_or_none() if user_id else None
+    hotel = (
+        (await s.execute(select(Hotel).where(Hotel.id == hotel_id))).scalar_one_or_none()
+        if hotel_id
+        else None
+    )
+    return {
+        "kind": kind,
+        "user": {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "email_verified": user.email_verified_at is not None,
+        }
+        if user
+        else None,
+        "hotel": {"id": hotel.id, "name": hotel.name, "status": hotel.status} if hotel else None,
+        "roles": list(roles),
+        "permissions": sorted(permissions),
+        "mfa": "mfa" in amr,
+        "mfa_pending": mfa_pending,
+    }

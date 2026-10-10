@@ -1,3 +1,4 @@
 # config
 
-Shared TypeScript, ESLint and Tailwind configuration. Created with the first web app in **Phase 2**. Nothing here yet.
+Shared TypeScript configuration. Apps extend `@diyneco/config/tsconfig.base.json` (strict,
+`noUncheckedIndexedAccess`).

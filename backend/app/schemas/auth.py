@@ -113,6 +113,25 @@ class MfaConfirmResponse(TokenResponse):
     recovery_codes: list[str]
 
 
+class MeHotel(BaseModel):
+    id: uuid.UUID
+    name: str
+    status: str
+
+
+class MeOut(BaseModel):
+    """Who is signed in and what they may do, so apps show only usable actions. The server
+    still checks every permission on every request."""
+
+    kind: str
+    user: UserOut | None
+    hotel: MeHotel | None
+    roles: list[str]
+    permissions: list[str]
+    mfa: bool
+    mfa_pending: bool
+
+
 class StepUpResponse(BaseModel):
     step_up_token: str
     expires_at: datetime

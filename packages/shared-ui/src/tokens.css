@@ -1,0 +1,138 @@
+/* Diyneco design tokens (from the approved prototype). Import after `@import "tailwindcss";`.
+   Colours are semantic: apps use `bg-surface`, `text-ink`, `border-line`, never raw hex. */
+
+@theme {
+  --color-bg: var(--dy-bg);
+  --color-surface: var(--dy-surface);
+  --color-surface-2: var(--dy-surface-2);
+  --color-ink: var(--dy-ink);
+  --color-muted: var(--dy-muted);
+  --color-line: var(--dy-line);
+  --color-brand: var(--dy-brand);
+  --color-on-brand: var(--dy-on-brand);
+  --color-blue: var(--dy-blue);
+  --color-teal: var(--dy-teal);
+  --color-green: var(--dy-green);
+  --color-tint: var(--dy-tint);
+  --color-tint-teal: var(--dy-tint-teal);
+  --color-warn: var(--dy-warn);
+  --color-warn-bg: var(--dy-warn-bg);
+  --color-crit: var(--dy-crit);
+  --color-crit-bg: var(--dy-crit-bg);
+  --color-good: var(--dy-good);
+  --color-good-bg: var(--dy-good-bg);
+  --font-display: var(--font-sora), "Segoe UI", system-ui, sans-serif;
+  --font-sans: var(--font-plex), "Segoe UI", system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, "SFMono-Regular", monospace;
+  --radius-card: 12px;
+}
+
+:root {
+  --dy-bg: #f3f6fa;
+  --dy-surface: #ffffff;
+  --dy-surface-2: #f7f9fc;
+  --dy-ink: #0b1f3f;
+  --dy-muted: #5a6a82;
+  --dy-line: #dce3ed;
+  --dy-brand: #0b2350;
+  --dy-on-brand: #ffffff;
+  --dy-blue: #1e7fd8;
+  --dy-teal: #1fa9a1;
+  --dy-green: #13965f;
+  --dy-tint: #e8f1fb;
+  --dy-tint-teal: #e3f5f3;
+  --dy-warn: #9a5b07;
+  --dy-warn-bg: #fdf3e1;
+  --dy-crit: #b23a32;
+  --dy-crit-bg: #fbe9e7;
+  --dy-good: #13965f;
+  --dy-good-bg: #e4f5ec;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --dy-bg: #0a1222;
+    --dy-surface: #111c31;
+    --dy-surface-2: #0e182b;
+    --dy-ink: #e5ecf6;
+    --dy-muted: #93a3bb;
+    --dy-line: #24324d;
+    --dy-brand: #2f7fd6;
+    --dy-on-brand: #ffffff;
+    --dy-blue: #5aa6f0;
+    --dy-teal: #3cc7be;
+    --dy-green: #3cc98a;
+    --dy-tint: #132a47;
+    --dy-tint-teal: #123634;
+    --dy-warn: #f0b661;
+    --dy-warn-bg: #3a2a10;
+    --dy-crit: #f08a80;
+    --dy-crit-bg: #3a1714;
+    --dy-good: #3cc98a;
+    --dy-good-bg: #0f2e22;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --dy-bg: #0a1222;
+  --dy-surface: #111c31;
+  --dy-surface-2: #0e182b;
+  --dy-ink: #e5ecf6;
+  --dy-muted: #93a3bb;
+  --dy-line: #24324d;
+  --dy-brand: #2f7fd6;
+  --dy-on-brand: #ffffff;
+  --dy-blue: #5aa6f0;
+  --dy-teal: #3cc7be;
+  --dy-green: #3cc98a;
+  --dy-tint: #132a47;
+  --dy-tint-teal: #123634;
+  --dy-warn: #f0b661;
+  --dy-warn-bg: #3a2a10;
+  --dy-crit: #f08a80;
+  --dy-crit-bg: #3a1714;
+  --dy-good: #3cc98a;
+  --dy-good-bg: #0f2e22;
+  color-scheme: dark;
+}
+
+/* Kitchen high-visibility mode: black, white and pure signal colours, bigger type. */
+:root[data-contrast="high"] {
+  --dy-bg: #000000;
+  --dy-surface: #0d0d0d;
+  --dy-surface-2: #000000;
+  --dy-ink: #ffffff;
+  --dy-muted: #d9d9d9;
+  --dy-line: #ffffff;
+  --dy-brand: #ffd400;
+  --dy-on-brand: #000000;
+  --dy-warn: #ffd400;
+  --dy-warn-bg: #2b2400;
+  --dy-crit: #ff5a4f;
+  --dy-crit-bg: #330a08;
+  --dy-good: #33e07a;
+  --dy-good-bg: #062b15;
+  font-size: 112.5%;
+  color-scheme: dark;
+}
+
+html {
+  background: var(--dy-bg);
+  color: var(--dy-ink);
+}
+
+:focus-visible {
+  outline: 3px solid var(--dy-blue);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

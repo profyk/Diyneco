@@ -1,0 +1,4 @@
+{
+  "extends": "@diyneco/config/tsconfig.base.json",
+  "include": ["src"]
+}

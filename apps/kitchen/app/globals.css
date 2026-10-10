@@ -1,0 +1,14 @@
+@import "tailwindcss";
+@import "@diyneco/shared-ui/tokens.css";
+@source "../../../packages/shared-ui/src";
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* A kitchen screen is touched with wet or gloved hands: no hover-only cues, no text selection. */
+.kds {
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}

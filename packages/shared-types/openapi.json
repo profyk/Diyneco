@@ -4692,6 +4692,15 @@
             "type": "integer"
           },
           "ready_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Ready At"
           },
           "station": {
@@ -4717,10 +4726,21 @@
       "KitchenOrder": {
         "properties": {
           "accepted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Accepted At"
           },
           "created_at": {
-            "title": "Created At"
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
           },
           "id": {
             "format": "uuid",
@@ -4739,6 +4759,15 @@
             "type": "integer"
           },
           "ready_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Ready At"
           },
           "room": {
@@ -5012,6 +5041,92 @@
           "size_bytes"
         ],
         "title": "LogoUploadRequest",
+        "type": "object"
+      },
+      "MeHotel": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "status"
+        ],
+        "title": "MeHotel",
+        "type": "object"
+      },
+      "MeOut": {
+        "description": "Who is signed in and what they may do, so apps show only usable actions. The server\nstill checks every permission on every request.",
+        "properties": {
+          "hotel": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MeHotel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "mfa": {
+            "title": "Mfa",
+            "type": "boolean"
+          },
+          "mfa_pending": {
+            "title": "Mfa Pending",
+            "type": "boolean"
+          },
+          "permissions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Permissions",
+            "type": "array"
+          },
+          "roles": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Roles",
+            "type": "array"
+          },
+          "user": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "user",
+          "hotel",
+          "roles",
+          "permissions",
+          "mfa",
+          "mfa_pending"
+        ],
+        "title": "MeOut",
         "type": "object"
       },
       "Metrics": {
@@ -11486,6 +11601,27 @@
           }
         },
         "summary": "Logout",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "operationId": "me_api_v1_auth_me_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Me",
         "tags": [
           "auth"
         ]
