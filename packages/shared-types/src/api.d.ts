@@ -5627,9 +5627,7 @@ export interface components {
             /** Name */
             name: string;
             /** Windows */
-            windows: {
-                [key: string]: unknown;
-            }[];
+            windows: components["schemas"]["Window"][];
         };
         /** SessionList */
         SessionList: {

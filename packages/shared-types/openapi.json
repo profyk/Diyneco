@@ -8884,8 +8884,7 @@
           },
           "windows": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/Window"
             },
             "title": "Windows",
             "type": "array"

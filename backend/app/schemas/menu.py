@@ -67,6 +67,7 @@ class Window(StrictModel):
     days: Annotated[list[Annotated[int, Field(ge=1, le=7)]], Field(min_length=1, max_length=7)]
     from_: Annotated[HHMM, Field(alias="from")]
     to: HHMM
+    model_config = {"serialize_by_alias": True}
 
     @field_validator("days")
     @classmethod
@@ -82,7 +83,7 @@ class ScheduleCreate(StrictModel):
 class ScheduleOut(BaseModel):
     id: uuid.UUID
     name: str
-    windows: list[dict[str, object]]
+    windows: list[Window]
 
 
 class ScheduleList(BaseModel):

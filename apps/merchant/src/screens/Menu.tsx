@@ -44,7 +44,9 @@ const IMAGE_MAX_BYTES = 5 * 1024 * 1024;
 
 export function Menu() {
   const { api, can } = useSession();
-  const [dialog, setDialog] = useState<null | "category" | "station" | "groups" | { item: string | null }>(null);
+  const [dialog, setDialog] = useState<null | "category" | "station" | "groups" | "hours" | { item: string | null }>(null);
+  const [editCategory, setEditCategory] = useState<string | null>(null);
+  const schedules = useQuery({ queryKey: ["menu", "schedules"], queryFn: () => ok(api.GET("/api/v1/menu/schedules")) });
   const categories = useQuery({ queryKey: ["menu", "categories"], queryFn: () => ok(api.GET("/api/v1/menu/categories")) });
   const items = useQuery({ queryKey: ["menu", "items"], queryFn: () => ok(api.GET("/api/v1/menu/items")) });
   const stations = useQuery({ queryKey: ["stations"], queryFn: () => ok(api.GET("/api/v1/kitchen-stations")) });
@@ -71,6 +73,9 @@ export function Menu() {
               <Button variant="secondary" onClick={() => setDialog("groups")}>
                 Options
               </Button>
+              <Button variant="secondary" onClick={() => setDialog("hours")}>
+                Serving hours
+              </Button>
               <Button onClick={() => setDialog({ item: null })}>Add item</Button>
             </>
           ) : null
@@ -89,7 +94,19 @@ export function Menu() {
             const list = (items.data?.data ?? []).filter((i) => i.category_id === c.id);
             return (
               <Card key={c.id}>
-                <CardHeader title={c.name} description={`${list.length} item${list.length === 1 ? "" : "s"}`} />
+                <CardHeader
+                  title={c.name}
+                  description={`${list.length} item${list.length === 1 ? "" : "s"}${
+                    c.schedule_id ? ` · ${schedules.data?.data.find((x) => x.id === c.schedule_id)?.name ?? "limited hours"}` : " · all day"
+                  }`}
+                  actions={
+                    can("menu.manage") ? (
+                      <Button size="sm" variant="ghost" onClick={() => setEditCategory(c.id)}>
+                        Edit category
+                      </Button>
+                    ) : undefined
+                  }
+                />
                 {list.length === 0 ? (
                   <EmptyState title="No items in this category" />
                 ) : (
@@ -135,6 +152,14 @@ export function Menu() {
       {dialog === "category" ? <NameDialog kind="category" onClose={() => setDialog(null)} /> : null}
       {dialog === "station" ? <NameDialog kind="station" onClose={() => setDialog(null)} /> : null}
       {dialog === "groups" ? <GroupsDialog onClose={() => setDialog(null)} /> : null}
+      {dialog === "hours" ? <HoursDialog onClose={() => setDialog(null)} /> : null}
+      {editCategory && categories.data ? (
+        <CategoryDialog
+          category={categories.data.data.find((c) => c.id === editCategory)!}
+          schedules={schedules.data?.data ?? []}
+          onClose={() => setEditCategory(null)}
+        />
+      ) : null}
       {dialog && typeof dialog === "object" ? (
         <ItemDialog
           itemId={dialog.item}
@@ -205,7 +230,9 @@ function ItemDialog({
     dietary?: string[];
     allergens?: string[];
     groups?: string[];
+    schedule_id?: string;
   }>({});
+  const schedules = useQuery({ queryKey: ["menu", "schedules"], queryFn: () => ok(api.GET("/api/v1/menu/schedules")) });
   const groups = useQuery({ queryKey: ["menu", "modifier-groups"], queryFn: () => ok(api.GET("/api/v1/menu/modifier-groups")) });
   const v = {
     name: form.name ?? item?.name ?? "",
@@ -217,6 +244,7 @@ function ItemDialog({
     dietary: form.dietary ?? item?.dietary_tags ?? [],
     allergens: form.allergens ?? item?.allergens ?? [],
     groups: form.groups ?? item?.modifier_groups.map((g) => g.id) ?? [],
+    schedule_id: form.schedule_id ?? item?.schedule_id ?? "",
   };
   const minor = parseAmount(v.price);
   const body = {
@@ -229,6 +257,7 @@ function ItemDialog({
     dietary_tags: v.dietary as (typeof DIETARY)[number][],
     allergens: v.allergens as (typeof ALLERGENS)[number][],
     sort_order: item?.sort_order ?? 0,
+    schedule_id: v.schedule_id || null,
   };
   const groupsChanged = form.groups !== undefined;
   const save = useAction(
@@ -304,6 +333,18 @@ function ItemDialog({
                 {stations.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name}
+                  </option>
+                ))}
+              </Select>
+            )}
+          </Field>
+          <Field label="Serving hours" hint="Outside these hours guests see the item but cannot order it.">
+            {(p) => (
+              <Select {...p} value={v.schedule_id} onChange={(e) => set({ schedule_id: e.target.value })}>
+                <option value="">Same as its category</option>
+                {schedules.data?.data.map((x) => (
+                  <option key={x.id} value={x.id}>
+                    {x.name}
                   </option>
                 ))}
               </Select>
@@ -540,6 +581,173 @@ function GroupsDialog({ onClose }: { onClose: () => void }) {
           </Button>
         </form>
       </div>
+    </Dialog>
+  );
+}
+
+const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
+
+function describeWindows(windows: { days: number[]; from: string; to: string }[]): string {
+  return windows
+    .map((w) => {
+      const days = w.days.length === 7 ? "Every day" : w.days.map((d) => DAY_NAMES[d - 1]).join(", ");
+      return `${days} ${w.from}–${w.to}`;
+    })
+    .join("; ");
+}
+
+function CategoryDialog({
+  category,
+  schedules,
+  onClose,
+}: {
+  category: { id: string; name: string; sort_order: number; schedule_id: string | null };
+  schedules: { id: string; name: string }[];
+  onClose: () => void;
+}) {
+  const { api } = useSession();
+  const [name, setName] = useState(category.name);
+  const [order, setOrder] = useState(String(category.sort_order));
+  const [schedule, setSchedule] = useState(category.schedule_id ?? "");
+  const save = useAction(
+    () =>
+      ok(
+        api.PATCH("/api/v1/menu/categories/{category_id}", {
+          params: { path: { category_id: category.id } },
+          body: { name: name.trim(), sort_order: Number(order) || 0, schedule_id: schedule || null },
+        }),
+      ),
+    { success: "Category saved.", onDone: onClose },
+  );
+  const remove = useAction(
+    () => ok(api.DELETE("/api/v1/menu/categories/{category_id}", { params: { path: { category_id: category.id } } })),
+    { success: "Category deleted.", onDone: onClose },
+  );
+  return (
+    <Dialog
+      open
+      onClose={onClose}
+      title={`Edit ${category.name}`}
+      footer={
+        <>
+          <Button variant="ghost" loading={remove.isPending} onClick={() => remove.mutate(undefined)}>
+            Delete category
+          </Button>
+          <Button disabled={!name.trim()} loading={save.isPending} onClick={() => save.mutate(undefined)}>
+            Save
+          </Button>
+        </>
+      }
+    >
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Name" className="sm:col-span-2">
+          {(p) => <Input {...p} value={name} onChange={(e) => setName(e.target.value)} />}
+        </Field>
+        <Field label="Position" hint="Lower numbers show first.">
+          {(p) => <Input {...p} type="number" min={0} value={order} onChange={(e) => setOrder(e.target.value)} />}
+        </Field>
+        <Field label="Serving hours">
+          {(p) => (
+            <Select {...p} value={schedule} onChange={(e) => setSchedule(e.target.value)}>
+              <option value="">All day</option>
+              {schedules.map((x) => (
+                <option key={x.id} value={x.id}>
+                  {x.name}
+                </option>
+              ))}
+            </Select>
+          )}
+        </Field>
+      </div>
+      <p className="mt-4 text-sm text-muted">A category can be deleted only when it has no items.</p>
+      {save.error || remove.error ? <ErrorNotice error={save.error ?? remove.error} className="mt-4" /> : null}
+    </Dialog>
+  );
+}
+
+type Win = { days: number[]; from: string; to: string };
+
+/** Named serving hours ("Breakfast 06:30–10:30") that categories and items can follow. */
+function HoursDialog({ onClose }: { onClose: () => void }) {
+  const { api } = useSession();
+  const schedules = useQuery({ queryKey: ["menu", "schedules"], queryFn: () => ok(api.GET("/api/v1/menu/schedules")) });
+  const [name, setName] = useState("");
+  const [windows, setWindows] = useState<Win[]>([{ days: [1, 2, 3, 4, 5, 6, 7], from: "06:30", to: "10:30" }]);
+  const valid = name.trim() && windows.length && windows.every((w) => w.days.length && /^\d\d:\d\d$/.test(w.from) && /^\d\d:\d\d$/.test(w.to));
+  const add = useAction(() => ok(api.POST("/api/v1/menu/schedules", { body: { name: name.trim(), windows } })), {
+    success: "Serving hours added. Choose them on a category or item.",
+    onDone: () => {
+      setName("");
+      setWindows([{ days: [1, 2, 3, 4, 5, 6, 7], from: "06:30", to: "10:30" }]);
+    },
+  });
+  const setWin = (i: number, patch: Partial<Win>) => setWindows(windows.map((w, j) => (j === i ? { ...w, ...patch } : w)));
+  return (
+    <Dialog
+      open
+      onClose={onClose}
+      size="lg"
+      title="Serving hours"
+      description="Times are the hotel's local time. A window that ends before it starts runs past midnight."
+    >
+      {schedules.data?.data.length ? (
+        <ul className="mb-6 divide-y divide-line rounded-lg border border-line text-sm">
+          {schedules.data.data.map((x) => (
+            <li key={x.id} className="px-4 py-3">
+              <p className="font-medium text-ink">{x.name}</p>
+              <p className="text-muted">{describeWindows(x.windows)}</p>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mb-6 text-sm text-muted">No serving hours yet: everything can be ordered at any time.</p>
+      )}
+      <form
+        className="flex flex-col gap-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          add.mutate(undefined);
+        }}
+      >
+        <Field label="Name">{(p) => <Input {...p} placeholder="Breakfast" value={name} onChange={(e) => setName(e.target.value)} />}</Field>
+        {windows.map((w, i) => (
+          <fieldset key={i} className="rounded-lg border border-line p-3">
+            <legend className="px-1 text-sm font-medium text-ink">Window {i + 1}</legend>
+            <div className="flex flex-wrap gap-2">
+              {DAY_NAMES.map((d, n) => (
+                <label key={d} className="flex items-center gap-1 rounded-full border border-line px-3 py-1 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={w.days.includes(n + 1)}
+                    onChange={(e) =>
+                      setWin(i, { days: e.target.checked ? [...w.days, n + 1].sort() : w.days.filter((x) => x !== n + 1) })
+                    }
+                  />
+                  {d}
+                </label>
+              ))}
+            </div>
+            <div className="mt-3 flex flex-wrap items-end gap-3">
+              <Field label="From">{(p) => <Input {...p} type="time" value={w.from} onChange={(e) => setWin(i, { from: e.target.value })} />}</Field>
+              <Field label="To">{(p) => <Input {...p} type="time" value={w.to} onChange={(e) => setWin(i, { to: e.target.value })} />}</Field>
+              {windows.length > 1 ? (
+                <Button size="sm" variant="ghost" onClick={() => setWindows(windows.filter((_, j) => j !== i))}>
+                  Remove window
+                </Button>
+              ) : null}
+            </div>
+          </fieldset>
+        ))}
+        <div className="flex flex-wrap justify-between gap-2">
+          <Button variant="secondary" disabled={windows.length >= 21} onClick={() => setWindows([...windows, { days: [6, 7], from: "07:00", to: "11:00" }])}>
+            Add a window
+          </Button>
+          <Button type="submit" disabled={!valid} loading={add.isPending}>
+            Add serving hours
+          </Button>
+        </div>
+        {add.error ? <ErrorNotice error={add.error} /> : null}
+      </form>
     </Dialog>
   );
 }

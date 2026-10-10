@@ -134,7 +134,7 @@ async def list_schedules(uow: UnitOfWork, ctx: TenantContext) -> list[dict[str, 
 
 
 async def create_schedule(uow: UnitOfWork, ctx: TenantContext, body: dict[str, Any]) -> dict[str, Any]:
-    windows = [{"days": w["days"], "from": w["from_"], "to": w["to"]} for w in body["windows"]]
+    windows = [{"days": w["days"], "from": w["from"], "to": w["to"]} for w in body["windows"]]
     schedule = await MenuRepository(uow.session, ctx).create_schedule(body["name"], windows)
     await write_audit(
         uow.session,
