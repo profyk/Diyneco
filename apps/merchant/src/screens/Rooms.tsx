@@ -31,7 +31,9 @@ type SettableStatus = (typeof STATUSES)[number];
 export function Rooms() {
   const { api, can } = useSession();
   const [filter, setFilter] = useState("");
-  const [dialog, setDialog] = useState<null | "room" | "range" | "type">(null);
+  const [dialog, setDialog] = useState<null | "room" | "range" | "type" | "import">(null);
+  const [editRoom, setEditRoom] = useState<string | null>(null);
+  const [editType, setEditType] = useState<string | null>(null);
   const rooms = useQuery({
     queryKey: ["rooms", "all"],
     queryFn: () => ok(api.GET("/api/v1/rooms", { params: { query: { limit: 200 } } })),
@@ -61,6 +63,9 @@ export function Rooms() {
               </Button>
               <Button variant="secondary" onClick={() => setDialog("range")}>
                 Add a range
+              </Button>
+              <Button variant="secondary" onClick={() => setDialog("import")}>
+                Import CSV
               </Button>
               <Button onClick={() => setDialog("room")}>Add room</Button>
             </>
@@ -105,7 +110,14 @@ export function Rooms() {
                 </div>
                 <RoomStatus status={r.status} />
               </div>
-              <p className="text-xs text-muted">{formatMoney(r.effective_rate)} a night</p>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs text-muted">{formatMoney(r.effective_rate)} a night</p>
+                {can("rooms.manage") ? (
+                  <button className="text-xs text-blue hover:underline" onClick={() => setEditRoom(r.id)}>
+                    Edit
+                  </button>
+                ) : null}
+              </div>
               {r.status === "occupied" ? (
                 <Link className="text-sm text-blue hover:underline" href="/stays">
                   View stay
@@ -136,6 +148,7 @@ export function Rooms() {
               <Th>Rooms</Th>
               <Th>Sleeps</Th>
               <Th className="text-right">Rate</Th>
+              {can("rooms.manage") ? <Th /> : null}
             </tr>
           </thead>
           <tbody>
@@ -145,12 +158,30 @@ export function Rooms() {
                 <Td>{t.room_count}</Td>
                 <Td>{t.capacity}</Td>
                 <Td className="text-right tabular-nums">{formatMoney(t.base_rate)}</Td>
+                {can("rooms.manage") ? (
+                  <Td className="text-right">
+                    <Button size="sm" variant="ghost" onClick={() => setEditType(t.id)}>
+                      Edit
+                    </Button>
+                  </Td>
+                ) : null}
               </tr>
             ))}
           </tbody>
         </Table>
       </Card>
       {dialog === "type" ? <TypeDialog onClose={() => setDialog(null)} /> : null}
+      {dialog === "import" ? <ImportDialog onClose={() => setDialog(null)} /> : null}
+      {editRoom ? (
+        <EditRoomDialog
+          room={rooms.data!.data.find((r) => r.id === editRoom)!}
+          types={types.data?.data ?? []}
+          onClose={() => setEditRoom(null)}
+        />
+      ) : null}
+      {editType && types.data ? (
+        <EditTypeDialog type={types.data.data.find((t) => t.id === editType)!} onClose={() => setEditType(null)} />
+      ) : null}
       {dialog === "room" || dialog === "range" ? (
         <RoomDialog range={dialog === "range"} types={types.data?.data ?? []} onClose={() => setDialog(null)} />
       ) : null}
@@ -271,6 +302,241 @@ function RoomDialog({
         </div>
       )}
       {save.error ? <ErrorNotice error={save.error} className="mt-4" /> : null}
+    </Dialog>
+  );
+}
+
+type RoomRow = {
+  id: string;
+  number: string;
+  floor: string | null;
+  room_type: { id: string; name: string };
+  rate: { amount_minor: number; currency: string } | null;
+  capacity: number;
+  status: string;
+  version: number;
+};
+
+function EditRoomDialog({ room, types, onClose }: { room: RoomRow; types: { id: string; name: string }[]; onClose: () => void }) {
+  const { api } = useSession();
+  const currency = useCurrency();
+  const [f, setF] = useState({
+    number: room.number,
+    floor: room.floor ?? "",
+    room_type_id: room.room_type.id,
+    rate: room.rate ? (room.rate.amount_minor / 100).toFixed(2) : "",
+    capacity: String(room.capacity),
+  });
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const minor = f.rate.trim() ? parseAmount(f.rate) : null;
+  const rateOk = !f.rate.trim() || minor !== null;
+  const save = useAction(
+    () =>
+      ok(
+        api.PATCH("/api/v1/rooms/{room_id}", {
+          params: { path: { room_id: room.id }, header: { "If-Match": `"${room.version}"` } as never },
+          body: {
+            number: f.number.trim(),
+            floor: f.floor.trim() || null,
+            room_type_id: f.room_type_id,
+            rate: minor === null ? null : { amount_minor: minor, currency },
+            capacity: Number(f.capacity),
+          },
+        }),
+      ),
+    { success: "Room saved.", onDone: onClose },
+  );
+  const remove = useAction(() => ok(api.DELETE("/api/v1/rooms/{room_id}", { params: { path: { room_id: room.id } } })), {
+    success: `Room ${room.number} deleted.`,
+    onDone: onClose,
+  });
+  return (
+    <Dialog
+      open
+      onClose={onClose}
+      title={`Room ${room.number}`}
+      footer={
+        <>
+          {confirmDelete ? (
+            <Button variant="danger" loading={remove.isPending} onClick={() => remove.mutate(undefined)}>
+              Delete for good
+            </Button>
+          ) : (
+            <Button variant="ghost" disabled={room.status === "occupied"} onClick={() => setConfirmDelete(true)}>
+              Delete room
+            </Button>
+          )}
+          <Button disabled={!f.number.trim() || !rateOk || Number(f.capacity) < 1} loading={save.isPending} onClick={() => save.mutate(undefined)}>
+            Save
+          </Button>
+        </>
+      }
+    >
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Number">{(p) => <Input {...p} value={f.number} onChange={(e) => setF({ ...f, number: e.target.value })} />}</Field>
+        <Field label="Floor">{(p) => <Input {...p} value={f.floor} onChange={(e) => setF({ ...f, floor: e.target.value })} />}</Field>
+        <Field label="Room type">
+          {(p) => (
+            <Select {...p} value={f.room_type_id} onChange={(e) => setF({ ...f, room_type_id: e.target.value })}>
+              {types.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </Select>
+          )}
+        </Field>
+        <Field label="Sleeps">
+          {(p) => <Input {...p} type="number" min={1} value={f.capacity} onChange={(e) => setF({ ...f, capacity: e.target.value })} />}
+        </Field>
+        <Field label={`Own nightly rate (${currencySymbol(currency)})`} hint="Leave empty to use the room type's rate." className="sm:col-span-2">
+          {(p) => <Input {...p} inputMode="decimal" value={f.rate} onChange={(e) => setF({ ...f, rate: e.target.value })} />}
+        </Field>
+      </div>
+      {confirmDelete ? (
+        <p className="mt-4 text-sm text-crit">Deleting needs your PIN. Rooms with stays on record are refused; mark them out of service instead.</p>
+      ) : null}
+      {save.error || remove.error ? <ErrorNotice error={save.error ?? remove.error} className="mt-4" /> : null}
+    </Dialog>
+  );
+}
+
+function EditTypeDialog({
+  type,
+  onClose,
+}: {
+  type: { id: string; name: string; base_rate: { amount_minor: number; currency: string }; capacity: number; version: number };
+  onClose: () => void;
+}) {
+  const { api } = useSession();
+  const currency = useCurrency();
+  const [name, setName] = useState(type.name);
+  const [rate, setRate] = useState((type.base_rate.amount_minor / 100).toFixed(2));
+  const [capacity, setCapacity] = useState(String(type.capacity));
+  const minor = parseAmount(rate);
+  const save = useAction(
+    () =>
+      ok(
+        api.PATCH("/api/v1/room-types/{room_type_id}", {
+          params: { path: { room_type_id: type.id }, header: { "If-Match": `"${type.version}"` } as never },
+          body: { name: name.trim(), base_rate: { amount_minor: minor ?? 0, currency }, capacity: Number(capacity) },
+        }),
+      ),
+    { success: "Room type saved. New stays use the new rate.", onDone: onClose },
+  );
+  return (
+    <Dialog
+      open
+      onClose={onClose}
+      title={`Edit ${type.name}`}
+      description="Rate changes apply to stays booked from now on; existing stays keep their rate."
+      footer={
+        <Button disabled={!name.trim() || minor === null || Number(capacity) < 1} loading={save.isPending} onClick={() => save.mutate(undefined)}>
+          Save
+        </Button>
+      }
+    >
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Field label="Name" className="sm:col-span-3">
+          {(p) => <Input {...p} value={name} onChange={(e) => setName(e.target.value)} />}
+        </Field>
+        <Field label={`Nightly rate (${currencySymbol(currency)})`} className="sm:col-span-2">
+          {(p) => <Input {...p} inputMode="decimal" value={rate} onChange={(e) => setRate(e.target.value)} />}
+        </Field>
+        <Field label="Sleeps">{(p) => <Input {...p} type="number" min={1} value={capacity} onChange={(e) => setCapacity(e.target.value)} />}</Field>
+      </div>
+      {save.error ? <ErrorNotice error={save.error} className="mt-4" /> : null}
+    </Dialog>
+  );
+}
+
+const CSV_TEMPLATE = "room_number,floor,room_type,rate,capacity,amenities\n101,1,Standard,,2,\n102,1,Deluxe King,1850.00,2,balcony;sea view\n";
+
+/** Checks the whole file first (nothing is written), then imports every row or none. */
+function ImportDialog({ onClose }: { onClose: () => void }) {
+  const { api } = useSession();
+  const [csv, setCsv] = useState("");
+  const [fileName, setFileName] = useState("");
+  const send = (commit: boolean) =>
+    ok(
+      api.POST("/api/v1/rooms/import", {
+        params: { query: { commit } },
+        body: csv as never,
+        bodySerializer: (b: unknown) => b as string,
+        headers: { "Content-Type": "text/csv" },
+      }),
+    );
+  const check = useAction(() => send(false));
+  const commit = useAction(() => send(true), { success: (r) => `${r.created} rooms imported.`, onDone: onClose });
+  const report = check.data;
+  return (
+    <Dialog
+      open
+      onClose={onClose}
+      size="lg"
+      title="Import rooms from a spreadsheet"
+      description="Save the sheet as CSV with the columns room_number, floor, room_type, rate, capacity, amenities. Room types must exist; an empty rate uses the type's rate; separate amenities with semicolons."
+      footer={
+        <>
+          <Button variant="secondary" disabled={!csv} loading={check.isPending} onClick={() => check.mutate(undefined)}>
+            Check file
+          </Button>
+          <Button disabled={!report?.valid} loading={commit.isPending} onClick={() => commit.mutate(undefined)}>
+            Import {report?.valid ? `${report.rows} rooms` : ""}
+          </Button>
+        </>
+      }
+    >
+      <div className="flex flex-wrap items-center gap-3">
+        <input
+          type="file"
+          accept=".csv,text/csv"
+          aria-label="Choose a CSV file"
+          className="text-sm"
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            setFileName(file.name);
+            setCsv(await file.text());
+            check.reset();
+          }}
+        />
+        <a
+          className="text-sm text-blue hover:underline"
+          href={`data:text/csv;charset=utf-8,${encodeURIComponent(CSV_TEMPLATE)}`}
+          download="diyneco-rooms-template.csv"
+        >
+          Download a template
+        </a>
+      </div>
+      {fileName ? <p className="mt-2 text-sm text-muted">{fileName}</p> : null}
+      {report ? (
+        report.valid ? (
+          <p className="mt-4 rounded-lg bg-good/10 p-3 text-sm text-ink">All {report.rows} rows are ready to import.</p>
+        ) : (
+          <div className="mt-4 max-h-64 overflow-auto rounded-lg border border-line">
+            <Table>
+              <thead>
+                <tr>
+                  <Th>Line</Th>
+                  <Th>Column</Th>
+                  <Th>Problem</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {report.errors.map((x, i) => (
+                  <tr key={i}>
+                    <Td>{x.line}</Td>
+                    <Td>{x.field}</Td>
+                    <Td>{x.problem}</Td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          </div>
+        )
+      ) : null}
+      {check.error || commit.error ? <ErrorNotice error={check.error ?? commit.error} className="mt-4" /> : null}
     </Dialog>
   );
 }

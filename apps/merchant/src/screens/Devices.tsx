@@ -27,6 +27,7 @@ type DeviceAction = "lock" | "unlock" | "reset" | "disable";
 export function Devices() {
   const { api, can } = useSession();
   const [pairing, setPairing] = useState(false);
+  const [moving, setMoving] = useState<{ id: string; label: string } | null>(null);
   const devices = useQuery({
     queryKey: ["devices"],
     queryFn: () => ok(api.GET("/api/v1/devices", { params: { query: { limit: 200 } } })),
@@ -101,8 +102,18 @@ export function Devices() {
                           </Button>
                         )}
                         {d.kind === "guest" ? (
-                          <Button size="sm" variant="secondary" onClick={() => act.mutate({ id: d.id, action: "reset" })}>
-                            Reset
+                          <>
+                            <Button size="sm" variant="secondary" onClick={() => act.mutate({ id: d.id, action: "reset" })}>
+                              Reset
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => setMoving({ id: d.id, label: d.label })}>
+                              Move
+                            </Button>
+                          </>
+                        ) : null}
+                        {d.status !== "disabled" ? (
+                          <Button size="sm" variant="ghost" onClick={() => act.mutate({ id: d.id, action: "disable" })}>
+                            Disable
                           </Button>
                         ) : null}
                         <Button size="sm" variant="ghost" onClick={() => unpair.mutate(d.id)}>
@@ -118,6 +129,7 @@ export function Devices() {
         )}
       </Card>
       {pairing ? <PairDialog onClose={() => setPairing(false)} /> : null}
+      {moving ? <MoveDialog device={moving} onClose={() => setMoving(null)} /> : null}
     </>
   );
 }
@@ -206,6 +218,48 @@ function PairDialog({ onClose }: { onClose: () => void }) {
           </Button>
         </div>
       )}
+    </Dialog>
+  );
+}
+
+/** Moves a room tablet to another room; it resets so the new room starts clean. */
+function MoveDialog({ device, onClose }: { device: { id: string; label: string }; onClose: () => void }) {
+  const { api } = useSession();
+  const [roomId, setRoomId] = useState("");
+  const rooms = useQuery({
+    queryKey: ["rooms", "all"],
+    queryFn: () => ok(api.GET("/api/v1/rooms", { params: { query: { limit: 200 } } })),
+  });
+  const move = useAction(
+    () =>
+      ok(api.POST("/api/v1/devices/{device_id}/reassign", { params: { path: { device_id: device.id } }, body: { room_id: roomId } })),
+    { success: (d) => `${d.label} now belongs to room ${d.room?.number ?? ""}.`, onDone: onClose },
+  );
+  return (
+    <Dialog
+      open
+      onClose={onClose}
+      title={`Move ${device.label}`}
+      description="The tablet resets and shows the new room's guest. Any open session on it ends."
+      footer={
+        <Button disabled={!roomId} loading={move.isPending} onClick={() => move.mutate(undefined)}>
+          Move tablet
+        </Button>
+      }
+    >
+      <Field label="New room">
+        {(p) => (
+          <Select {...p} value={roomId} onChange={(e) => setRoomId(e.target.value)}>
+            <option value="">Choose a room</option>
+            {rooms.data?.data.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.number}
+              </option>
+            ))}
+          </Select>
+        )}
+      </Field>
+      {move.error ? <ErrorNotice error={move.error} className="mt-4" /> : null}
     </Dialog>
   );
 }
