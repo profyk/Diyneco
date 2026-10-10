@@ -157,9 +157,19 @@ function ItemRow({
       <div className="min-w-0 flex-1">
         <p className={cn("text-lg font-medium text-ink", ready && "line-through decoration-2")}>{item.name}</p>
         {item.modifiers.length ? (
-          <p className="text-sm text-muted">{item.modifiers.map((m) => m.name).join(" · ")}</p>
+          <ul className="text-base text-ink">
+            {item.modifiers.map((m, i) => {
+              const group = (m as { group?: unknown }).group;
+              return (
+                <li key={i}>
+                  {group ? <span className="text-muted">{String(group)}: </span> : null}
+                  <span className="font-semibold">{m.name}</span>
+                </li>
+              );
+            })}
+          </ul>
         ) : null}
-        {item.note ? <p className="text-sm font-medium text-warn">{item.note}</p> : null}
+        {item.note ? <p className="mt-1 rounded bg-warn-bg px-2 py-1 text-base font-semibold text-warn">Guest: {item.note}</p> : null}
         {!item.mine ? <p className="text-xs text-muted">{String(item.station?.name ?? "Another station")}</p> : null}
       </div>
       {canMark ? (
