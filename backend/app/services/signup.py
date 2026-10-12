@@ -30,6 +30,7 @@ from app.models.events import EventSeq
 from app.models.tenancy import Hotel, HotelSettings, HotelUser, Plan, Subscription, User, UserRole
 from app.realtime.outbox import emit
 from app.repositories.roles import RoleRepository
+from app.services import legal
 from app.services.auth import ClientInfo, send_verification_email
 
 DEFAULT_PLAN = "starter"
@@ -62,24 +63,11 @@ async def signup(
     password: str,
     hotel: dict[str, Any],
     client: ClientInfo,
+    accepted_documents: list[uuid.UUID] | None = None,
 ) -> dict[str, Any]:
     s = uow.session
     email = email.strip()
     check_password(password, email=email, field="owner.password")
-
-    existing = (await s.execute(select(User).where(User.email == email))).scalar_one_or_none()
-    if existing is not None:
-        await st.mailer.queue(
-            uow,
-            hotel_id=None,
-            template="signup_existing_account",
-            to=existing.email,
-            subject="Someone tried to sign up with your email",
-            body=(
-                "An account already exists for this email. Sign in, or reset your password if you forgot it."
-            ),
-        )
-        return SIGNUP_RESPONSE
 
     place = country_of(hotel["country"])
     if place is None:
@@ -108,6 +96,23 @@ async def signup(
                 "fields": [{"field": "hotel.currency", "problem": "Not supported.", "type": "value_error"}]
             },
         )
+    # Checked before the email lookup so a known address gets the same answers (no enumeration).
+    documents = await legal.signup_documents(uow, place.code, accepted_documents)
+
+    existing = (await s.execute(select(User).where(User.email == email))).scalar_one_or_none()
+    if existing is not None:
+        await st.mailer.queue(
+            uow,
+            hotel_id=None,
+            template="signup_existing_account",
+            to=existing.email,
+            subject="Someone tried to sign up with your email",
+            body=(
+                "An account already exists for this email. Sign in, or reset your password if you forgot it."
+            ),
+        )
+        return SIGNUP_RESPONSE
+
     hotel_id: uuid.UUID = (await s.execute(text("SELECT app.uuid_v7()"))).scalar_one()
     user_id: uuid.UUID = (await s.execute(text("SELECT app.uuid_v7()"))).scalar_one()
     await set_tenant(s, hotel_id, user_id)
@@ -179,6 +184,8 @@ async def signup(
         hotel_id,
         new_value={"name": hotel["name"], "plan": DEFAULT_PLAN, "status": "pending_approval"},
     )
+    if documents:
+        await legal.accept(uow, ctx, documents, user_agent=client.user_agent, country=place.code)
     await emit(s, ctx, "TENANT_CREATED", ["platform"], {"hotel_id": str(hotel_id)})
     user = (await s.execute(select(User).where(User.id == user_id))).scalar_one()
     await send_verification_email(st, uow, user, hotel_id)

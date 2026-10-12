@@ -17,6 +17,7 @@ const NAV: { href: string; label: string; perm: string }[] = [
   { href: "/plans", label: "Plans & billing", perm: "platform.billing.manage" },
   { href: "/flags", label: "Feature flags", perm: "platform.flags.manage" },
   { href: "/health", label: "Health", perm: "platform.metrics" },
+  { href: "/legal", label: "Legal documents", perm: "platform.legal.manage" },
 ];
 
 export function Gate({ children }: { children: ReactNode }) {

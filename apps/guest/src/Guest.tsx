@@ -574,6 +574,8 @@ function BillTab() {
 
 function InfoTab() {
   const info = useQuery({ queryKey: ["info"], queryFn: () => ok(api.GET("/api/v1/guest/info")) });
+  // Guest terms and privacy notice for the hotel's country (D70); plain text, never HTML.
+  const legal = useQuery({ queryKey: ["guest-legal"], queryFn: () => ok(api.GET("/api/v1/guest/legal")) });
   const i = info.data;
   if (!i) return <Spinner className="m-10 size-8 text-muted" />;
   return (
@@ -589,6 +591,12 @@ function InfoTab() {
         <details key={n} className="mt-3 rounded-[var(--radius-card)] border border-line bg-surface p-5 text-lg" open={i.pages.length === 1}>
           <summary className="min-h-12 cursor-pointer font-display text-xl font-semibold">{p.title}</summary>
           <p className="mt-3 whitespace-pre-line text-ink">{p.body}</p>
+        </details>
+      ))}
+      {legal.data?.data.map((d) => (
+        <details key={d.id} className="mt-3 rounded-[var(--radius-card)] border border-line bg-surface p-5 text-base">
+          <summary className="min-h-12 cursor-pointer font-display text-lg font-semibold text-muted">{d.title}</summary>
+          <p className="mt-3 whitespace-pre-line text-ink">{d.body}</p>
         </details>
       ))}
     </section>

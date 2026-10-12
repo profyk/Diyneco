@@ -276,3 +276,35 @@ class OneTimeToken(Base):
     expires_at: Mapped[datetime]
     used_at: Mapped[datetime | None]
 
+
+class LegalDocument(Base):
+    """A version of a legal document (control plane, no hotel). Published versions are frozen."""
+
+    __tablename__ = "legal_documents"
+    id: Mapped[uuid.UUID] = _pk()
+    kind: Mapped[str]
+    country: Mapped[str | None] = mapped_column(CHAR(2))
+    version: Mapped[int]
+    title: Mapped[str]
+    body: Mapped[str]
+    summary: Mapped[str | None]
+    status: Mapped[str] = mapped_column(server_default=text("'draft'"))
+    effective_at: Mapped[datetime | None]
+    published_at: Mapped[datetime | None]
+    published_by: Mapped[uuid.UUID | None]
+    created_by: Mapped[uuid.UUID | None]
+    created_at: Mapped[datetime] = _created()
+    updated_at: Mapped[datetime] = _updated()
+
+
+class LegalAcceptance(Base):
+    """One person accepting one document version for one hotel (append-only)."""
+
+    __tablename__ = "legal_acceptances"
+    id: Mapped[uuid.UUID] = _pk()
+    hotel_id: Mapped[uuid.UUID]
+    document_id: Mapped[uuid.UUID]
+    user_id: Mapped[uuid.UUID]
+    accepted_at: Mapped[datetime] = _created()
+    ip: Mapped[str | None] = mapped_column(INET)
+    user_agent: Mapped[str | None]

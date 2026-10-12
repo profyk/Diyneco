@@ -6213,6 +6213,289 @@
         "title": "KitchenUser",
         "type": "object"
       },
+      "LegalAccept": {
+        "additionalProperties": false,
+        "properties": {
+          "document_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 10,
+            "minItems": 1,
+            "title": "Document Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "document_ids"
+        ],
+        "title": "LegalAccept",
+        "type": "object"
+      },
+      "LegalDocumentList": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/LegalDocumentOut"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "LegalDocumentList",
+        "type": "object"
+      },
+      "LegalDocumentOut": {
+        "properties": {
+          "body": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Body"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
+          "effective_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective At"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "terms",
+              "privacy",
+              "dpa",
+              "acceptable_use",
+              "guest_terms",
+              "guest_privacy"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "published"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "country",
+          "version",
+          "title",
+          "summary",
+          "status",
+          "effective_at",
+          "published_at"
+        ],
+        "title": "LegalDocumentOut",
+        "type": "object"
+      },
+      "LegalDraftCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "maxLength": 200000,
+            "minLength": 1,
+            "title": "Body",
+            "type": "string"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Z]{2}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
+          "effective_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective At"
+          },
+          "kind": {
+            "enum": [
+              "terms",
+              "privacy",
+              "dpa",
+              "acceptable_use",
+              "guest_terms",
+              "guest_privacy"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "title",
+          "body"
+        ],
+        "title": "LegalDraftCreate",
+        "type": "object"
+      },
+      "LegalDraftPatch": {
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "anyOf": [
+              {
+                "maxLength": 200000,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Body"
+          },
+          "effective_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective At"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "title": "LegalDraftPatch",
+        "type": "object"
+      },
       "LoginRequest": {
         "additionalProperties": false,
         "properties": {
@@ -10351,6 +10634,15 @@
       "SignupRequest": {
         "additionalProperties": false,
         "properties": {
+          "accepted_documents": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 10,
+            "title": "Accepted Documents",
+            "type": "array"
+          },
           "hotel": {
             "$ref": "#/components/schemas/SignupHotel"
           },
@@ -13060,6 +13352,196 @@
         ]
       }
     },
+    "/api/v1/admin/legal-documents": {
+      "get": {
+        "operationId": "admin_list_api_v1_admin_legal_documents_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegalDocumentList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Admin List",
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "operationId": "create_draft_api_v1_admin_legal_documents_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LegalDraftCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegalDocumentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Draft",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/legal-documents/{document_id}": {
+      "delete": {
+        "operationId": "delete_draft_api_v1_admin_legal_documents__document_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Document Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Draft",
+        "tags": [
+          "admin"
+        ]
+      },
+      "patch": {
+        "operationId": "update_draft_api_v1_admin_legal_documents__document_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Document Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LegalDraftPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegalDocumentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Draft",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/legal-documents/{document_id}/publish": {
+      "post": {
+        "operationId": "publish_api_v1_admin_legal_documents__document_id__publish_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Document Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegalDocumentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Publish",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/api/v1/admin/metrics": {
       "get": {
         "operationId": "metrics_api_v1_admin_metrics_get",
@@ -15234,6 +15716,28 @@
         ]
       }
     },
+    "/api/v1/guest/legal": {
+      "get": {
+        "description": "Guest terms and privacy notice for the tablet's hotel country.",
+        "operationId": "guest_documents_api_v1_guest_legal_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegalDocumentList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Guest Documents",
+        "tags": [
+          "legal"
+        ]
+      }
+    },
     "/api/v1/guest/menu": {
       "get": {
         "operationId": "menu_api_v1_guest_menu_get",
@@ -16582,6 +17086,178 @@
         "summary": "Sign In List",
         "tags": [
           "kitchen"
+        ]
+      }
+    },
+    "/api/v1/legal/accept": {
+      "post": {
+        "operationId": "accept_api_v1_legal_accept_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LegalAccept"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegalDocumentList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Accept",
+        "tags": [
+          "legal"
+        ]
+      }
+    },
+    "/api/v1/legal/documents": {
+      "get": {
+        "description": "Current published version of each document for a country (public: signup shows them).",
+        "operationId": "documents_api_v1_legal_documents_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "country",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^[A-Z]{2}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Country"
+            }
+          },
+          {
+            "in": "query",
+            "name": "audience",
+            "required": false,
+            "schema": {
+              "default": "all",
+              "enum": [
+                "merchant",
+                "guest",
+                "all"
+              ],
+              "title": "Audience",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegalDocumentList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Documents",
+        "tags": [
+          "legal"
+        ]
+      }
+    },
+    "/api/v1/legal/documents/{document_id}": {
+      "get": {
+        "operationId": "document_api_v1_legal_documents__document_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Document Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegalDocumentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Document",
+        "tags": [
+          "legal"
+        ]
+      }
+    },
+    "/api/v1/legal/pending": {
+      "get": {
+        "description": "Current merchant documents the caller has not accepted yet for this hotel.",
+        "operationId": "pending_api_v1_legal_pending_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegalDocumentList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Pending",
+        "tags": [
+          "legal"
         ]
       }
     },

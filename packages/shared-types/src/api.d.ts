@@ -244,6 +244,59 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/legal-documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admin List */
+        get: operations["admin_list_api_v1_admin_legal_documents_get"];
+        put?: never;
+        /** Create Draft */
+        post: operations["create_draft_api_v1_admin_legal_documents_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/legal-documents/{document_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Draft */
+        delete: operations["delete_draft_api_v1_admin_legal_documents__document_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Draft */
+        patch: operations["update_draft_api_v1_admin_legal_documents__document_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/admin/legal-documents/{document_id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish */
+        post: operations["publish_api_v1_admin_legal_documents__document_id__publish_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/metrics": {
         parameters: {
             query?: never;
@@ -1103,6 +1156,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/guest/legal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Guest Documents
+         * @description Guest terms and privacy notice for the tablet's hotel country.
+         */
+        get: operations["guest_documents_api_v1_guest_legal_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/guest/menu": {
         parameters: {
             query?: never;
@@ -1596,6 +1669,80 @@ export interface paths {
         };
         /** Sign In List */
         get: operations["sign_in_list_api_v1_kitchen_staff_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/legal/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept */
+        post: operations["accept_api_v1_legal_accept_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/legal/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Documents
+         * @description Current published version of each document for a country (public: signup shows them).
+         */
+        get: operations["documents_api_v1_legal_documents_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/legal/documents/{document_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Document */
+        get: operations["document_api_v1_legal_documents__document_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/legal/pending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Pending
+         * @description Current merchant documents the caller has not accepted yet for this hotel.
+         */
+        get: operations["pending_api_v1_legal_pending_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4897,6 +5044,79 @@ export interface components {
             /** Name */
             name: string;
         };
+        /** LegalAccept */
+        LegalAccept: {
+            /** Document Ids */
+            document_ids: string[];
+        };
+        /** LegalDocumentList */
+        LegalDocumentList: {
+            /** Data */
+            data: components["schemas"]["LegalDocumentOut"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+        };
+        /** LegalDocumentOut */
+        LegalDocumentOut: {
+            /** Body */
+            body?: string | null;
+            /** Country */
+            country: string | null;
+            /** Effective At */
+            effective_at: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "terms" | "privacy" | "dpa" | "acceptable_use" | "guest_terms" | "guest_privacy";
+            /** Published At */
+            published_at: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "draft" | "published";
+            /** Summary */
+            summary: string | null;
+            /** Title */
+            title: string;
+            /** Version */
+            version: number;
+        };
+        /** LegalDraftCreate */
+        LegalDraftCreate: {
+            /** Body */
+            body: string;
+            /** Country */
+            country?: string | null;
+            /** Effective At */
+            effective_at?: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "terms" | "privacy" | "dpa" | "acceptable_use" | "guest_terms" | "guest_privacy";
+            /** Summary */
+            summary?: string | null;
+            /** Title */
+            title: string;
+        };
+        /** LegalDraftPatch */
+        LegalDraftPatch: {
+            /** Body */
+            body?: string | null;
+            /** Effective At */
+            effective_at?: string | null;
+            /** Summary */
+            summary?: string | null;
+            /** Title */
+            title?: string | null;
+        };
         /** LoginRequest */
         LoginRequest: {
             /** Email */
@@ -6277,6 +6497,8 @@ export interface components {
         };
         /** SignupRequest */
         SignupRequest: {
+            /** Accepted Documents */
+            accepted_documents?: string[];
             hotel: components["schemas"]["SignupHotel"];
             owner: components["schemas"]["SignupOwner"];
         };
@@ -7469,6 +7691,154 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HotelStatusOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_list_api_v1_admin_legal_documents_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LegalDocumentList"];
+                };
+            };
+        };
+    };
+    create_draft_api_v1_admin_legal_documents_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LegalDraftCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LegalDocumentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_draft_api_v1_admin_legal_documents__document_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_draft_api_v1_admin_legal_documents__document_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LegalDraftPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LegalDocumentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    publish_api_v1_admin_legal_documents__document_id__publish_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LegalDocumentOut"];
                 };
             };
             /** @description Validation Error */
@@ -9015,6 +9385,26 @@ export interface operations {
             };
         };
     };
+    guest_documents_api_v1_guest_legal_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LegalDocumentList"];
+                };
+            };
+        };
+    };
     menu_api_v1_guest_menu_get: {
         parameters: {
             query?: never;
@@ -10020,6 +10410,122 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["KitchenStaffList"];
+                };
+            };
+        };
+    };
+    accept_api_v1_legal_accept_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LegalAccept"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LegalDocumentList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    documents_api_v1_legal_documents_get: {
+        parameters: {
+            query?: {
+                country?: string | null;
+                audience?: "merchant" | "guest" | "all";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LegalDocumentList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    document_api_v1_legal_documents__document_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LegalDocumentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pending_api_v1_legal_pending_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LegalDocumentList"];
                 };
             };
         };

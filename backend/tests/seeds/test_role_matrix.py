@@ -69,7 +69,7 @@ async def test_seeded_hotel_roles_match_the_security_spec(owner_engine):
     hotel_perms = {p.code for p in perms if p.scope == "hotel"}
     assert hotel_perms == set().union(*spec.values())
     assert len(hotel_perms) == 52
-    assert {p.code for p in perms if p.sensitive} == spec_sensitive
+    assert {p.code for p in perms if p.sensitive and p.scope == "hotel"} == spec_sensitive
 
 
 async def test_platform_roles(owner_engine):
@@ -93,6 +93,7 @@ async def test_platform_roles(owner_engine):
         "platform.billing.manage",
         "platform.flags.manage",
         "platform.support",
+        "platform.legal.manage",  # D70; Super Admin holds every platform.* permission
     }
     # Neither platform role holds any hotel permission.
     assert all(p.startswith("platform.") for perms in roles.values() for p in perms)

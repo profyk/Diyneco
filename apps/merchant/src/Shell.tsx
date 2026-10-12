@@ -8,6 +8,7 @@ import { usePathname } from "next/navigation";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 
 import { EnrolScreen, LoginScreen } from "./auth-screens";
+import { LegalGate } from "./Legal";
 import { API_URL } from "./config";
 import { Search } from "./Search";
 import { useSession } from "./session";
@@ -47,7 +48,11 @@ export function Gate({ children }: { children: ReactNode }) {
   }
   if (state.status === "signed-out") return <LoginScreen />;
   if (state.status === "mfa-enrol") return <EnrolScreen />;
-  return <Shell>{children}</Shell>;
+  return (
+    <LegalGate>
+      <Shell>{children}</Shell>
+    </LegalGate>
+  );
 }
 
 function useLiveUpdates(): RealtimeStatus {

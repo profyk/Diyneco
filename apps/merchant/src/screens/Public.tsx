@@ -8,6 +8,7 @@ import { type FormEvent, type ReactNode, useState } from "react";
 
 import { useAction } from "../common";
 import { API_URL } from "../config";
+import { type LegalDoc, LegalText } from "../Legal";
 import { useSession } from "../session";
 
 async function publicPost(path: string, body: unknown): Promise<unknown> {
@@ -64,6 +65,16 @@ export function Signup() {
     queryFn: async () =>
       (await (await fetch(`${API_URL}/api/v1/countries`)).json()) as { data: { code: string; name: string; currency: string }[] },
   });
+  const [agreed, setAgreed] = useState(false);
+  const legal = useQuery({
+    queryKey: ["legal-signup", f.country],
+    enabled: Boolean(f.country),
+    queryFn: async () =>
+      (await (await fetch(`${API_URL}/api/v1/legal/documents?audience=merchant&country=${f.country}`)).json()) as {
+        data: LegalDoc[];
+      },
+  });
+  const docs = legal.data?.data ?? [];
   const currencies = useQuery({
     queryKey: ["currencies"],
     queryFn: async () => (await (await fetch(`${API_URL}/api/v1/currencies`)).json()) as { data: { code: string; name: string }[] },
@@ -78,6 +89,7 @@ export function Signup() {
         currency: f.currency || null,
       },
       owner: { name: f.name, email: f.email, password: f.password },
+      accepted_documents: agreed ? docs.map((d) => d.id) : [],
     }),
   );
   if (s.done) {
@@ -139,8 +151,22 @@ export function Signup() {
         {field("name", "Your name")}
         {field("email", "Your email", "email")}
         {field("password", "Password", "password", "At least 12 characters. A passphrase works well.")}
+        {docs.length ? (
+          <div className="flex flex-col gap-2">
+            {docs.map((d) => (
+              <LegalText key={d.id} doc={d} />
+            ))}
+            <label className="flex items-center gap-2 text-sm text-ink">
+              <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
+              I accept these documents on behalf of the hotel.
+            </label>
+          </div>
+        ) : null}
         {s.error ? <ErrorNotice error={s.error} /> : null}
-        <Button type="submit" loading={s.busy} disabled={!f.hotel || !f.country || !f.currency || !f.name || !f.email || f.password.length < 12}>
+        <Button
+          type="submit"
+          loading={s.busy}
+          disabled={(docs.length > 0 && !agreed) || !f.hotel || !f.country || !f.currency || !f.name || !f.email || f.password.length < 12}>
           Register
         </Button>
         <p className="text-xs text-muted">

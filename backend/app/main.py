@@ -19,6 +19,7 @@ from app.api.v1 import (
     health,
     hotel,
     kitchen,
+    legal,
     menu,
     orders,
     reports,
@@ -118,6 +119,8 @@ def create_app(settings: Settings | None = None, state: AppState | None = None) 
     api.include_router(admin.hotel_router)
     api.include_router(reports.router)
     api.include_router(reports.admin_router)
+    api.include_router(legal.router)
+    api.include_router(legal.admin_router)
     if isinstance(app_state.storage, LocalStorage):
         api.include_router(dev_storage.router)  # development only (build_storage refuses elsewhere)
     app.include_router(api)

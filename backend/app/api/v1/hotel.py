@@ -88,6 +88,7 @@ async def signup(idem: IdemAnon, body: SignupRequest, request: Request, uow: Uow
         password=body.owner.password,
         hotel=body.hotel.model_dump(mode="json", exclude_none=True),
         client=client,
+        accepted_documents=body.accepted_documents,
     )
     return await idem.complete(uow, 201, result)
 

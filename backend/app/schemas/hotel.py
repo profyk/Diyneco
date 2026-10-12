@@ -79,6 +79,9 @@ class SignupHotel(StrictModel):
 class SignupRequest(StrictModel):
     owner: SignupOwner
     hotel: SignupHotel
+    # Ids of the current terms, privacy notice and data processing agreement for the hotel's
+    # country (GET /legal/documents?country=..&audience=merchant), required once published (D70).
+    accepted_documents: list[uuid.UUID] = Field(default_factory=list, max_length=10)
 
 
 class SignupResponse(BaseModel):
