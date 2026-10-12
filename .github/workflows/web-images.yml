@@ -1,0 +1,75 @@
+name: Web images
+
+# Builds and scans a container image for each web app on every change. On main, when the
+# repository variable PUBLIC_API_URL is set (the production or staging API address), the images
+# are also pushed to GitHub Container Registry, tagged with the commit hash. Without it they are
+# built against a placeholder address only to prove they build.
+
+on:
+  push:
+    branches: [main]
+    paths: ["apps/**", "packages/**", "pnpm-lock.yaml", "infra/docker/web.Dockerfile", ".github/workflows/web-images.yml"]
+  pull_request:
+    paths: ["apps/**", "packages/**", "pnpm-lock.yaml", "infra/docker/web.Dockerfile", ".github/workflows/web-images.yml"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: web-images-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.app }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [admin, merchant, kitchen, guest, room-service]
+    env:
+      API_URL: ${{ vars.PUBLIC_API_URL || 'https://api.example.invalid' }}
+      STORAGE_URL: ${{ vars.PUBLIC_STORAGE_URL || '' }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/setup-buildx-action@v4
+      - name: Build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: infra/docker/web.Dockerfile
+          load: true
+          build-args: |
+            APP=${{ matrix.app }}
+            NEXT_PUBLIC_API_URL=${{ env.API_URL }}
+            NEXT_PUBLIC_STORAGE_URL=${{ env.STORAGE_URL }}
+          tags: diyneco-${{ matrix.app }}:${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.app }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.app }}
+      - name: Start the image and fetch its home page
+        run: |
+          docker run -d --name app -p 3000:3000 "diyneco-${{ matrix.app }}:${{ github.sha }}"
+          for i in $(seq 1 30); do curl -sf -o /dev/null http://localhost:3000/ && break; sleep 2; done
+          curl -sf -o /dev/null http://localhost:3000/ || { docker logs app; exit 1; }
+          docker exec app id -u | grep -qx 10001  # never root
+      - name: Scan image (fail on critical OS package vulnerabilities)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: diyneco-${{ matrix.app }}:${{ github.sha }}
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+      - name: Push to GHCR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.PUBLIC_API_URL != ''
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "$TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          repo="$(echo "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')"
+          image="ghcr.io/$repo/${{ matrix.app }}:${{ github.sha }}"
+          docker tag "diyneco-${{ matrix.app }}:${{ github.sha }}" "$image"
+          docker push "$image"

@@ -14,7 +14,7 @@ recovery is available on it). Everything below works the same on any container h
 | Database | Supabase Postgres 15+ | Run `infra/db/bootstrap.sql` once as the Supabase `postgres` role, then `alembic upgrade head` as `diyneco_owner`. Schema `app` must never be exposed through the Supabase REST API. |
 | Storage | Supabase Storage, private buckets `hotel-assets` and `invoices` | Second, separately keyed copy in another region (operations runbook, backups). |
 | Redis | any managed Redis 7 | Rate limits across instances; required outside development. |
-| Web apps | Next.js (Merchant, Kitchen, Admin, Guest, Room service) | Node hosting; they need `NEXT_PUBLIC_API_URL` and, when files are not on Supabase, `NEXT_PUBLIC_STORAGE_URL` (both feed the Content-Security-Policy). Set the API's `MERCHANT_APP_URL` to the Merchant app's address and `ADMIN_APP_URL` to the Admin panel's so account emails link to them. |
+| Web apps | `infra/docker/web.Dockerfile`, one image per app (`--build-arg APP=admin\|merchant\|kitchen\|guest\|room-service`), listening on port 3000 as a non-root user | `NEXT_PUBLIC_API_URL` (and, when files are not on Supabase, `NEXT_PUBLIC_STORAGE_URL`) are build arguments compiled into the pages and their Content-Security-Policy, so build per environment; they are public addresses, never secrets. The `Web images` workflow builds, starts and scans all five on every change and pushes them to GHCR when the repository variable `PUBLIC_API_URL` is set. Set the API's `MERCHANT_APP_URL` and `ADMIN_APP_URL` to the Merchant app's and Admin panel's addresses so account emails link to them, and list every web app's origin in `CORS_ALLOWED_ORIGINS`. |
 | Mobile apps | Expo / EAS (Guest, Room service) | Build profiles `staging` and `production`, each with its API URL. |
 
 ## Environments
@@ -82,8 +82,18 @@ uv run python scripts/restore_drill.py --source-url "$RESTORED_FROM" --target-ur
 - [ ] Email domain with SPF, DKIM and DMARC; `EMAIL_PROVIDER=smtp` and `EMAIL_SMTP_URL` set.
 - [ ] An SA attorney has reviewed the POPIA sections and a registered tax practitioner the
       VAT and invoicing rules (security spec).
-- [ ] Plan prices and limits replaced (they are placeholders, DECISIONS) through `/admin/plans`.
+- [ ] Company details verified and entered in Admin > Company & tax (CIPC registration number,
+      registered address, billing contacts, bank details); VAT switched on only once registered.
+- [ ] Plans reviewed in Admin > Plans & Pricing (the seeded R499, R999 and R1,999 monthly
+      drafts, plus any quarterly or annual prices) and published.
+- [ ] Payment provider (Stitch) merchant account, sandbox then production credentials, and its
+      webhook address configured once the payments slice ships (D73).
 - [ ] External penetration test of the staging environment, findings fixed.
 - [ ] Load test on staging meets the targets in `infra/loadtest/locustfile.py`.
 - [ ] Restore drill run against a real backup.
-- [ ] Platform admin accounts created with MFA; break-glass procedure documented.
+- [ ] First Super Admin created with `uv run python scripts/create_platform_admin.py --email ...
+      --name ...` (prints a one-time link to choose a password), then further Diyneco staff
+      invited from Admin > Diyneco staff (D71);
+      break-glass procedure documented. Do not run `scripts/seed_dev.py` or
+      `scripts/seed_e2e.py` outside development (they refuse to).
+- [ ] Browser end-to-end tests green in CI on the release commit.

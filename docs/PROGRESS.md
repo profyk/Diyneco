@@ -30,11 +30,18 @@
 - Account separation (D75): separate sign-ins for hotel apps and the Admin panel, kind checks
   on every permission, database triggers keeping the two kinds of account apart, and a test
   that tries every route with the wrong kind of token.
+- Sign-out in the Merchant, Admin and room-service apps ends the server session, clears
+  cached data and signs out the app's other tabs; the Admin panel has a sign-out on small
+  screens and confirms actions with the staff member's password.
+- Browser end-to-end tests (`packages/e2e`, Playwright) run in CI against production builds and
+  a seeded API: cross-app sign-in refusals, plan pricing and publishing, sign-out.
+- Deployment: container images for all five web apps (`infra/docker/web.Dockerfile`, Next.js
+  standalone, non-root) built, started and scanned in CI; `scripts/create_platform_admin.py`
+  for the first Super Admin; launch checklist updated.
 
 ### Next
 
 - Interface translations (message catalogues per language, English first).
-- Browser end-to-end tests (Playwright) against a seeded API.
 - Subscription billing slices 3-8 (D73): subscriptions (signup trial without a plan replaces
   the hard-coded `starter` default), invoices and credit notes, payments (EFT, Stitch sandbox), renewals and reminders, billing dashboard, hotel
   billing screens.
@@ -67,7 +74,6 @@
 
 ### Next
 
-- Browser end-to-end tests (Playwright) against a seeded API.
 - Global search, platform staff management, subscription invoicing, image resizing (D32),
   `HEALTH_DEGRADED` events.
 

@@ -1,0 +1,13 @@
+# Web app images (infra/docker/web.Dockerfile) build from the repository root.
+.git
+**/node_modules
+**/.next
+**/.env
+**/.env.*
+!**/.env.example
+backend
+brand
+docs
+infra
+packages/e2e
+**/*.tsbuildinfo

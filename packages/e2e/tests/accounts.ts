@@ -38,7 +38,7 @@ export async function signInAdmin(page: Page): Promise<void> {
 export async function confirmIfAsked(page: Page, secret: string): Promise<void> {
   const dialog = page.getByRole("dialog", { name: /Confirm it/ });
   try {
-    await dialog.waitFor({ state: "visible", timeout: 3_000 });
+    await dialog.waitFor({ state: "visible", timeout: 10_000 });
   } catch {
     return; // still confirmed from an earlier step-up
   }
