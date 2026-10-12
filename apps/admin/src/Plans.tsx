@@ -594,7 +594,7 @@ function PreviewDialog({ planId, onClose }: { planId: string; onClose: () => voi
                   <span className="text-sm">{INTERVALS.find(([i]) => i === pr.interval)?.[1]}</span>
                   <span className="text-right">
                     <span className="font-display text-lg font-semibold tabular-nums">{formatMoney(pr.amount)}</span>
-                    {pr.saving_bp ? <Badge tone="good" className="ml-2">Save {(pr.saving_bp / 100).toFixed(0)}%</Badge> : null}
+                    {pr.saving_bp ? <Badge tone="good" className="ml-2">Save {Math.floor(pr.saving_bp / 100)}%</Badge> : null}
                     {pr.intro_amount ? (
                       <span className="block text-xs text-muted">
                         {formatMoney(pr.intro_amount)} for the first {pr.intro_periods}

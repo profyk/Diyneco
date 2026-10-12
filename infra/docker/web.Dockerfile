@@ -7,7 +7,7 @@
 # are not on Supabase, NEXT_PUBLIC_STORAGE_URL) are fixed at build time: they are compiled into
 # the pages and their Content-Security-Policy, so build one image per environment. They are
 # public addresses, never secrets; no secret is ever passed to a web image.
-FROM node:24-slim AS build
+FROM node:24-alpine AS build
 ARG APP
 ARG NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_STORAGE_URL=
@@ -22,10 +22,11 @@ COPY . .
 RUN pnpm install --frozen-lockfile
 RUN pnpm --filter "./apps/${APP}" build && mkdir -p "apps/${APP}/public"
 
-FROM node:24-slim
+# Alpine keeps the runtime small and its OS packages few (the image scan fails on critical ones).
+FROM node:24-alpine
 ARG APP
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0 APP=${APP}
-RUN useradd --system --uid 10001 --home /app web
+RUN apk upgrade --no-cache && addgroup -S -g 10001 web && adduser -S -D -H -u 10001 -G web -h /app web
 WORKDIR /app
 COPY --from=build --chown=web:web /repo/apps/${APP}/.next/standalone ./
 COPY --from=build --chown=web:web /repo/apps/${APP}/.next/static ./apps/${APP}/.next/static
