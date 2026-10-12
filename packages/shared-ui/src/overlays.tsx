@@ -7,6 +7,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -33,6 +34,9 @@ export function Dialog({
   size?: "sm" | "md" | "lg";
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  // Screen readers (and tests) find a dialog by its title and description.
+  const titleId = useId();
+  const descriptionId = useId();
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -43,6 +47,8 @@ export function Dialog({
   return (
     <dialog
       ref={ref}
+      aria-labelledby={titleId}
+      aria-describedby={description ? descriptionId : undefined}
       onClose={onClose}
       onCancel={(e) => {
         e.preventDefault();
@@ -57,8 +63,14 @@ export function Dialog({
       {open ? (
         <div className="flex max-h-[85vh] flex-col">
           <div className="border-b border-line px-5 py-4">
-            <h2 className="font-display text-lg font-semibold">{title}</h2>
-            {description ? <p className="mt-1 text-sm text-muted">{description}</p> : null}
+            <h2 id={titleId} className="font-display text-lg font-semibold">
+              {title}
+            </h2>
+            {description ? (
+              <p id={descriptionId} className="mt-1 text-sm text-muted">
+                {description}
+              </p>
+            ) : null}
           </div>
           <div className="overflow-y-auto px-5 py-4">{children}</div>
           {footer ? <div className="flex justify-end gap-2 border-t border-line px-5 py-3">{footer}</div> : null}
