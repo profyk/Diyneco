@@ -15,6 +15,13 @@ from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 PLACEHOLDER = "CHANGE_ME"
 
 
+def _link(base: str | None, path: str, token: str) -> str:
+    if not base:
+        return "Use"
+    url = f"{base.rstrip('/')}{path}?token={quote(token)}"
+    return f"Open this link:\n\n{url}\n\nOr use"
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
@@ -24,6 +31,8 @@ class Settings(BaseSettings):
     cors_allowed_origins: Annotated[list[str], NoDecode] = Field(default_factory=list)
     # Public address of the Merchant web app; account emails link to its pages when set.
     merchant_app_url: str | None = None
+    # Public address of the Admin panel; platform staff invitations link to it (D71).
+    admin_app_url: str | None = None
     log_level: str = "info"
 
     # Database
@@ -64,10 +73,11 @@ class Settings(BaseSettings):
     def merchant_link(self, path: str, token: str) -> str:
         """The start of an email sentence: a link that fills in `token` when the app URL is set,
         followed by "Or use" (the code still follows), else just "Use"."""
-        if not self.merchant_app_url:
-            return "Use"
-        url = f"{self.merchant_app_url.rstrip('/')}{path}?token={quote(token)}"
-        return f"Open this link:\n\n{url}\n\nOr use"
+        return _link(self.merchant_app_url, path, token)
+
+    def admin_link(self, path: str, token: str) -> str:
+        """As merchant_link, for a page of the Admin panel."""
+        return _link(self.admin_app_url, path, token)
 
     @field_validator("cors_allowed_origins", mode="before")
     @classmethod

@@ -18,10 +18,14 @@ const NAV: { href: string; label: string; perm: string }[] = [
   { href: "/flags", label: "Feature flags", perm: "platform.flags.manage" },
   { href: "/health", label: "Health", perm: "platform.metrics" },
   { href: "/legal", label: "Legal documents", perm: "platform.legal.manage" },
+  { href: "/staff", label: "Diyneco staff", perm: "platform.staff.manage" },
 ];
 
 export function Gate({ children }: { children: ReactNode }) {
   const { state, signOut } = useSession();
+  const pathname = usePathname();
+  // An invited person has no account to sign in with yet (D71).
+  if (pathname === "/accept-invite") return <>{children}</>;
   if (state.status === "loading") {
     return (
       <main className="flex min-h-dvh items-center justify-center">

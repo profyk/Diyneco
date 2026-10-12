@@ -22,6 +22,7 @@ from app.api.v1 import (
     legal,
     menu,
     orders,
+    platform_staff,
     reports,
     room_service,
     rooms,
@@ -121,6 +122,8 @@ def create_app(settings: Settings | None = None, state: AppState | None = None) 
     api.include_router(reports.admin_router)
     api.include_router(legal.router)
     api.include_router(legal.admin_router)
+    api.include_router(platform_staff.router)
+    api.include_router(platform_staff.public_router)
     if isinstance(app_state.storage, LocalStorage):
         api.include_router(dev_storage.router)  # development only (build_storage refuses elsewhere)
     app.include_router(api)

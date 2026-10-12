@@ -57,6 +57,9 @@ async def accept_invitation(
                 .returning(User)
             )
         ).scalar_one()
+    elif user.is_platform:
+        # Diyneco staff accounts never join a hotel (D71); hotels use support access instead.
+        raise AppError("INVALID_TRANSITION", "A Diyneco staff account cannot join a hotel.")
     else:
         # Existing account (member of another hotel): prove it is theirs with the current password.
         if user.status != "active" or not crypto.verify_secret(user.password_hash, password):

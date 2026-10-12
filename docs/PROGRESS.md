@@ -17,12 +17,16 @@
   and `tax_label`; the apps format money, dates and times with them. Typed amounts accept
   either decimal sign ("1.234,50" and "1,234.50"), refusing extra decimals; unit tests for the
   API client run in CI.
+- Diyneco staff accounts (D71): Super Admins invite platform staff, change their roles,
+  deactivate and reactivate them from the Admin panel ("Diyneco staff"); invitees set their
+  password on `/accept-invite`; the database keeps at least one active Super Admin.
 
 ### Next
 
 - Interface translations (message catalogues per language, English first).
 - Browser end-to-end tests (Playwright) against a seeded API.
-- Platform staff management in the Admin panel; subscription invoicing of hotels.
+- Subscription plans, billing and invoicing of hotels by Diyneco Tech (Pty) Ltd (brief received
+  2026-10-12).
 
 ### Known gaps
 
