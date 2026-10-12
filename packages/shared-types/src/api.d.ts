@@ -235,6 +235,118 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/hotels/{hotel_id}/invoices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admin List */
+        get: operations["admin_list_api_v1_admin_hotels__hotel_id__invoices_get"];
+        put?: never;
+        /**
+         * Draft
+         * @description A manual invoice for an approved charge, as a draft; the server works out tax and totals.
+         */
+        post: operations["draft_api_v1_admin_hotels__hotel_id__invoices_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/hotels/{hotel_id}/invoices/{invoice_id}/credit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Credit
+         * @description Issues a credit note for all or part of an issued invoice.
+         */
+        post: operations["credit_api_v1_admin_hotels__hotel_id__invoices__invoice_id__credit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/hotels/{hotel_id}/invoices/{invoice_id}/issue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Issue
+         * @description Numbers, freezes, renders and emails the invoice.
+         */
+        post: operations["issue_api_v1_admin_hotels__hotel_id__invoices__invoice_id__issue_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/hotels/{hotel_id}/invoices/{invoice_id}/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admin Pdf */
+        get: operations["admin_pdf_api_v1_admin_hotels__hotel_id__invoices__invoice_id__pdf_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/hotels/{hotel_id}/invoices/{invoice_id}/send": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resend */
+        post: operations["resend_api_v1_admin_hotels__hotel_id__invoices__invoice_id__send_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/hotels/{hotel_id}/invoices/{invoice_id}/void": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Void */
+        post: operations["void_api_v1_admin_hotels__hotel_id__invoices__invoice_id__void_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/hotels/{hotel_id}/reactivate": {
         parameters: {
             query?: never;
@@ -3322,6 +3434,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/subscription/invoices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My Invoices */
+        get: operations["my_invoices_api_v1_subscription_invoices_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/subscription/invoices/{invoice_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My Invoice */
+        get: operations["my_invoice_api_v1_subscription_invoices__invoice_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/subscription/invoices/{invoice_id}/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My Invoice Pdf
+         * @description A signed address valid for 5 minutes; invoices are never at a public address.
+         */
+        get: operations["my_invoice_pdf_api_v1_subscription_invoices__invoice_id__pdf_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/subscription/quote": {
         parameters: {
             query?: never;
@@ -4521,6 +4687,13 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /** CreditRequest */
+        CreditRequest: {
+            /** Amount Minor */
+            amount_minor?: number | null;
+            /** Reason */
+            reason: string;
+        };
         /** CurrencyList */
         CurrencyList: {
             /** Data */
@@ -4676,6 +4849,51 @@ export interface components {
             percent_bp?: number | null;
             /** Reason */
             reason: string;
+        };
+        /**
+         * DraftCreate
+         * @description A manual invoice for an approved charge. Amounts are minor units of `currency`.
+         */
+        DraftCreate: {
+            /** Currency */
+            currency: string;
+            /** Lines */
+            lines: components["schemas"]["DraftLine"][];
+            /** Notes */
+            notes?: string | null;
+            /** Period End */
+            period_end?: string | null;
+            /** Period Start */
+            period_start?: string | null;
+            /**
+             * Prices Include Tax
+             * @default false
+             */
+            prices_include_tax: boolean;
+            /** Reason */
+            reason: string;
+        };
+        /** DraftLine */
+        DraftLine: {
+            /**
+             * Code
+             * @default charge
+             */
+            code: string;
+            /** Description */
+            description: string;
+            /**
+             * Discount Minor
+             * @default 0
+             */
+            discount_minor: number;
+            /**
+             * Quantity
+             * @default 1
+             */
+            quantity: number;
+            /** Unit Amount Minor */
+            unit_amount_minor: number;
         };
         /** FlagChange */
         FlagChange: {
@@ -5354,6 +5572,25 @@ export interface components {
             vat: components["schemas"]["SignedMoney"];
             /** Vat Rate Bp */
             vat_rate_bp: number;
+        };
+        /** InvoiceLineOut */
+        InvoiceLineOut: {
+            /** Code */
+            code: string;
+            /** Description */
+            description: string;
+            /** Discount Minor */
+            discount_minor: number;
+            /** Position */
+            position: number;
+            /** Quantity */
+            quantity: number;
+            /** Tax Minor */
+            tax_minor: number;
+            /** Total Minor */
+            total_minor: number;
+            /** Unit Amount Minor */
+            unit_amount_minor: number;
         };
         /** InvoiceList */
         InvoiceList: {
@@ -6531,6 +6768,11 @@ export interface components {
             to: string;
             total: components["schemas"]["PaymentLine"];
         };
+        /** PdfLink */
+        PdfLink: {
+            /** Url */
+            url: string;
+        };
         /** PermissionList */
         PermissionList: {
             /** Data */
@@ -7309,6 +7551,11 @@ export interface components {
             /** Windows */
             windows: components["schemas"]["Window"][];
         };
+        /** SentOut */
+        SentOut: {
+            /** Recipients */
+            recipients: number;
+        };
         /** SessionList */
         SessionList: {
             /** Data */
@@ -7781,6 +8028,76 @@ export interface components {
             /** Step Up Token */
             step_up_token: string;
         };
+        /** SubscriptionInvoiceList */
+        SubscriptionInvoiceList: {
+            /** Data */
+            data: components["schemas"]["SubscriptionInvoiceOut"][];
+        };
+        /** SubscriptionInvoiceOut */
+        SubscriptionInvoiceOut: {
+            balance: components["schemas"]["SignedMoney"];
+            /** Buyer */
+            buyer: {
+                [key: string]: unknown;
+            };
+            credited: components["schemas"]["SignedMoney"];
+            /** Credits Invoice Id */
+            credits_invoice_id: string | null;
+            /** Credits Number */
+            credits_number: string | null;
+            /** Currency */
+            currency: string;
+            /** Due On */
+            due_on: string | null;
+            /** Has Pdf */
+            has_pdf: boolean;
+            /**
+             * Hotel Id
+             * Format: uuid
+             */
+            hotel_id: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Is Tax Invoice */
+            is_tax_invoice: boolean;
+            /** Issued At */
+            issued_at: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "invoice" | "credit_note";
+            /** Lines */
+            lines: components["schemas"]["InvoiceLineOut"][];
+            /** Notes */
+            notes: string | null;
+            /** Number */
+            number: string | null;
+            paid: components["schemas"]["SignedMoney"];
+            /** Period End */
+            period_end: string | null;
+            /** Period Start */
+            period_start: string | null;
+            /** Seller */
+            seller: {
+                [key: string]: unknown;
+            };
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "draft" | "issued" | "partially_paid" | "paid" | "overdue" | "void" | "credited";
+            subtotal: components["schemas"]["SignedMoney"];
+            tax: components["schemas"]["SignedMoney"];
+            /** Tax Name */
+            tax_name: string | null;
+            /** Tax Rate Bp */
+            tax_rate_bp: number | null;
+            total: components["schemas"]["SignedMoney"];
+        };
         /** SubscriptionOut */
         SubscriptionOut: {
             /** Cancelled At */
@@ -8034,6 +8351,11 @@ export interface components {
         VerifyEmailRequest: {
             /** Token */
             token: string;
+        };
+        /** VoidRequest */
+        VoidRequest: {
+            /** Reason */
+            reason: string;
         };
         /** VoidedItemOut */
         VoidedItemOut: {
@@ -8873,6 +9195,240 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HotelStatusOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_list_api_v1_admin_hotels__hotel_id__invoices_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                hotel_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscriptionInvoiceList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    draft_api_v1_admin_hotels__hotel_id__invoices_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                hotel_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DraftCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscriptionInvoiceOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    credit_api_v1_admin_hotels__hotel_id__invoices__invoice_id__credit_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                hotel_id: string;
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreditRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscriptionInvoiceOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    issue_api_v1_admin_hotels__hotel_id__invoices__invoice_id__issue_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                hotel_id: string;
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscriptionInvoiceOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_pdf_api_v1_admin_hotels__hotel_id__invoices__invoice_id__pdf_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                hotel_id: string;
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PdfLink"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resend_api_v1_admin_hotels__hotel_id__invoices__invoice_id__send_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                hotel_id: string;
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    void_api_v1_admin_hotels__hotel_id__invoices__invoice_id__void_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                hotel_id: string;
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VoidRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscriptionInvoiceOut"];
                 };
             };
             /** @description Validation Error */
@@ -15136,6 +15692,88 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ChangeRequestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    my_invoices_api_v1_subscription_invoices_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscriptionInvoiceList"];
+                };
+            };
+        };
+    };
+    my_invoice_api_v1_subscription_invoices__invoice_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscriptionInvoiceOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    my_invoice_pdf_api_v1_subscription_invoices__invoice_id__pdf_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PdfLink"];
                 };
             };
             /** @description Validation Error */

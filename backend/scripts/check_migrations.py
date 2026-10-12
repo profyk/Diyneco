@@ -29,6 +29,8 @@ FINANCIAL_TABLES = (
     "invoice_items",
     "audit_logs",
     "order_status_history",
+    "subscription_invoice_lines",
+    "subscription_invoice_events",
 )
 APP_ROLES = ("diyneco_api", "diyneco_worker")
 

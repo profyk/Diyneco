@@ -38,6 +38,9 @@
 - Subscription billing, slice 3 (D76): plan-free signup trial with configurable length and
   limits, the eight subscription statuses, agreed-price snapshot and month-end billing
   anchor, server-side quotes with VAT, cancellation and resume, billing contact.
+- Subscription billing, slice 4 (D78): Diyneco's invoices and credit notes to hotels: drafts,
+  safe gapless numbering, frozen issued invoices, PDFs, email, void and credit rules; hotels
+  list and download theirs in the Merchant app (Settings > Plan).
 - Fixed (D77): confirmed actions with an Idempotency-Key failed after the PIN or password
   prompt because the refusal was replayed to the retry.
 - Deployment: container images for all five web apps (`infra/docker/web.Dockerfile`, Next.js
@@ -47,7 +50,7 @@
 ### Next
 
 - Interface translations (message catalogues per language, English first).
-- Subscription billing slices 4-8 (D73): invoices and credit notes, payments (EFT, Stitch sandbox), renewals and reminders, billing dashboard, hotel
+- Subscription billing slices 5-8 (D73): payments (EFT, Stitch sandbox), renewals and reminders, billing dashboard, hotel
   billing screens.
 
 ### Known gaps

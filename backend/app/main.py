@@ -30,6 +30,7 @@ from app.api.v1 import (
     rooms,
     staff,
     stays,
+    sub_invoices,
 )
 from app.core.config import Settings, get_settings
 from app.core.crypto import LocalKms
@@ -128,6 +129,8 @@ def create_app(settings: Settings | None = None, state: AppState | None = None) 
     api.include_router(company.router)
     api.include_router(plans.router)
     api.include_router(plans.public_router)
+    api.include_router(sub_invoices.admin_router)
+    api.include_router(sub_invoices.router)
     api.include_router(platform_staff.public_router)
     if isinstance(app_state.storage, LocalStorage):
         api.include_router(dev_storage.router)  # development only (build_storage refuses elsewhere)

@@ -3344,6 +3344,35 @@
         "title": "CreditNoteRequest",
         "type": "object"
       },
+      "CreditRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "amount_minor": {
+            "anyOf": [
+              {
+                "maximum": 1000000000000.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount Minor"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 3,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "CreditRequest",
+        "type": "object"
+      },
       "CurrencyList": {
         "properties": {
           "data": {
@@ -3846,6 +3875,123 @@
           "reason"
         ],
         "title": "DiscountRequest",
+        "type": "object"
+      },
+      "DraftCreate": {
+        "additionalProperties": false,
+        "description": "A manual invoice for an approved charge. Amounts are minor units of `currency`.",
+        "properties": {
+          "currency": {
+            "pattern": "^[A-Z]{3}$",
+            "title": "Currency",
+            "type": "string"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/DraftLine"
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Lines",
+            "type": "array"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "period_end": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period End"
+          },
+          "period_start": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Start"
+          },
+          "prices_include_tax": {
+            "default": false,
+            "title": "Prices Include Tax",
+            "type": "boolean"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 3,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "currency",
+          "lines",
+          "reason"
+        ],
+        "title": "DraftCreate",
+        "type": "object"
+      },
+      "DraftLine": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "default": "charge",
+            "pattern": "^[a-z][a-z0-9_]{0,39}$",
+            "title": "Code",
+            "type": "string"
+          },
+          "description": {
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Description",
+            "type": "string"
+          },
+          "discount_minor": {
+            "default": 0,
+            "maximum": 1000000000000.0,
+            "minimum": 0.0,
+            "title": "Discount Minor",
+            "type": "integer"
+          },
+          "quantity": {
+            "default": 1,
+            "maximum": 10000.0,
+            "minimum": 1.0,
+            "title": "Quantity",
+            "type": "integer"
+          },
+          "unit_amount_minor": {
+            "maximum": 1000000000000.0,
+            "minimum": 0.0,
+            "title": "Unit Amount Minor",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "description",
+          "unit_amount_minor"
+        ],
+        "title": "DraftLine",
         "type": "object"
       },
       "FlagChange": {
@@ -5895,6 +6041,54 @@
           "vat"
         ],
         "title": "InvoiceItemOut",
+        "type": "object"
+      },
+      "InvoiceLineOut": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "discount_minor": {
+            "title": "Discount Minor",
+            "type": "integer"
+          },
+          "position": {
+            "title": "Position",
+            "type": "integer"
+          },
+          "quantity": {
+            "title": "Quantity",
+            "type": "integer"
+          },
+          "tax_minor": {
+            "title": "Tax Minor",
+            "type": "integer"
+          },
+          "total_minor": {
+            "title": "Total Minor",
+            "type": "integer"
+          },
+          "unit_amount_minor": {
+            "title": "Unit Amount Minor",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "position",
+          "code",
+          "description",
+          "quantity",
+          "unit_amount_minor",
+          "discount_minor",
+          "tax_minor",
+          "total_minor"
+        ],
+        "title": "InvoiceLineOut",
         "type": "object"
       },
       "InvoiceList": {
@@ -9356,6 +9550,19 @@
         "title": "PaymentsReport",
         "type": "object"
       },
+      "PdfLink": {
+        "properties": {
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "title": "PdfLink",
+        "type": "object"
+      },
       "PermissionList": {
         "properties": {
           "data": {
@@ -11934,6 +12141,19 @@
         "title": "ScheduleOut",
         "type": "object"
       },
+      "SentOut": {
+        "properties": {
+          "recipients": {
+            "title": "Recipients",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "recipients"
+        ],
+        "title": "SentOut",
+        "type": "object"
+      },
       "SessionList": {
         "properties": {
           "data": {
@@ -13509,6 +13729,249 @@
         "title": "StepUpResponse",
         "type": "object"
       },
+      "SubscriptionInvoiceList": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/SubscriptionInvoiceOut"
+            },
+            "title": "Data",
+            "type": "array"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "SubscriptionInvoiceList",
+        "type": "object"
+      },
+      "SubscriptionInvoiceOut": {
+        "properties": {
+          "balance": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "buyer": {
+            "additionalProperties": true,
+            "title": "Buyer",
+            "type": "object"
+          },
+          "credited": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "credits_invoice_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credits Invoice Id"
+          },
+          "credits_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credits Number"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "due_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due On"
+          },
+          "has_pdf": {
+            "title": "Has Pdf",
+            "type": "boolean"
+          },
+          "hotel_id": {
+            "format": "uuid",
+            "title": "Hotel Id",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "is_tax_invoice": {
+            "title": "Is Tax Invoice",
+            "type": "boolean"
+          },
+          "issued_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Issued At"
+          },
+          "kind": {
+            "enum": [
+              "invoice",
+              "credit_note"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/InvoiceLineOut"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Number"
+          },
+          "paid": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "period_end": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period End"
+          },
+          "period_start": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Start"
+          },
+          "seller": {
+            "additionalProperties": true,
+            "title": "Seller",
+            "type": "object"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "issued",
+              "partially_paid",
+              "paid",
+              "overdue",
+              "void",
+              "credited"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "subtotal": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "tax": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "tax_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Name"
+          },
+          "tax_rate_bp": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Rate Bp"
+          },
+          "total": {
+            "$ref": "#/components/schemas/SignedMoney"
+          }
+        },
+        "required": [
+          "id",
+          "hotel_id",
+          "kind",
+          "number",
+          "status",
+          "is_tax_invoice",
+          "currency",
+          "subtotal",
+          "tax",
+          "total",
+          "paid",
+          "credited",
+          "balance",
+          "tax_name",
+          "tax_rate_bp",
+          "period_start",
+          "period_end",
+          "issued_at",
+          "due_on",
+          "credits_invoice_id",
+          "credits_number",
+          "seller",
+          "buyer",
+          "notes",
+          "has_pdf",
+          "lines"
+        ],
+        "title": "SubscriptionInvoiceOut",
+        "type": "object"
+      },
       "SubscriptionOut": {
         "properties": {
           "cancelled_at": {
@@ -14163,6 +14626,22 @@
           "token"
         ],
         "title": "VerifyEmailRequest",
+        "type": "object"
+      },
+      "VoidRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "minLength": 3,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "VoidRequest",
         "type": "object"
       },
       "VoidedItemOut": {
@@ -15934,6 +16413,388 @@
           }
         },
         "summary": "Approve",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/hotels/{hotel_id}/invoices": {
+      "get": {
+        "operationId": "admin_list_api_v1_admin_hotels__hotel_id__invoices_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "hotel_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Hotel Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionInvoiceList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Admin List",
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "description": "A manual invoice for an approved charge, as a draft; the server works out tax and totals.",
+        "operationId": "draft_api_v1_admin_hotels__hotel_id__invoices_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "hotel_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Hotel Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DraftCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionInvoiceOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Draft",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/hotels/{hotel_id}/invoices/{invoice_id}/credit": {
+      "post": {
+        "description": "Issues a credit note for all or part of an issued invoice.",
+        "operationId": "credit_api_v1_admin_hotels__hotel_id__invoices__invoice_id__credit_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "hotel_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Hotel Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "invoice_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Invoice Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreditRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionInvoiceOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Credit",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/hotels/{hotel_id}/invoices/{invoice_id}/issue": {
+      "post": {
+        "description": "Numbers, freezes, renders and emails the invoice.",
+        "operationId": "issue_api_v1_admin_hotels__hotel_id__invoices__invoice_id__issue_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "hotel_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Hotel Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "invoice_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Invoice Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionInvoiceOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Issue",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/hotels/{hotel_id}/invoices/{invoice_id}/pdf": {
+      "get": {
+        "operationId": "admin_pdf_api_v1_admin_hotels__hotel_id__invoices__invoice_id__pdf_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "hotel_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Hotel Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "invoice_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Invoice Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PdfLink"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Admin Pdf",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/hotels/{hotel_id}/invoices/{invoice_id}/send": {
+      "post": {
+        "operationId": "resend_api_v1_admin_hotels__hotel_id__invoices__invoice_id__send_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "hotel_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Hotel Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "invoice_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Invoice Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Resend",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/hotels/{hotel_id}/invoices/{invoice_id}/void": {
+      "post": {
+        "operationId": "void_api_v1_admin_hotels__hotel_id__invoices__invoice_id__void_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "hotel_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Hotel Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "invoice_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Invoice Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VoidRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionInvoiceOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Void",
         "tags": [
           "admin"
         ]
@@ -25033,6 +25894,114 @@
         "summary": "Change Request",
         "tags": [
           "reports"
+        ]
+      }
+    },
+    "/api/v1/subscription/invoices": {
+      "get": {
+        "operationId": "my_invoices_api_v1_subscription_invoices_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionInvoiceList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "My Invoices",
+        "tags": [
+          "subscription"
+        ]
+      }
+    },
+    "/api/v1/subscription/invoices/{invoice_id}": {
+      "get": {
+        "operationId": "my_invoice_api_v1_subscription_invoices__invoice_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "invoice_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Invoice Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionInvoiceOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "My Invoice",
+        "tags": [
+          "subscription"
+        ]
+      }
+    },
+    "/api/v1/subscription/invoices/{invoice_id}/pdf": {
+      "get": {
+        "description": "A signed address valid for 5 minutes; invoices are never at a public address.",
+        "operationId": "my_invoice_pdf_api_v1_subscription_invoices__invoice_id__pdf_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "invoice_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Invoice Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PdfLink"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "My Invoice Pdf",
+        "tags": [
+          "subscription"
         ]
       }
     },

@@ -613,7 +613,62 @@ function Plan() {
         )
       ) : null}
       {request.error ? <ErrorNotice error={request.error} className="mt-3" /> : null}
+      <SubscriptionInvoices />
     </Card>
+  );
+}
+
+/** Invoices and credit notes from Diyneco; PDFs open through a short-lived signed link. */
+function SubscriptionInvoices() {
+  const { api } = useSession();
+  const list = useQuery({ queryKey: ["subscription-invoices"], queryFn: () => ok(api.GET("/api/v1/subscription/invoices")) });
+  const [error, setError] = useState<unknown>(null);
+  const open = async (id: string) => {
+    setError(null);
+    try {
+      const { url } = await ok(api.GET("/api/v1/subscription/invoices/{invoice_id}/pdf", { params: { path: { invoice_id: id } } }));
+      window.open(url, "_blank", "noopener");
+    } catch (err) {
+      setError(err);
+    }
+  };
+  const rows = list.data?.data ?? [];
+  return (
+    <div className="mt-6">
+      <h3 className="mb-2 font-display text-sm font-semibold">Invoices from Diyneco</h3>
+      {rows.length ? (
+        <Table>
+          <tbody>
+            {rows.map((i) => (
+              <tr key={i.id}>
+                <Td>
+                  <p className="font-medium">{i.number}</p>
+                  <p className="text-xs text-muted">
+                    {i.kind === "credit_note" ? "Credit note" : i.is_tax_invoice ? "Tax invoice" : "Invoice"} ·{" "}
+                    {formatDate(i.issued_at)}
+                    {i.due_on && i.kind === "invoice" ? ` · due ${formatDate(i.due_on)}` : ""}
+                  </p>
+                </Td>
+                <Td className="text-right tabular-nums">{formatMoney(i.total)}</Td>
+                <Td>
+                  <Badge tone={i.status === "paid" || i.status === "credited" ? "good" : i.status === "overdue" ? "crit" : "neutral"}>
+                    {label(i.status)}
+                  </Badge>
+                </Td>
+                <Td className="text-right">
+                  <Button size="sm" variant="secondary" disabled={!i.has_pdf} onClick={() => void open(i.id)}>
+                    PDF
+                  </Button>
+                </Td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      ) : (
+        <p className="text-sm text-muted">No invoices yet.</p>
+      )}
+      {error ? <ErrorNotice error={error} className="mt-3" /> : null}
+    </div>
   );
 }
 

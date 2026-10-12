@@ -436,3 +436,74 @@ class TaxRate(Base):
     reason: Mapped[str]
     created_by: Mapped[uuid.UUID | None]
     created_at: Mapped[datetime] = _created()
+
+
+class SubscriptionInvoice(Base):
+    """Diyneco's invoice or credit note to a hotel (D78). Frozen once issued."""
+
+    __tablename__ = "subscription_invoices"
+    id: Mapped[uuid.UUID] = _pk()
+    hotel_id: Mapped[uuid.UUID]
+    subscription_id: Mapped[uuid.UUID | None]
+    kind: Mapped[str]
+    credits_invoice_id: Mapped[uuid.UUID | None]
+    number: Mapped[str | None]
+    status: Mapped[str] = mapped_column(server_default=text("'draft'"))
+    is_tax_invoice: Mapped[bool] = mapped_column(server_default=text("false"))
+    currency: Mapped[str] = mapped_column(CHAR(3))
+    subtotal_minor: Mapped[int] = mapped_column(BigInteger, server_default=text("0"))
+    tax_minor: Mapped[int] = mapped_column(BigInteger, server_default=text("0"))
+    total_minor: Mapped[int] = mapped_column(BigInteger, server_default=text("0"))
+    tax_name: Mapped[str | None]
+    tax_rate_bp: Mapped[int | None] = mapped_column(Integer)
+    period_start: Mapped[date | None]
+    period_end: Mapped[date | None]
+    issued_at: Mapped[datetime | None]
+    due_on: Mapped[date | None]
+    seller: Mapped[dict[str, Any]] = mapped_column(JSONB, server_default=text("'{}'"))
+    buyer: Mapped[dict[str, Any]] = mapped_column(JSONB, server_default=text("'{}'"))
+    payment_instructions: Mapped[str | None]
+    notes: Mapped[str | None]
+    pdf_path: Mapped[str | None]
+    created_by: Mapped[uuid.UUID | None]
+    created_at: Mapped[datetime] = _created()
+    updated_at: Mapped[datetime] = _updated()
+
+
+class SubscriptionInvoiceLine(Base):
+    __tablename__ = "subscription_invoice_lines"
+    id: Mapped[uuid.UUID] = _pk()
+    hotel_id: Mapped[uuid.UUID]
+    invoice_id: Mapped[uuid.UUID]
+    position: Mapped[int] = mapped_column(Integer)
+    code: Mapped[str]
+    description: Mapped[str]
+    quantity: Mapped[int] = mapped_column(Integer, server_default=text("1"))
+    unit_amount_minor: Mapped[int] = mapped_column(BigInteger)
+    discount_minor: Mapped[int] = mapped_column(BigInteger, server_default=text("0"))
+    tax_minor: Mapped[int] = mapped_column(BigInteger, server_default=text("0"))
+    total_minor: Mapped[int] = mapped_column(BigInteger)
+
+
+class SubscriptionInvoiceEvent(Base):
+    __tablename__ = "subscription_invoice_events"
+    id: Mapped[uuid.UUID] = _pk()
+    hotel_id: Mapped[uuid.UUID]
+    invoice_id: Mapped[uuid.UUID]
+    status_from: Mapped[str | None]
+    status_to: Mapped[str]
+    reason: Mapped[str | None]
+    actor_type: Mapped[str]
+    actor_id: Mapped[uuid.UUID | None]
+    created_at: Mapped[datetime] = _created()
+
+
+class SubscriptionInvoiceSequence(Base):
+    """Counter per kind, prefix and year (0: running), advanced only through
+    app.next_subscription_invoice_number (D78)."""
+
+    __tablename__ = "subscription_invoice_sequences"
+    kind: Mapped[str] = mapped_column(primary_key=True)
+    prefix: Mapped[str] = mapped_column(primary_key=True)
+    year: Mapped[int] = mapped_column(Integer, primary_key=True)
+    next_number: Mapped[int] = mapped_column(BigInteger)
