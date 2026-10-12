@@ -52,7 +52,7 @@ async def test_invited_staff_choose_a_password_then_sign_in_with_two_step(client
     assert {"platform_super_admin", "platform_support"} <= {r["code"] for r in roles}
 
     # No password yet, so no sign-in.
-    login = await client.post("/auth/login", json={"email": email, "password": PASSWORD})
+    login = await client.post("/auth/platform/login", json={"email": email, "password": PASSWORD})
     assert login.json()["error"]["code"] == "UNAUTHENTICATED"
 
     # A resend replaces the first link.
@@ -75,7 +75,7 @@ async def test_invited_staff_choose_a_password_then_sign_in_with_two_step(client
     assert again.json()["error"]["code"] == "VALIDATION_FAILED"
 
     # Signed in, but two-step sign-in must be set up before anything else.
-    signed_in = await client.post("/auth/login", json={"email": email, "password": PASSWORD})
+    signed_in = await client.post("/auth/platform/login", json={"email": email, "password": PASSWORD})
     assert signed_in.status_code == 200, signed_in.text
     headers = {"Authorization": f"Bearer {signed_in.json()['access_token']}"}
     assert (await client.get("/admin/metrics", headers=headers)).json()["error"]["code"] == "MFA_REQUIRED"

@@ -27,6 +27,9 @@
   monthly, quarterly and annual prices with an append-only price history, scheduled
   changes, preview, publish and archive; public `GET /plans`. The Merchant app's plan
   picker now lists published plans from the server instead of fixed names.
+- Account separation (D75): separate sign-ins for hotel apps and the Admin panel, kind checks
+  on every permission, database triggers keeping the two kinds of account apart, and a test
+  that tries every route with the wrong kind of token.
 
 ### Next
 

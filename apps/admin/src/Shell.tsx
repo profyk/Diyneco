@@ -108,12 +108,15 @@ function Shell({ children }: { children: ReactNode }) {
       </aside>
       <div className="min-w-0 flex-1">
         <header className="flex items-center justify-between border-b border-line bg-surface px-6 py-3">
-          <nav className="flex gap-3 text-sm md:hidden">
+          <nav className="flex flex-wrap gap-x-3 gap-y-1 text-sm md:hidden">
             {NAV.filter((n) => can(n.perm)).map((n) => (
               <Link key={n.href} href={n.href} className="text-blue">
                 {n.label}
               </Link>
             ))}
+            <button type="button" className="font-medium text-ink underline" onClick={() => void signOut()}>
+              Sign out
+            </button>
           </nav>
           <span className="hidden text-xs text-muted md:block">Aggregates only. Guest data is never shown here.</span>
           <Badge tone={live === "live" ? "good" : "warn"}>{live === "live" ? "Live" : "Connecting…"}</Badge>

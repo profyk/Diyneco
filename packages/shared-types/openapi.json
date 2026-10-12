@@ -9716,6 +9716,30 @@
         "title": "PlatformInviteAccept",
         "type": "object"
       },
+      "PlatformLoginRequest": {
+        "additionalProperties": false,
+        "description": "Admin panel sign-in (D75): a Diyneco staff account has no hotel.",
+        "properties": {
+          "email": {
+            "maxLength": 320,
+            "minLength": 3,
+            "title": "Email",
+            "type": "string"
+          },
+          "password": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "PlatformLoginRequest",
+        "type": "object"
+      },
       "PlatformRole": {
         "properties": {
           "code": {
@@ -17208,6 +17232,56 @@
           }
         },
         "summary": "Accept Invitation",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/platform/login": {
+      "post": {
+        "description": "Sign-in for the Diyneco admin panel: Diyneco staff accounts only (D75). Hotel accounts\nsign in through /auth/login, which in turn refuses Diyneco staff accounts.",
+        "operationId": "platform_login_api_v1_auth_platform_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlatformLoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/TokenResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/MfaChallengeResponse"
+                    }
+                  ],
+                  "title": "Response 200 Platform Login Api V1 Auth Platform Login Post"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Platform Login",
         "tags": [
           "auth"
         ]

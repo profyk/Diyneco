@@ -7,6 +7,7 @@
  */
 import { type Api, ApiError, type components, createApi, type ErrorBody, ok, setDisplayLocale } from "@diyneco/api-client";
 import { StepUpProvider, useStepUp } from "@diyneco/shared-ui";
+import { useQueryClient } from "@tanstack/react-query";
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 
 import { API_URL } from "./config";
@@ -36,6 +37,10 @@ interface SessionContext {
 
 const Ctx = createContext<SessionContext | null>(null);
 
+function signOutChannel(): BroadcastChannel | null {
+  return typeof BroadcastChannel === "undefined" ? null : new BroadcastChannel("diyneco-room-service-session");
+}
+
 async function post<T>(path: string, body: unknown): Promise<{ status: number; data: T }> {
   const res = await fetch(`${API_URL}/api/v1${path}`, {
     method: "POST",
@@ -52,6 +57,23 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const token = useRef<string | null>(null);
   const [state, setState] = useState<SessionState>({ status: "loading" });
   const stepUpRef = useRef<() => Promise<string | null>>(async () => null);
+
+  const queryClient = useQueryClient();
+  const forget = useCallback(() => {
+    token.current = null;
+    queryClient.clear();
+    setState({ status: "signed-out" });
+  }, [queryClient]);
+
+  // Signing out in one tab signs out every tab of this app.
+  useEffect(() => {
+    const channel = signOutChannel();
+    if (!channel) return;
+    channel.onmessage = (e) => {
+      if (e.data === "signed-out") forget();
+    };
+    return () => channel.close();
+  }, [forget]);
 
   const refresh = useCallback(async (hotelId?: string): Promise<string | null> => {
     try {
@@ -141,12 +163,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         await accept(data);
       },
       async signOut() {
+        // Ends the session on the server (and its refresh cookie), then forgets everything
+        // this tab knew, and tells the user's other tabs to do the same.
         await api.POST("/api/v1/auth/logout").catch(() => undefined);
-        token.current = null;
-        setState({ status: "signed-out" });
+        forget();
+        signOutChannel()?.postMessage("signed-out");
       },
     }),
-    [state, api, accept, refresh],
+    [state, api, accept, refresh, forget],
   );
 
   // The PIN dialog exchanges a PIN or password for a step-up token (POST /auth/step-up).

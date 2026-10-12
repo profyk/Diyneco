@@ -181,6 +181,35 @@ async def seed_hotel(s: AsyncSession, spec: dict) -> list[str]:  # type: ignore[
     return lines
 
 
+PLATFORM_ADMIN = "admin@diyneco.example"
+
+
+async def seed_platform_admin(s: AsyncSession) -> list[str]:
+    """A Diyneco Super Admin for the Admin panel (development only; TOTP at first sign-in)."""
+    found = (await s.execute(select(t.User.id).where(t.User.email == PLATFORM_ADMIN))).first()
+    if found is None:
+        user_id = (
+            await s.execute(
+                insert(t.User)
+                .values(
+                    email=PLATFORM_ADMIN,
+                    name="Diyneco Admin (demo)",
+                    password_hash=crypto.hash_secret(DEMO_PASSWORD),
+                    email_verified_at=datetime.now(UTC),
+                    is_platform=True,
+                )
+                .returning(t.User.id)
+            )
+        ).scalar_one()
+        role_id = (
+            await s.execute(
+                select(t.Role.id).where(t.Role.hotel_id.is_(None), t.Role.code == "platform_super_admin")
+            )
+        ).scalar_one()
+        await s.execute(insert(t.PlatformUserRole).values(user_id=user_id, role_id=role_id))
+    return ["Diyneco Admin panel", f"  {PLATFORM_ADMIN:<42} Platform Super Admin"]
+
+
 async def main() -> int:
     settings = get_settings()
     if settings.app_env != "development":
@@ -195,6 +224,7 @@ async def main() -> int:
     async with async_sessionmaker(engine)() as s, s.begin():
         for spec in HOTELS:
             output += await seed_hotel(s, spec)
+        output += await seed_platform_admin(s)
     await engine.dispose()
     print("\n".join(output))
     print(f"\nPassword for every demo user: {DEMO_PASSWORD}\nPIN: {DEMO_PIN}")

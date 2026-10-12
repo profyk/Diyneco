@@ -35,6 +35,7 @@ from app.schemas.auth import (
     MfaConfirmResponse,
     MfaEnrollResponse,
     MfaVerifyRequest,
+    PlatformLoginRequest,
     RefreshRequest,
     ResetPasswordRequest,
     SessionList,
@@ -105,6 +106,23 @@ async def login(body: LoginRequest, request: Request, uow: Uow) -> Response:
     client = _client(request)
     result = await auth_service.login(
         state_of(request), uow, body.email, body.password, body.hotel_id, client
+    )
+    if result.mfa_token is not None:
+        return JSONResponse(MfaChallengeResponse(mfa_token=result.mfa_token).model_dump())
+    return _token_response(result, client)
+
+
+@router.post(
+    "/platform/login",
+    dependencies=AuthLimited,
+    responses={200: {"model": TokenResponse | MfaChallengeResponse}},
+)
+async def platform_login(body: PlatformLoginRequest, request: Request, uow: Uow) -> Response:
+    """Sign-in for the Diyneco admin panel: Diyneco staff accounts only (D75). Hotel accounts
+    sign in through /auth/login, which in turn refuses Diyneco staff accounts."""
+    client = _client(request)
+    result = await auth_service.login(
+        state_of(request), uow, body.email, body.password, None, client, audience="platform"
     )
     if result.mfa_token is not None:
         return JSONResponse(MfaChallengeResponse(mfa_token=result.mfa_token).model_dump())

@@ -167,7 +167,9 @@ async def test_mandatory_mfa_forces_enrolment_then_issues_full_session(client, f
 
 async def test_platform_accounts_require_mfa(client, factory):
     admin = await factory.platform_user()
-    challenge = (await login(client, admin)).json()
+    challenge = (
+        await client.post("/auth/platform/login", json={"email": admin.email, "password": admin.password})
+    ).json()
     assert challenge["mfa_required"] is True
     token, _ = await factory.token(None, admin, amr=("pwd",))
     r = await client.get("/auth/sessions", headers={"Authorization": f"Bearer {token}"})

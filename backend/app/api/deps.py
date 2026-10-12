@@ -580,8 +580,13 @@ PendingPrincipal = Annotated[Principal, Depends(get_principal_allow_mfa_pending)
 
 
 def require_permission(code: str) -> Callable[..., Coroutine[Any, Any, Principal]]:
+    platform_permission = code.startswith("platform.")
+
     async def _check(request: Request, principal: CurrentPrincipal) -> Principal:
-        if code not in principal.permissions:
+        # Platform permissions only ever for Diyneco staff, hotel permissions never for them
+        # (D75), whatever a role might hold.
+        wrong_kind = (principal.kind == "platform") != platform_permission
+        if wrong_kind or code not in principal.permissions:
             security_event(
                 "rbac.permission_denied",
                 permission=code,

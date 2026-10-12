@@ -12,7 +12,7 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, Literal
 
 from sqlalchemy import func, insert, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -259,8 +259,17 @@ class LoginResult:
 
 
 async def login(
-    st: AppState, uow: UnitOfWork, email: str, password: str, hotel_id: uuid.UUID | None, client: ClientInfo
+    st: AppState,
+    uow: UnitOfWork,
+    email: str,
+    password: str,
+    hotel_id: uuid.UUID | None,
+    client: ClientInfo,
+    audience: Literal["hotel", "platform"] = "hotel",
 ) -> LoginResult:
+    """`audience` is the sign-in the request came through: hotel apps or the admin panel. An
+    account only ever signs in through its own (D75); the wrong one answers exactly like a
+    wrong password, so it reveals nothing."""
     s = uow.session
     user = (await s.execute(select(User).where(User.email == email.strip()))).scalar_one_or_none()
     ok = crypto.verify_secret(user.password_hash if user else None, password)
@@ -276,6 +285,11 @@ async def login(
         security_event("auth.login_failed", reason=reason, user_id=str(user.id), ip=client.ip)
         if not ok:
             await _record_login_failure(st, user.id, client, reason)
+        raise AppError("UNAUTHENTICATED", INVALID_LOGIN)
+    if user.is_platform != (audience == "platform"):
+        security_event(
+            "auth.login_failed", reason=f"wrong_app_{audience}", user_id=str(user.id), ip=client.ip
+        )
         raise AppError("UNAUTHENTICATED", INVALID_LOGIN)
 
     if user.password_hash and crypto.needs_rehash(user.password_hash):

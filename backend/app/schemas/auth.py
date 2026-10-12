@@ -24,6 +24,13 @@ class LoginRequest(StrictModel):
     hotel_id: uuid.UUID | None = None  # pick one of the caller's hotels (DECISIONS G11)
 
 
+class PlatformLoginRequest(StrictModel):
+    """Admin panel sign-in (D75): a Diyneco staff account has no hotel."""
+
+    email: LoginEmail
+    password: Password
+
+
 class MfaVerifyRequest(StrictModel):
     mfa_token: str | None = None
     code: Code | None = None

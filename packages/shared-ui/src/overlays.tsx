@@ -97,14 +97,17 @@ const StepUpContext = createContext<(() => Promise<string | null>) | null>(null)
 export function StepUpProvider({
   request,
   allowPassword = true,
+  passwordOnly = false,
   children,
 }: {
   request: StepUpRequest;
   allowPassword?: boolean;
+  /** Accounts without a PIN (Diyneco staff) confirm with their password only. */
+  passwordOnly?: boolean;
   children: ReactNode;
 }) {
   const [pending, setPending] = useState<StepUpState | null>(null);
-  const [mode, setMode] = useState<"pin" | "password">("pin");
+  const [mode, setMode] = useState<"pin" | "password">(passwordOnly ? "password" : "pin");
   const [value, setValue] = useState("");
   const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
@@ -145,7 +148,7 @@ export function StepUpProvider({
         onClose={() => close(null)}
         size="sm"
         title="Confirm it's you"
-        description="This action needs your PIN. It stays confirmed for 5 minutes."
+        description={`This action needs your ${mode === "pin" ? "PIN" : "password"}. It stays confirmed for 5 minutes.`}
       >
         <form onSubmit={submit} className="flex flex-col gap-4">
           <Field label={mode === "pin" ? "PIN" : "Password"} error={error ? (error as Error).message : undefined}>
@@ -163,7 +166,7 @@ export function StepUpProvider({
             )}
           </Field>
           <div className="flex items-center justify-between gap-2">
-            {allowPassword ? (
+            {allowPassword && !passwordOnly ? (
               <button
                 type="button"
                 className="text-sm text-blue underline-offset-2 hover:underline"
