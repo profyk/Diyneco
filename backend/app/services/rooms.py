@@ -15,6 +15,7 @@ from decimal import Decimal, InvalidOperation
 from typing import Any
 
 from app.audit.writer import write_audit
+from app.core.currencies import decimals, to_minor
 from app.core.errors import AppError
 from app.db.session import TenantContext, UnitOfWork
 from app.models.domain import Room, RoomType
@@ -25,7 +26,8 @@ from app.services.plans import ensure_capacity
 
 CSV_COLUMNS = ("room_number", "floor", "room_type", "rate", "capacity", "amenities")
 MAX_CSV_BYTES = 1_000_000
-_RATE = re.compile(r"^\d{1,9}(\.\d{1,2})?$")
+_RATE = re.compile(r"^\d{1,9}(\.\d{1,3})?$")
+_LEADING_SYMBOL = re.compile(r"^[^\d-]*")  # "R", "BHD ", "$"; a minus sign is kept (and refused)
 
 
 def money(amount_minor: int, currency: str) -> dict[str, Any]:
@@ -311,16 +313,16 @@ async def bulk_create(
 # --- CSV import ----------------------------------------------------------------------------
 
 
-def parse_rate(raw: str) -> int | None:
-    """Rands with up to 2 decimals to cents, exactly (no floats)."""
-    raw = raw.strip().replace(" ", "")
-    if raw.startswith("R"):
-        raw = raw[1:]
+def parse_rate(raw: str, currency: str) -> int | None:
+    """An amount in the currency's major units ("R 1 850.05", "1850") to minor units, exactly.
+    A leading currency symbol or code and spaces are ignored; more decimals than the currency
+    has are refused."""
+    raw = _LEADING_SYMBOL.sub("", raw.strip()).replace(" ", "")
     if not _RATE.match(raw):
         return None
     try:
-        return int(Decimal(raw) * 100)
-    except InvalidOperation:
+        return to_minor(Decimal(raw), currency)
+    except (InvalidOperation, ValueError):
         return None
 
 
@@ -369,9 +371,13 @@ def _check_csv_row(
         problems.append(
             ("room_type", f"Unknown room type {type_name!r}." if type_name else "Room type is required.")
         )
-    rate = parse_rate(rate_raw) if rate_raw else None
-    if rate_raw and rate is None:
-        problems.append(("rate", "Rate must be in rands with up to 2 decimals, e.g. 1500.00."))
+    rate = parse_rate(rate_raw, rt.currency) if rate_raw and rt is not None else None
+    if rate_raw and rt is not None and rate is None:
+        places = decimals(rt.currency)
+        example = "1500" if places == 0 else "1500." + "0" * places
+        problems.append(
+            ("rate", f"Rate must be in {rt.currency} with up to {places} decimals, e.g. {example}.")
+        )
     capacity = int(cap_raw) if cap_raw.isdigit() and 1 <= int(cap_raw) <= 20 else None
     if cap_raw and capacity is None:
         problems.append(("capacity", "Capacity must be a whole number from 1 to 20."))

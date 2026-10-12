@@ -146,6 +146,7 @@ async def _supplier(uow: UnitOfWork, ctx: TenantContext, settings: Any) -> dict[
         "trading_name": hotel.name,
         "address": _address(hotel.address),
         "vat_number": settings.vat_number if settings.vat_registered else None,
+        "tax_label": settings.tax_label,  # VAT, GST, IVA... (D69)
         "phone": hotel.phone,
         "email": hotel.email,
     }

@@ -58,14 +58,25 @@ function useSubmit(fn: () => Promise<unknown>) {
 }
 
 export function Signup() {
-  const [f, setF] = useState({ hotel: "", legal: "", phone: "", currency: "", name: "", email: "", password: "" });
+  const [f, setF] = useState({ hotel: "", legal: "", phone: "", country: "", currency: "", name: "", email: "", password: "" });
+  const countries = useQuery({
+    queryKey: ["countries"],
+    queryFn: async () =>
+      (await (await fetch(`${API_URL}/api/v1/countries`)).json()) as { data: { code: string; name: string; currency: string }[] },
+  });
   const currencies = useQuery({
     queryKey: ["currencies"],
     queryFn: async () => (await (await fetch(`${API_URL}/api/v1/currencies`)).json()) as { data: { code: string; name: string }[] },
   });
   const s = useSubmit(() =>
     publicPost("/signup", {
-      hotel: { name: f.hotel, legal_name: f.legal || null, phone: f.phone || null, currency: f.currency },
+      hotel: {
+        name: f.hotel,
+        legal_name: f.legal || null,
+        phone: f.phone || null,
+        country: f.country,
+        currency: f.currency || null,
+      },
       owner: { name: f.name, email: f.email, password: f.password },
     }),
   );
@@ -93,6 +104,25 @@ export function Signup() {
         {field("hotel", "Hotel name")}
         {field("legal", "Registered company name (optional)")}
         {field("phone", "Hotel phone (optional)", "tel")}
+        <Field label="Country" hint="Where the hotel is. It sets where your data is stored and suggests your currency, time zone and tax.">
+          {(p) => (
+            <Select
+              {...p}
+              value={f.country}
+              onChange={(e) => {
+                const c = countries.data?.data.find((x) => x.code === e.target.value);
+                setF({ ...f, country: e.target.value, currency: c?.currency ?? f.currency });
+              }}
+            >
+              <option value="">Choose your country</option>
+              {countries.data?.data.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.name}
+                </option>
+              ))}
+            </Select>
+          )}
+        </Field>
         <Field label="Currency" hint="The currency your prices and bills use. You can change it until your first guest checks in.">
           {(p) => (
             <Select {...p} value={f.currency} onChange={(e) => setF({ ...f, currency: e.target.value })}>
@@ -110,12 +140,12 @@ export function Signup() {
         {field("email", "Your email", "email")}
         {field("password", "Password", "password", "At least 12 characters. A passphrase works well.")}
         {s.error ? <ErrorNotice error={s.error} /> : null}
-        <Button type="submit" loading={s.busy} disabled={!f.hotel || !f.currency || !f.name || !f.email || f.password.length < 12}>
+        <Button type="submit" loading={s.busy} disabled={!f.hotel || !f.country || !f.currency || !f.name || !f.email || f.password.length < 12}>
           Register
         </Button>
         <p className="text-xs text-muted">
-          By registering you confirm you may act for this hotel and accept that guest data is processed under POPIA as
-          described in our privacy notice.
+          By registering you confirm you may act for this hotel and accept that guest data is processed under the data
+          protection law of your country as described in our privacy notice.
         </p>
       </form>
     </Panel>

@@ -1,6 +1,6 @@
 "use client";
 
-import { currencySymbol, formatDate, formatMoney, ok, parseAmount } from "@diyneco/api-client";
+import { currencySymbol, formatDate, formatMoney, ok, parseAmount, toAmountInput } from "@diyneco/api-client";
 import {
   Badge,
   Button,
@@ -382,13 +382,13 @@ function PlanDialog({
   const currencies = useCurrencies();
   const [code, setCode] = useState("");
   const [name, setName] = useState(plan?.name ?? "");
-  const [price, setPrice] = useState(plan ? (plan.monthly_price.amount_minor / 100).toFixed(2) : "");
+  const [price, setPrice] = useState(plan ? toAmountInput(plan.monthly_price) : "");
   const [currency, setCurrency] = useState(plan?.monthly_price.currency ?? "");
   const [limits, setLimits] = useState<Record<string, string>>(
     Object.fromEntries(["rooms", "devices", "staff", "api_keys"].map((k) => [k, String(plan?.limits[k] ?? "")])),
   );
   const [active, setActive] = useState(plan?.is_active ?? true);
-  const minor = parseAmount(price);
+  const minor = parseAmount(price, currency || "USD");
   const limitValues = Object.fromEntries(Object.entries(limits).filter(([, v]) => v !== "").map(([k, v]) => [k, Number(v)]));
   const save = useAction(
     async () =>

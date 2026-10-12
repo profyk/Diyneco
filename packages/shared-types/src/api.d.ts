@@ -642,6 +642,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/countries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Countries
+         * @description Countries Diyneco serves and the defaults each suggests (public: signup needs it).
+         */
+        get: operations["countries_api_v1_countries_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/currencies": {
         parameters: {
             query?: never;
@@ -3638,6 +3658,36 @@ export interface components {
             staff_id: string | null;
             tips: components["schemas"]["SignedMoney"];
         };
+        /** CountryList */
+        CountryList: {
+            /** Data */
+            data: components["schemas"]["CountryOut"][];
+        };
+        /** CountryOut */
+        CountryOut: {
+            /** Code */
+            code: string;
+            /** Currency */
+            currency: string;
+            /** Dial */
+            dial: string;
+            /** Locale */
+            locale: string;
+            /** Name */
+            name: string;
+            /** Region */
+            region: string;
+            /** Tax Id Label */
+            tax_id_label: string;
+            /** Tax Id Pattern */
+            tax_id_pattern: string | null;
+            /** Tax Label */
+            tax_label: string;
+            /** Tax Rate Bp */
+            tax_rate_bp: number | null;
+            /** Timezone */
+            timezone: string;
+        };
         /** CreditNoteRequest */
         CreditNoteRequest: {
             /** Reason */
@@ -3652,6 +3702,8 @@ export interface components {
         CurrencyOut: {
             /** Code */
             code: string;
+            /** Decimals */
+            decimals: number;
             /** Name */
             name: string;
             /** Symbol */
@@ -4226,6 +4278,8 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /** Data Region */
+            data_region: string;
             /** Email */
             email: string | null;
             /**
@@ -6104,6 +6158,8 @@ export interface components {
             info_pages: components["schemas"]["InfoPage"][];
             /** Invoice Prefix */
             invoice_prefix: string;
+            /** Locale */
+            locale: string;
             /** Menu Prices Include Vat */
             menu_prices_include_vat: boolean;
             room_charge_auto_approve_limit: components["schemas"]["Money"];
@@ -6115,6 +6171,8 @@ export interface components {
              * @enum {string}
              */
             room_status_after_checkout: "cleaning" | "available";
+            /** Tax Label */
+            tax_label: string;
             /** Timezone */
             timezone: string;
             /** Vat Number */
@@ -6145,6 +6203,8 @@ export interface components {
             info_pages?: components["schemas"]["InfoPage"][] | null;
             /** Invoice Prefix */
             invoice_prefix?: string | null;
+            /** Locale */
+            locale?: string | null;
             /** Menu Prices Include Vat */
             menu_prices_include_vat?: boolean | null;
             room_charge_auto_approve_limit?: components["schemas"]["Money"] | null;
@@ -6153,6 +6213,8 @@ export interface components {
             room_service_fee?: components["schemas"]["Money"] | null;
             /** Room Status After Checkout */
             room_status_after_checkout?: ("cleaning" | "available") | null;
+            /** Tax Label */
+            tax_label?: string | null;
             /** Timezone */
             timezone?: string | null;
             /** Vat Number */
@@ -6184,16 +6246,22 @@ export interface components {
         /** SignupHotel */
         SignupHotel: {
             address?: components["schemas"]["Address"] | null;
+            /** Country */
+            country: string;
             /** Currency */
-            currency: string;
+            currency?: string | null;
             /** Email */
             email?: string | null;
             /** Legal Name */
             legal_name?: string | null;
+            /** Locale */
+            locale?: string | null;
             /** Name */
             name: string;
             /** Phone */
             phone?: string | null;
+            /** Timezone */
+            timezone?: string | null;
         };
         /** SignupOwner */
         SignupOwner: {
@@ -8155,6 +8223,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ChargeCategoryList"];
+                };
+            };
+        };
+    };
+    countries_api_v1_countries_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CountryList"];
                 };
             };
         };

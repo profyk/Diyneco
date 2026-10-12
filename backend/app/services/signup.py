@@ -11,6 +11,7 @@ from __future__ import annotations
 import re
 import secrets
 import uuid
+import zoneinfo
 from datetime import UTC, datetime
 from typing import Any
 
@@ -18,6 +19,7 @@ from sqlalchemy import insert, select, text
 
 from app.audit.writer import write_audit
 from app.core import crypto
+from app.core.countries import country as country_of
 from app.core.currencies import is_supported
 from app.core.errors import AppError
 from app.core.passwords import check_password
@@ -79,6 +81,25 @@ async def signup(
         )
         return SIGNUP_RESPONSE
 
+    place = country_of(hotel["country"])
+    if place is None:
+        raise AppError(
+            "VALIDATION_FAILED",
+            "Diyneco is not available in that country yet.",
+            details={
+                "fields": [{"field": "hotel.country", "problem": "Not supported.", "type": "value_error"}]
+            },
+        )
+    tz = hotel.get("timezone") or place.timezone
+    try:
+        zoneinfo.ZoneInfo(tz)
+    except (zoneinfo.ZoneInfoNotFoundError, ValueError) as exc:
+        raise AppError(
+            "VALIDATION_FAILED",
+            "Unknown time zone.",
+            details={"fields": [{"field": "hotel.timezone", "problem": "Unknown.", "type": "value_error"}]},
+        ) from exc
+    hotel = {**hotel, "currency": hotel.get("currency") or place.currency}
     if not is_supported(hotel["currency"]):
         raise AppError(
             "VALIDATION_FAILED",
@@ -105,11 +126,22 @@ async def signup(
             address=hotel.get("address") or {},
             phone=hotel.get("phone"),
             email=hotel.get("email"),
+            country=place.code,
+            data_region=place.region,
         )
     )
     await s.execute(
         insert(HotelSettings).values(
-            hotel_id=hotel_id, invoice_prefix=invoice_prefix(hotel["name"]), currency=hotel["currency"]
+            hotel_id=hotel_id,
+            invoice_prefix=invoice_prefix(hotel["name"]),
+            currency=hotel["currency"],
+            timezone=tz,
+            locale=hotel.get("locale") or place.locale,
+            tax_label=place.tax_label,
+            # Suggestions only: the hotel confirms tax registration and rate in settings.
+            vat_registered=False,
+            vat_rate_bp=place.tax_rate_bp or 0,
+            abridged_invoice_max_minor=place.abridged_invoice_max_minor,
         )
     )
     plan_id = (await s.execute(select(Plan.id).where(Plan.code == DEFAULT_PLAN))).scalar_one()

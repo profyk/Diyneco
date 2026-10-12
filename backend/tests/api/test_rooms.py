@@ -245,12 +245,14 @@ async def test_csv_import_rejects_wrong_header(client, factory):
 
 
 def test_parse_rate_is_exact():
-    assert parse_rate("1500") == 150000
-    assert parse_rate("R 1 850.05") == 185005
-    assert parse_rate("0.1") == 10
-    assert parse_rate("12.345") is None
-    assert parse_rate("-5") is None
-    assert parse_rate("1e3") is None
+    assert parse_rate("1500", "ZAR") == 150000
+    assert parse_rate("R 1 850.05", "ZAR") == 185005
+    assert parse_rate("0.1", "ZAR") == 10
+    assert parse_rate("12.345", "ZAR") is None
+    assert parse_rate("-5", "ZAR") is None
+    assert parse_rate("1500", "JPY") == 1500 and parse_rate("15.5", "JPY") is None
+    assert parse_rate("BHD 2.125", "BHD") == 2125
+    assert parse_rate("1e3", "ZAR") is None
 
 
 async def test_room_status_rules(client, factory):

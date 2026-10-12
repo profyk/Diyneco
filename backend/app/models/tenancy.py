@@ -58,7 +58,8 @@ class Hotel(Base):
     phone: Mapped[str | None]
     email: Mapped[str | None]
     logo_path: Mapped[str | None]
-    country: Mapped[str] = mapped_column(CHAR(2), server_default=text("'ZA'"))
+    country: Mapped[str] = mapped_column(CHAR(2))
+    data_region: Mapped[str]
     created_at: Mapped[datetime] = _created()
     updated_at: Mapped[datetime] = _updated()
     version: Mapped[int] = _version()
@@ -69,6 +70,8 @@ class HotelSettings(Base):
     hotel_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
     timezone: Mapped[str] = mapped_column(server_default=text("'Africa/Johannesburg'"))
     currency: Mapped[str] = _currency()
+    locale: Mapped[str]
+    tax_label: Mapped[str]
     vat_registered: Mapped[bool] = mapped_column(server_default=text("false"))
     vat_number: Mapped[str | None]
     vat_rate_bp: Mapped[int] = mapped_column(server_default=text("1500"))
@@ -272,3 +275,4 @@ class OneTimeToken(Base):
     purpose: Mapped[str]
     expires_at: Mapped[datetime]
     used_at: Mapped[datetime | None]
+

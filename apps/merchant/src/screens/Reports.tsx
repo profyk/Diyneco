@@ -1,6 +1,6 @@
 "use client";
 
-import { currencySymbol, formatDate, formatMoney, formatTime, type Money, ok, parseAmount } from "@diyneco/api-client";
+import { currencySymbol, formatDate, formatMoney, formatTime, type Money, ok, parseAmount, toAmountInput } from "@diyneco/api-client";
 import {
   Badge,
   Button,
@@ -104,7 +104,7 @@ function Revenue({ from, to }: { from: string; to: string }) {
       ["date", "accommodation", "fnb", "other", "revenue", "vat_included", "discounts", "adjustments", "tips"],
       ...days.map((d) =>
         [d.date, d.accommodation, d.fnb, d.other, d.revenue, d.vat_included, d.discounts, d.adjustments, d.tips].map((v) =>
-          typeof v === "object" && v ? (v.amount_minor / 100).toFixed(2) : String(v),
+          typeof v === "object" && v ? toAmountInput(v) : String(v),
         ),
       ),
     ];
@@ -346,11 +346,11 @@ function DailyClose() {
     queryFn: () => ok(api.GET("/api/v1/reports/daily-close", { params: { query: { date: day } } })),
   });
   const money = (t: string) => {
-    const m = parseAmount(t);
+    const m = parseAmount(t, currency);
     return m === null ? null : { amount_minor: m, currency };
   };
   const d = r.data;
-  const shown = (m: Money | null | undefined) => (m ? (m.amount_minor / 100).toFixed(2) : "");
+  const shown = (m: Money | null | undefined) => (m ? toAmountInput(m) : "");
   const batch = edits.batch ?? shown(d?.card.terminal_batch_total);
   const cash = edits.cash ?? shown(d?.cash.counted);
   const notes = edits.notes ?? d?.notes ?? "";

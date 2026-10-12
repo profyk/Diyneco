@@ -18,11 +18,13 @@ from app.api.deps import (
     require_permission,
     state_of,
 )
+from app.core.countries import COUNTRIES
 from app.core.currencies import CURRENCIES
 from app.core.errors import AppError
 from app.core.logging import request_id_var
 from app.repositories.roles import RoleRepository
 from app.schemas.hotel import (
+    CountryList,
     CurrencyList,
     HotelOut,
     HotelPatch,
@@ -147,7 +149,18 @@ async def patch_settings(
 @router.get("/currencies", response_model=CurrencyList)
 async def currencies() -> dict[str, Any]:
     """Currencies a hotel or a plan may use (public: the signup form needs it)."""
-    return {"data": [{"code": c.code, "name": c.name, "symbol": c.symbol} for c in CURRENCIES.values()]}
+    return {
+        "data": [
+            {"code": c.code, "name": c.name, "symbol": c.symbol, "decimals": c.decimals}
+            for c in CURRENCIES.values()
+        ]
+    }
+
+
+@router.get("/countries", response_model=CountryList)
+async def countries() -> dict[str, Any]:
+    """Countries Diyneco serves and the defaults each suggests (public: signup needs it)."""
+    return {"data": [c.__dict__ for c in sorted(COUNTRIES.values(), key=lambda c: c.name)]}
 
 
 @router.get("/permissions", response_model=PermissionList)

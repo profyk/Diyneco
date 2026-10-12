@@ -182,7 +182,7 @@ function PayDialog({ d, onClose }: { d: Delivery; onClose: () => void }) {
   const [received, setReceived] = useState("");
   const [reference, setReference] = useState("");
   const [tipOk, setTipOk] = useState(false);
-  const minor = parseAmount(received);
+  const minor = parseAmount(received, d.amount_due.currency);
   const amount = minor === null ? null : { amount_minor: minor, currency: d.amount_due.currency };
   const preview = useQuery({
     queryKey: ["preview", d.order_id, minor],

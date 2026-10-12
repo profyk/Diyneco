@@ -124,13 +124,23 @@ class Factory:
             hotel_id = (
                 await s.execute(
                     insert(t.Hotel)
-                    .values(name=name, slug=f"h-{secrets.token_hex(6)}", status=status)
+                    .values(
+                        name=name,
+                        slug=f"h-{secrets.token_hex(6)}",
+                        status=status,
+                        country="ZA",
+                        data_region="af-south",
+                    )
                     .returning(t.Hotel.id)
                 )
             ).scalar_one()
             await s.execute(
                 insert(t.HotelSettings).values(
-                    hotel_id=hotel_id, invoice_prefix="TST", currency=TEST_CURRENCY
+                    hotel_id=hotel_id,
+                    invoice_prefix="TST",
+                    currency=TEST_CURRENCY,
+                    locale="en-ZA",
+                    tax_label="VAT",
                 )
             )
             plan_id = (await s.execute(select(t.Plan.id).where(t.Plan.code == "starter"))).scalar_one()

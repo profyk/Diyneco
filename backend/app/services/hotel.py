@@ -11,6 +11,8 @@ from typing import Any
 from sqlalchemy import text
 
 from app.audit.writer import write_audit
+from app.core.countries import country as country_of
+from app.core.countries import tax_id_ok
 from app.core.currencies import is_supported
 from app.core.errors import AppError
 from app.core.state import AppState
@@ -41,6 +43,8 @@ SETTINGS_FIELDS: dict[str, tuple[str, str]] = {
     "abridged_invoice_max": ("abridged_invoice_max_minor", "money"),
     "guest_data_retention_days": ("guest_data_retention_days", "plain"),
     "guest_id_number_enabled": ("guest_id_number_enabled", "plain"),
+    "locale": ("locale", "plain"),
+    "tax_label": ("tax_label", "plain"),
 }
 
 HOTEL_FIELDS = ("name", "legal_name", "address", "phone", "email")
@@ -88,6 +92,8 @@ def settings_payload(st: HotelSettings) -> dict[str, Any]:
         "abridged_invoice_max": money(st.abridged_invoice_max_minor, st.currency),
         "guest_data_retention_days": st.guest_data_retention_days,
         "guest_id_number_enabled": st.guest_id_number_enabled,
+        "locale": st.locale,
+        "tax_label": st.tax_label,
     }
 
 
@@ -104,6 +110,7 @@ async def hotel_payload(repo: HotelRepository, hotel: Hotel, storage: Storage, b
         "email": hotel.email,
         "logo_url": await storage.signed_download(bucket, hotel.logo_path) if hotel.logo_path else None,
         "country": hotel.country,
+        "data_region": hotel.data_region,
         "plan": {"code": plan[0].code, "name": plan[0].name, "subscription_status": plan[1].status}
         if plan
         else None,
@@ -183,7 +190,9 @@ def _field_error(field: str, problem: str, code: str = "VALIDATION_FAILED") -> A
     )
 
 
-def _to_column_values(current: HotelSettings, changes: dict[str, Any]) -> dict[str, Any]:
+def _to_column_values(
+    current: HotelSettings, changes: dict[str, Any], country_code: str | None = None
+) -> dict[str, Any]:
     values: dict[str, Any] = {}
     currency = changes.get("currency") or current.currency
     if not is_supported(currency):
@@ -206,7 +215,13 @@ def _to_column_values(current: HotelSettings, changes: dict[str, Any]) -> dict[s
     vat_registered = values.get("vat_registered", current.vat_registered)
     vat_number = values.get("vat_number", current.vat_number)
     if vat_registered and not vat_number:
-        raise _field_error("vat_number", "A VAT-registered hotel needs a VAT number.")
+        raise _field_error("vat_number", "A tax-registered hotel needs its registration number.")
+    if values.get("vat_number"):
+        values["vat_number"] = values["vat_number"].strip().upper()
+        if not tax_id_ok(country_code, values["vat_number"]):
+            c = country_of(country_code)
+            label = c.tax_id_label if c else "tax number"
+            raise _field_error("vat_number", f"That does not look like a valid {label}.")
     return values
 
 
@@ -220,7 +235,8 @@ async def patch_settings(
     if current.version != expected_version:
         raise AppError("PRECONDITION_FAILED")
     before = settings_payload(current)
-    values = _to_column_values(current, changes)
+    hotel = await repo.get()
+    values = _to_column_values(current, changes, hotel.country if hotel else None)
     if values.get("currency", current.currency) != current.currency:
         await _change_currency(uow, ctx, values["currency"])
     updated = await repo.update_settings(expected_version, values)

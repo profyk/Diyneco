@@ -17,6 +17,7 @@ from sqlalchemy import select
 from app.audit.writer import write_audit
 from app.billing.folio import FolioLedger, Line, business_date
 from app.billing.vat import gross_and_vat
+from app.core.countries import tax_id_ok
 from app.core.errors import AppError
 from app.core.state import Keyring
 from app.db.session import TenantContext, UnitOfWork
@@ -186,6 +187,11 @@ async def search_profiles(
 
 
 async def create_profile(uow: UnitOfWork, ctx: TenantContext, body: dict[str, Any]) -> dict[str, Any]:
+    if body.get("vat_number"):
+        hotel = await HotelRepository(uow.session, ctx).get()
+        body = {**body, "vat_number": body["vat_number"].strip().upper()}
+        if not tax_id_ok(hotel.country if hotel else None, body["vat_number"]):
+            raise _field_error("vat_number", "That does not look like a valid tax registration number.")
     values = {
         **body,
         "billing_email": str(body["billing_email"]).lower() if body.get("billing_email") else None,

@@ -284,9 +284,9 @@ function OrderDialog({ id, onClose }: { id: string; onClose: () => void }) {
                   </Button>
                 ) : (
                   <Button
-                    disabled={reason.trim().length < 3 || parseAmount(newAmount) === null}
+                    disabled={reason.trim().length < 3 || parseAmount(newAmount, o.total.currency) === null}
                     loading={adjust.isPending}
-                    onClick={() => adjust.mutate(parseAmount(newAmount) ?? 0)}
+                    onClick={() => adjust.mutate(parseAmount(newAmount, o.total.currency) ?? 0)}
                   >
                     Request adjustment
                   </Button>

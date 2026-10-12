@@ -1,6 +1,6 @@
 "use client";
 
-import { currencySymbol, formatMoney, ok, parseAmount } from "@diyneco/api-client";
+import { currencySymbol, formatMoney, ok, parseAmount, toAmountInput } from "@diyneco/api-client";
 import {
   Badge,
   Button,
@@ -284,7 +284,7 @@ function ItemDialog({
   const v = {
     name: form.name ?? item?.name ?? "",
     description: form.description ?? item?.description ?? "",
-    price: form.price ?? (item ? (item.price.amount_minor / 100).toFixed(2) : ""),
+    price: form.price ?? (item ? toAmountInput(item.price) : ""),
     category_id: form.category_id ?? item?.category_id ?? categories[0]?.id ?? "",
     station_id:
       form.station_id ??
@@ -304,7 +304,7 @@ function ItemDialog({
     .map((x) => x.trim())
     .filter(Boolean);
   const ingredientsOk = ingredients.length <= 40 && ingredients.every((x) => x.length <= 60);
-  const minor = parseAmount(v.price);
+  const minor = parseAmount(v.price, currency);
   const body = {
     name: v.name.trim(),
     description: v.description.trim() || null,
@@ -563,7 +563,7 @@ function GroupsDialog({ onClose }: { onClose: () => void }) {
   const max = Number(g.max);
   const groupOk =
     g.name.trim() !== "" && Number.isInteger(min) && Number.isInteger(max) && min >= 0 && max >= 1 && max <= 20 && min <= max;
-  const delta = parseAmount(opt.price);
+  const delta = parseAmount(opt.price, currency);
   const addGroup = useAction(
     () => ok(api.POST("/api/v1/menu/modifier-groups", { body: { name: g.name.trim(), min_select: min, max_select: max } })),
     {
@@ -909,7 +909,7 @@ function Presets({ existing }: { existing: string[] }) {
   const [skip, setSkip] = useState<string[]>([]);
   const preset = chosen === null ? null : PRESETS[chosen]!;
   const options = preset ? preset.options.filter((o) => !skip.includes(o)) : [];
-  const valid = options.length > 0 && options.every((o) => parseAmount(prices[o] || "0") !== null);
+  const valid = options.length > 0 && options.every((o) => parseAmount(prices[o] || "0", currency) !== null);
   const create = useAction(
     async () => {
       const group = await ok(
@@ -921,7 +921,7 @@ function Presets({ existing }: { existing: string[] }) {
         await ok(
           api.POST("/api/v1/menu/modifier-groups/{group_id}/options", {
             params: { path: { group_id: group.id } },
-            body: { name: o, price_delta: { amount_minor: parseAmount(prices[o] || "0") ?? 0, currency }, sort_order: n },
+            body: { name: o, price_delta: { amount_minor: parseAmount(prices[o] || "0", currency) ?? 0, currency }, sort_order: n },
           }),
         );
       }
@@ -1162,7 +1162,7 @@ function GroupRow({
         <ul className="mt-2 flex flex-col gap-1">
           {group.options.map((o) => {
             const typed = prices[o.id];
-            const minor = typed === undefined ? null : parseAmount(typed || "0");
+            const minor = typed === undefined ? null : parseAmount(typed || "0", o.price_delta.currency);
             return (
               <li key={o.id} className="flex flex-wrap items-center gap-2 text-sm">
                 <span className={o.is_available ? "flex-1 text-ink" : "flex-1 text-muted line-through"}>{o.name}</span>
@@ -1172,7 +1172,7 @@ function GroupRow({
                       aria-label={`Extra charge for ${o.name}`}
                       inputMode="decimal"
                       className="w-24"
-                      value={typed ?? (o.price_delta.amount_minor / 100).toFixed(2)}
+                      value={typed ?? toAmountInput(o.price_delta)}
                       onChange={(e) => setPrices({ ...prices, [o.id]: e.target.value })}
                     />
                     {typed !== undefined && minor !== null && minor !== o.price_delta.amount_minor ? (

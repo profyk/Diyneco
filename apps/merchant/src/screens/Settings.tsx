@@ -1,6 +1,6 @@
 "use client";
 
-import { currencySymbol, formatDate, formatTime, ok, parseAmount } from "@diyneco/api-client";
+import { currencySymbol, formatDate, formatTime, ok, parseAmount, toAmountInput } from "@diyneco/api-client";
 import {
   Badge,
   Button,
@@ -32,7 +32,7 @@ export function Settings() {
   const { can } = useSession();
   const tabs: { key: Tab; title: string; show: boolean }[] = [
     { key: "hotel", title: "Hotel", show: can("hotel.read") },
-    { key: "billing", title: "Billing & VAT", show: can("settings.read") },
+    { key: "billing", title: "Billing & tax", show: can("settings.read") },
     { key: "tablet", title: "Guest tablet", show: can("settings.read") },
     { key: "integrations", title: "Integrations", show: can("integrations.manage") },
     { key: "plan", title: "Plan", show: can("subscription.read") },
@@ -244,13 +244,14 @@ function BillingSettings() {
   if (!settings.data) return <Skeleton className="h-40" />;
   const s = { ...settings.data.data, ...patch } as typeof settings.data.data;
   const editable = can("settings.update");
+  const tax = s.tax_label;
   const money = (key: string, current: { amount_minor: number; currency: string }) => (
     <Input
       inputMode="decimal"
       disabled={!editable}
-      defaultValue={(current.amount_minor / 100).toFixed(2)}
+      defaultValue={toAmountInput(current)}
       onChange={(e) => {
-        const m = parseAmount(e.target.value);
+        const m = parseAmount(e.target.value, s.currency);
         if (m !== null) setPatch({ ...patch, [key]: { amount_minor: m, currency: s.currency } });
       }}
     />
@@ -265,9 +266,9 @@ function BillingSettings() {
     <Card className="max-w-3xl p-5">
       <div className="grid gap-5 sm:grid-cols-2">
         <div className="flex flex-col gap-3 sm:col-span-2">
-          {toggle("vat_registered", "The hotel is a registered VAT vendor (issues tax invoices)")}
-          {toggle("accommodation_rates_include_vat", "Room rates include VAT")}
-          {toggle("menu_prices_include_vat", "Menu prices include VAT")}
+          {toggle("vat_registered", `The hotel is registered for ${tax} (issues tax invoices)`)}
+          {toggle("accommodation_rates_include_vat", `Room rates include ${tax}`)}
+          {toggle("menu_prices_include_vat", `Menu prices include ${tax}`)}
           {toggle("room_charging_enabled", "Guests may charge orders to their room")}
           {toggle("checkout_override_allowed", "Managers may check out a guest who still owes money")}
           {toggle("guest_id_number_enabled", "Record guests' ID or passport numbers (encrypted; only shown in a privacy export)")}
@@ -287,12 +288,12 @@ function BillingSettings() {
             </Select>
           )}
         </Field>
-        <Field label="VAT number">
+        <Field label={`${tax} registration number`}>
           {(p) => (
             <Input {...p} disabled={!editable} value={(s.vat_number as string | null) ?? ""} onChange={(e) => setPatch({ ...patch, vat_number: e.target.value || null })} />
           )}
         </Field>
-        <Field label="VAT rate (%)">
+        <Field label={`${tax} rate (%)`}>
           {(p) => (
             <Input
               {...p}
@@ -307,6 +308,12 @@ function BillingSettings() {
         <Field label={`Room-service fee per order (${currencySymbol(s.currency)})`}>{() => money("room_service_fee", s.room_service_fee)}</Field>
         <Field label={`Abridged tax invoice limit (${currencySymbol(s.currency)})`} hint="Above this a full tax invoice with the guest's address is issued.">
           {() => money("abridged_invoice_max", s.abridged_invoice_max)}
+        </Field>
+        <Field label="Name of the tax" hint="Shown on bills and screens, e.g. VAT, GST, IVA or Sales tax.">
+          {(p) => <Input {...p} disabled={!editable} maxLength={30} value={s.tax_label} onChange={(e) => setPatch({ ...patch, tax_label: e.target.value })} />}
+        </Field>
+        <Field label="Language and region" hint="Formats numbers, dates and money, e.g. en-ZA, en-GB, fr-FR, pt-BR.">
+          {(p) => <Input {...p} disabled={!editable} value={s.locale} onChange={(e) => setPatch({ ...patch, locale: e.target.value })} />}
         </Field>
         <Field label="Invoice prefix">
           {(p) => <Input {...p} disabled={!editable} value={s.invoice_prefix} onChange={(e) => setPatch({ ...patch, invoice_prefix: e.target.value })} />}

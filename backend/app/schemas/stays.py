@@ -66,7 +66,7 @@ class GuestList(BaseModel):
 class BillingProfileCreate(StrictModel):
     company_name: Name
     registration_number: Annotated[str, StringConstraints(max_length=40)] | None = None
-    vat_number: Annotated[str, StringConstraints(pattern=r"^4\d{9}$")] | None = None
+    vat_number: Annotated[str, StringConstraints(min_length=2, max_length=30)] | None = None
     billing_address: dict[str, str] = Field(default_factory=dict, max_length=8)
     billing_email: EmailStr | None = None
 

@@ -1361,7 +1361,8 @@
           "vat_number": {
             "anyOf": [
               {
-                "pattern": "^4\\d{9}$",
+                "maxLength": 30,
+                "minLength": 2,
                 "type": "string"
               },
               {
@@ -2437,6 +2438,99 @@
         "title": "CloseTips",
         "type": "object"
       },
+      "CountryList": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/CountryOut"
+            },
+            "title": "Data",
+            "type": "array"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "CountryList",
+        "type": "object"
+      },
+      "CountryOut": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "dial": {
+            "title": "Dial",
+            "type": "string"
+          },
+          "locale": {
+            "title": "Locale",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "region": {
+            "title": "Region",
+            "type": "string"
+          },
+          "tax_id_label": {
+            "title": "Tax Id Label",
+            "type": "string"
+          },
+          "tax_id_pattern": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Id Pattern"
+          },
+          "tax_label": {
+            "title": "Tax Label",
+            "type": "string"
+          },
+          "tax_rate_bp": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Rate Bp"
+          },
+          "timezone": {
+            "title": "Timezone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "currency",
+          "timezone",
+          "locale",
+          "dial",
+          "region",
+          "tax_label",
+          "tax_id_label",
+          "tax_id_pattern",
+          "tax_rate_bp"
+        ],
+        "title": "CountryOut",
+        "type": "object"
+      },
       "CreditNoteRequest": {
         "additionalProperties": false,
         "properties": {
@@ -2475,6 +2569,10 @@
             "title": "Code",
             "type": "string"
           },
+          "decimals": {
+            "title": "Decimals",
+            "type": "integer"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -2487,7 +2585,8 @@
         "required": [
           "code",
           "name",
-          "symbol"
+          "symbol",
+          "decimals"
         ],
         "title": "CurrencyOut",
         "type": "object"
@@ -4228,6 +4327,10 @@
             "title": "Created At",
             "type": "string"
           },
+          "data_region": {
+            "title": "Data Region",
+            "type": "string"
+          },
           "email": {
             "anyOf": [
               {
@@ -4315,6 +4418,7 @@
           "email",
           "logo_url",
           "country",
+          "data_region",
           "plan",
           "created_at",
           "version"
@@ -9724,6 +9828,10 @@
             "title": "Invoice Prefix",
             "type": "string"
           },
+          "locale": {
+            "title": "Locale",
+            "type": "string"
+          },
           "menu_prices_include_vat": {
             "title": "Menu Prices Include Vat",
             "type": "boolean"
@@ -9744,6 +9852,10 @@
               "available"
             ],
             "title": "Room Status After Checkout",
+            "type": "string"
+          },
+          "tax_label": {
+            "title": "Tax Label",
             "type": "string"
           },
           "timezone": {
@@ -9800,7 +9912,9 @@
           "invoice_prefix",
           "abridged_invoice_max",
           "guest_data_retention_days",
-          "guest_id_number_enabled"
+          "guest_id_number_enabled",
+          "locale",
+          "tax_label"
         ],
         "title": "SettingsOut",
         "type": "object"
@@ -9915,6 +10029,18 @@
             ],
             "title": "Invoice Prefix"
           },
+          "locale": {
+            "anyOf": [
+              {
+                "pattern": "^[a-z]{2,3}(-[A-Z]{2})?$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locale"
+          },
           "menu_prices_include_vat": {
             "anyOf": [
               {
@@ -9972,6 +10098,19 @@
             ],
             "title": "Room Status After Checkout"
           },
+          "tax_label": {
+            "anyOf": [
+              {
+                "maxLength": 30,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Label"
+          },
           "timezone": {
             "anyOf": [
               {
@@ -9987,7 +10126,8 @@
           "vat_number": {
             "anyOf": [
               {
-                "pattern": "^4\\d{9}$",
+                "maxLength": 30,
+                "minLength": 2,
                 "type": "string"
               },
               {
@@ -10086,10 +10226,22 @@
               }
             ]
           },
-          "currency": {
-            "pattern": "^[A-Z]{3}$",
-            "title": "Currency",
+          "country": {
+            "pattern": "^[A-Z]{2}$",
+            "title": "Country",
             "type": "string"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Z]{3}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
           },
           "email": {
             "anyOf": [
@@ -10116,6 +10268,18 @@
             ],
             "title": "Legal Name"
           },
+          "locale": {
+            "anyOf": [
+              {
+                "pattern": "^[a-z]{2,3}(-[A-Z]{2})?$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locale"
+          },
           "name": {
             "maxLength": 120,
             "minLength": 1,
@@ -10134,11 +10298,23 @@
               }
             ],
             "title": "Phone"
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timezone"
           }
         },
         "required": [
           "name",
-          "currency"
+          "country"
         ],
         "title": "SignupHotel",
         "type": "object"
@@ -13910,6 +14086,28 @@
         "summary": "Charge Categories",
         "tags": [
           "billing"
+        ]
+      }
+    },
+    "/api/v1/countries": {
+      "get": {
+        "description": "Countries Diyneco serves and the defaults each suggests (public: signup needs it).",
+        "operationId": "countries_api_v1_countries_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CountryList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Countries",
+        "tags": [
+          "hotel"
         ]
       }
     },

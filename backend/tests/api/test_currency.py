@@ -27,11 +27,14 @@ async def test_currency_catalogue_is_public(client):
 
 
 async def test_signup_needs_a_supported_currency(client):
+    # Left out, the currency is the country's (D69); a country is always required.
     body = signup_body()
     body["hotel"].pop("currency")
+    body["hotel"].pop("country")
     assert (await client.post("/signup", json=body, headers=idem())).json()["error"][
         "code"
     ] == "VALIDATION_FAILED"
+    body = signup_body()
     body["hotel"]["currency"] = "XYZ"
     r = await client.post("/signup", json=body, headers=idem())
     assert r.json()["error"]["code"] == "VALIDATION_FAILED"

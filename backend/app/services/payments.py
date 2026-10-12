@@ -23,6 +23,7 @@ from sqlalchemy import insert, select
 
 from app.audit.writer import write_audit
 from app.billing.folio import FolioLedger, Line, business_date
+from app.core.currencies import format_minor
 from app.core.errors import AppError
 from app.db.session import TenantContext, UnitOfWork
 from app.models.domain import Delivery, Folio, Order, Payment, PaymentAllocation, Stay, Tip
@@ -171,7 +172,7 @@ async def record(
     if f["tip"] > 0 and not body.get("confirm_tip"):
         raise AppError(
             "TIP_CONFIRMATION_REQUIRED",
-            f"The guest gave {f['tip'] / 100:.2f} more than the amount due. Confirm it as a tip.",
+            f"The guest gave {format_minor(f['tip'], c)} more than the amount due. Confirm it as a tip.",
             details={k: money(v, c) for k, v in f.items() if k != "difference"},
         )
     occurred, late_reason = _occurred_at(body)

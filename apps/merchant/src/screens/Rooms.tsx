@@ -1,6 +1,6 @@
 "use client";
 
-import { currencySymbol, formatMoney, ok, parseAmount } from "@diyneco/api-client";
+import { currencySymbol, formatMoney, ok, parseAmount, toAmountInput } from "@diyneco/api-client";
 import {
   Button,
   Card,
@@ -195,7 +195,7 @@ function TypeDialog({ onClose }: { onClose: () => void }) {
   const [name, setName] = useState("");
   const [rate, setRate] = useState("");
   const [capacity, setCapacity] = useState("2");
-  const minor = parseAmount(rate);
+  const minor = parseAmount(rate, currency);
   const save = useAction(
     () =>
       ok(
@@ -324,11 +324,11 @@ function EditRoomDialog({ room, types, onClose }: { room: RoomRow; types: { id: 
     number: room.number,
     floor: room.floor ?? "",
     room_type_id: room.room_type.id,
-    rate: room.rate ? (room.rate.amount_minor / 100).toFixed(2) : "",
+    rate: room.rate ? toAmountInput(room.rate) : "",
     capacity: String(room.capacity),
   });
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const minor = f.rate.trim() ? parseAmount(f.rate) : null;
+  const minor = f.rate.trim() ? parseAmount(f.rate, currency) : null;
   const rateOk = !f.rate.trim() || minor !== null;
   const save = useAction(
     () =>
@@ -411,9 +411,9 @@ function EditTypeDialog({
   const { api } = useSession();
   const currency = useCurrency();
   const [name, setName] = useState(type.name);
-  const [rate, setRate] = useState((type.base_rate.amount_minor / 100).toFixed(2));
+  const [rate, setRate] = useState(toAmountInput(type.base_rate));
   const [capacity, setCapacity] = useState(String(type.capacity));
-  const minor = parseAmount(rate);
+  const minor = parseAmount(rate, currency);
   const save = useAction(
     () =>
       ok(

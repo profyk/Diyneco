@@ -29,20 +29,47 @@ class SignupOwner(StrictModel):
     password: Password
 
 
+class CountryOut(BaseModel):
+    code: str
+    name: str
+    currency: str
+    timezone: str
+    locale: str
+    dial: str
+    region: str
+    tax_label: str
+    tax_id_label: str
+    tax_id_pattern: str | None
+    tax_rate_bp: int | None  # a suggestion; the hotel confirms its own rate
+
+
+class CountryList(BaseModel):
+    data: list[CountryOut]
+
+
 class CurrencyOut(BaseModel):
     code: str
     name: str
     symbol: str
+    decimals: int  # 0 (yen), 2 (most) or 3 (dinars): amounts are integers of 10^-decimals
 
 
 class CurrencyList(BaseModel):
     data: list[CurrencyOut]
 
 
+TaxId = Annotated[str, StringConstraints(min_length=2, max_length=30, strip_whitespace=True)]
+Locale = Annotated[str, StringConstraints(pattern=r"^[a-z]{2,3}(-[A-Z]{2})?$")]
+
+
 class SignupHotel(StrictModel):
     name: Name
-    # The hotel's operating currency (ISO 4217), chosen at signup; no default (D57).
-    currency: Annotated[str, StringConstraints(pattern=r"^[A-Z]{3}$")]
+    # Where the hotel is (ISO 3166-1); it sets the data region and suggests the rest (D69).
+    country: Annotated[str, StringConstraints(pattern=r"^[A-Z]{2}$")]
+    # Operating currency (ISO 4217). Left out, it is the country's currency (user decision, D69).
+    currency: Annotated[str, StringConstraints(pattern=r"^[A-Z]{3}$")] | None = None
+    timezone: Annotated[str, StringConstraints(max_length=64)] | None = None  # default: the country's
+    locale: Locale | None = None  # default: the country's
     legal_name: Name | None = None
     phone: Phone | None = None
     email: EmailStr | None = None
@@ -76,6 +103,7 @@ class HotelOut(BaseModel):
     email: str | None
     logo_url: str | None
     country: str
+    data_region: str
     plan: PlanOut | None
     created_at: datetime
     version: int
@@ -116,13 +144,15 @@ class SettingsOut(BaseModel):
     abridged_invoice_max: Money
     guest_data_retention_days: int
     guest_id_number_enabled: bool
+    locale: str
+    tax_label: str
 
 
 class SettingsPatch(StrictModel):
     timezone: Annotated[str, StringConstraints(max_length=64)] | None = None
     currency: Annotated[str, StringConstraints(pattern=r"^[A-Z]{3}$")] | None = None
     vat_registered: bool | None = None
-    vat_number: Annotated[str, StringConstraints(pattern=r"^4\d{9}$")] | None = None
+    vat_number: TaxId | None = None  # checked against the hotel's country (D69)
     vat_rate_bp: Annotated[int, Field(ge=0, le=10000)] | None = None
     accommodation_rates_include_vat: bool | None = None
     menu_prices_include_vat: bool | None = None
@@ -138,6 +168,8 @@ class SettingsPatch(StrictModel):
     abridged_invoice_max: Money | None = None
     guest_data_retention_days: Annotated[int, Field(ge=365, le=3650)] | None = None
     guest_id_number_enabled: bool | None = None
+    locale: Locale | None = None
+    tax_label: Annotated[str, StringConstraints(min_length=1, max_length=30)] | None = None
 
 
 class PermissionOut(BaseModel):

@@ -22,6 +22,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from app.core import crypto
 from app.core.config import get_settings
+from app.core.countries import country
 from app.models import domain as d
 from app.models import events as ev
 from app.models import tenancy as t
@@ -36,6 +37,7 @@ HOTELS = [
         "domain": "grandexample.example",
         "prefix": "GEH",
         "currency": "ZAR",
+        "country": "ZA",
         "address": {
             "line1": "1 Beach Road",
             "city": "Cape Town",
@@ -55,6 +57,7 @@ HOTELS = [
         "domain": "seabreeze.example",
         "prefix": "SBL",
         "currency": "NAD",
+        "country": "NA",
         "address": {
             "line1": "12 Dune Lane",
             "city": "Plettenberg Bay",
@@ -96,6 +99,8 @@ async def seed_hotel(s: AsyncSession, spec: dict) -> list[str]:  # type: ignore[
                 status="active",
                 address=spec["address"],
                 email=f"hello@{spec['domain']}",
+                country=spec["country"],
+                data_region=country(spec["country"]).region,  # type: ignore[union-attr]
             )
             .returning(t.Hotel.id)
         )
@@ -106,6 +111,9 @@ async def seed_hotel(s: AsyncSession, spec: dict) -> list[str]:  # type: ignore[
             invoice_prefix=spec["prefix"],
             wifi_name=f"{spec['prefix']}-Guest",
             currency=spec["currency"],
+            timezone=country(spec["country"]).timezone,  # type: ignore[union-attr]
+            locale=country(spec["country"]).locale,  # type: ignore[union-attr]
+            tax_label=country(spec["country"]).tax_label,  # type: ignore[union-attr]
         )
     )
     plan = (await s.execute(select(t.Plan.id).where(t.Plan.code == "professional"))).scalar_one()

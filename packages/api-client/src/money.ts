@@ -8,9 +8,20 @@ export interface Money {
 
 const formatters = new Map<string, Intl.NumberFormat>();
 
-/** The currency's own symbol and two decimals, e.g. R1,234.50, €12.00, KSh 300.00. */
+// Must match the API's currency catalogue (backend/app/core/currencies.py): amounts are integers
+// of 10^-decimals of the currency. Everything not listed has 2.
+const ZERO_DECIMALS = new Set(["JPY", "CLP", "ISK", "VND", "UGX", "RWF", "IDR"]);
+const THREE_DECIMALS = new Set(["BHD", "OMR", "JOD"]);
+
+/** Decimal places of a currency's minor unit: 2 for most, 0 for yen, 3 for dinars. */
+export function currencyDecimals(currency: string): number {
+  return ZERO_DECIMALS.has(currency) ? 0 : THREE_DECIMALS.has(currency) ? 3 : 2;
+}
+
+/** The currency's own symbol and decimals, e.g. R1,234.50, €12.00, ¥1,500, BHD 2.125. */
 export function formatMoney(m: Money | null | undefined): string {
   if (!m) return "–";
+  const digits = currencyDecimals(m.currency);
   let f = formatters.get(m.currency);
   if (!f) {
     try {
@@ -18,15 +29,22 @@ export function formatMoney(m: Money | null | undefined): string {
         style: "currency",
         currency: m.currency,
         currencyDisplay: "narrowSymbol",
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits,
       });
     } catch {
-      f = new Intl.NumberFormat("en", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      f = new Intl.NumberFormat("en", { minimumFractionDigits: digits, maximumFractionDigits: digits });
     }
     formatters.set(m.currency, f);
   }
-  return f.format(m.amount_minor / 100).replace("-", "−");
+  return f.format(m.amount_minor / 10 ** digits).replace("-", "−");
+}
+
+/** An amount as an editable number in major units ("1500.00", "1500" for yen). */
+export function toAmountInput(m: Money | null | undefined): string {
+  if (!m) return "";
+  const digits = currencyDecimals(m.currency);
+  return (m.amount_minor / 10 ** digits).toFixed(digits);
 }
 
 /** The symbol a currency is shown with (for field labels). */
@@ -42,12 +60,17 @@ export function currencySymbol(currency: string): string {
   }
 }
 
-/** Converts a typed amount ("125.50", "1,200") to minor units, or null if it is not a valid amount. */
-export function parseAmount(text: string): number | null {
+/**
+ * Converts a typed amount ("125.50", "1,200") to minor units of `currency`, or null if it is not
+ * a valid amount (including more decimals than the currency has).
+ */
+export function parseAmount(text: string, currency: string): number | null {
+  const digits = currencyDecimals(currency);
   const cleaned = text.replace(/[^\d.]/g, "");
-  if (!/^\d{1,9}(\.\d{0,2})?$/.test(cleaned)) return null;
+  const pattern = digits ? new RegExp(`^\\d{1,12}(\\.\\d{0,${digits}})?$`) : /^\d{1,12}$/;
+  if (!pattern.test(cleaned)) return null;
   const [whole = "0", frac = ""] = cleaned.split(".");
-  return Number(whole) * 100 + Number(frac.padEnd(2, "0"));
+  return Number(whole) * 10 ** digits + Number(frac.padEnd(digits, "0") || "0");
 }
 
 /** An amount in a given currency; the currency always comes from the hotel or plan. */
@@ -55,8 +78,8 @@ export function money(amount_minor: number, currency: string): Money {
   return { amount_minor, currency };
 }
 
-const timeFmt = new Intl.DateTimeFormat("en-ZA", { hour: "2-digit", minute: "2-digit", hour12: false });
-const dateFmt = new Intl.DateTimeFormat("en-ZA", { day: "numeric", month: "short", year: "numeric" });
+const timeFmt = new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit", hour12: false });
+const dateFmt = new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short", year: "numeric" });
 
 export function formatTime(iso: string | null | undefined): string {
   return iso ? timeFmt.format(new Date(iso)) : "–";

@@ -221,7 +221,7 @@ function useAmount() {
     currency,
     symbol: currencySymbol(currency),
     parse: (text: string) => {
-      const minor = parseAmount(text);
+      const minor = parseAmount(text, currency);
       return minor === null ? null : { amount_minor: minor, currency };
     },
   };

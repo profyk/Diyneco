@@ -15,7 +15,7 @@ from typing import Any
 from fpdf import FPDF
 from fpdf.enums import XPos, YPos
 
-from app.core.currencies import format_minor
+from app.core.currencies import format_minor, symbol
 
 NAVY = (11, 35, 80)
 GREY = (90, 98, 112)
@@ -24,7 +24,13 @@ NEXT_LINE: dict[str, Any] = {"new_x": XPos.LMARGIN, "new_y": YPos.NEXT}
 
 
 def amount(minor: int, currency: str) -> str:
-    return format_minor(minor, currency)
+    text = format_minor(minor, currency)
+    try:
+        text.encode("latin-1")
+    except UnicodeEncodeError:
+        # Core PDF fonts are Latin-1 (D46): print "TRY 1,250.00" rather than "? 1,250.00".
+        text = text.replace(symbol(currency), currency, 1)
+    return text
 
 
 def _t(value: Any) -> str:
@@ -64,19 +70,25 @@ def _heading(pdf: _Doc, doc: dict[str, Any]) -> None:
     pdf.ln(4)
 
 
+def _tax(supplier: dict[str, Any]) -> str:
+    """The tax's name on this document; invoices issued before D69 carry none and were VAT."""
+    return str(supplier.get("tax_label") or "VAT")
+
+
 def _parties(pdf: _Doc, supplier: dict[str, Any], recipient: dict[str, Any]) -> None:
     left = [supplier.get("name")]
     if supplier.get("trading_name") and supplier["trading_name"] != supplier.get("name"):
         left.append(f"Trading as {supplier['trading_name']}")
     left += _address_lines(supplier.get("address"))
+    tax = _tax(supplier)
     if supplier.get("vat_number"):
-        left.append(f"VAT number {supplier['vat_number']}")
+        left.append(f"{tax} number {supplier['vat_number']}")
     left += [p for p in (supplier.get("phone"), supplier.get("email")) if p]
 
     right = [recipient.get("name"), *_address_lines(recipient.get("address"))]
     for key, label in (
         ("registration_number", "Registration"),
-        ("vat_number", "VAT number"),
+        ("vat_number", f"{tax} number"),
         ("purchase_order", "Order no."),
         ("traveller", "Traveller"),
     ):
@@ -97,12 +109,12 @@ def _parties(pdf: _Doc, supplier: dict[str, Any], recipient: dict[str, Any]) -> 
     pdf.set_y(top + 5 + 5 * max(len(left), len(right)) + 6)
 
 
-def _lines(pdf: _Doc, items: list[dict[str, Any]], currency: str) -> None:
+def _lines(pdf: _Doc, items: list[dict[str, Any]], currency: str, tax: str) -> None:
     cols = (pdf.width - 60, 14, 18, 28)
     pdf.set_draw_color(*LINE)
     pdf.set_font("Helvetica", "B", 9)
     pdf.set_text_color(*GREY)
-    for w, label, align in zip(cols, ("Description", "Qty", "VAT", "Amount"), "LRRR", strict=True):
+    for w, label, align in zip(cols, ("Description", "Qty", tax[:6], "Amount"), "LRRR", strict=True):
         pdf.cell(w, 7, label, border="B", align=align)
     pdf.ln()
     pdf.set_text_color(0, 0, 0)
@@ -137,7 +149,7 @@ def _totals(pdf: _Doc, doc: dict[str, Any]) -> None:
             row(label, t[key])
     row("Total", t["charges_minor"], bold=True)
     if doc["vat_registered"]:
-        row(f"VAT included at {doc['vat_rate_bp'] / 100:g}%", t["vat_minor"])
+        row(f"{_tax(doc['supplier'])} included at {doc['vat_rate_bp'] / 100:g}%", t["vat_minor"])
     if doc["kind"] != "credit_note":
         row("Payments received", t["paid_minor"])
         row("Balance due", t["balance_minor"], bold=True)
@@ -146,14 +158,15 @@ def _totals(pdf: _Doc, doc: dict[str, Any]) -> None:
 
 def _notes(pdf: _Doc, doc: dict[str, Any]) -> None:
     c, t = doc["currency"], doc["totals"]
+    tax = _tax(doc["supplier"])
     notes = []
     if doc["kind"] != "credit_note" and t.get("tips_minor"):
         notes.append(
             f"Tips of {amount(t['tips_minor'], c)} were received for staff. They are not part of this "
-            "bill and carry no VAT."
+            f"bill and carry no {tax}."
         )
     if not doc["vat_registered"]:
-        notes.append("The supplier is not registered for VAT; no VAT is charged.")
+        notes.append(f"The supplier is not registered for {tax}; no {tax} is charged.")
     if "long_stay" in t.get("flags", []):
         notes.append("Stay longer than 28 days: the hotel confirmed the accommodation charges at checkout.")
     if doc.get("reason"):
@@ -173,7 +186,7 @@ def render(doc: dict[str, Any]) -> bytes:
     pdf.add_page()
     _heading(pdf, doc)
     _parties(pdf, doc["supplier"], doc["recipient"])
-    _lines(pdf, doc["items"], doc["currency"])
+    _lines(pdf, doc["items"], doc["currency"], _tax(doc["supplier"]))
     _totals(pdf, doc)
     _notes(pdf, doc)
     return bytes(pdf.output())

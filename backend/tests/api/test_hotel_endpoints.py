@@ -24,6 +24,7 @@ def signup_body(email: str | None = None) -> dict:
         },
         "hotel": {
             "name": "Grand Example Hotel",
+            "country": "ZA",
             "currency": "ZAR",
             "phone": "+27 21 555 0100",
             "address": {"line1": "1 Beach Rd", "city": "Cape Town", "country": "ZA"},
@@ -72,7 +73,9 @@ async def test_signup_with_existing_email_reveals_nothing(client, mailbox, owner
     body = signup_body()
     await client.post("/signup", json=body, headers=idem())
     again = await client.post(
-        "/signup", json={**body, "hotel": {"name": "Second Hotel", "currency": "ZAR"}}, headers=idem()
+        "/signup",
+        json={**body, "hotel": {"name": "Second Hotel", "currency": "ZAR", "country": "ZA"}},
+        headers=idem(),
     )
     assert again.status_code == 201
     assert again.json() == (await client.post("/signup", json=signup_body(), headers=idem())).json()

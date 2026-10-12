@@ -15,6 +15,7 @@ import uuid
 from typing import Any, get_args
 
 from app.audit.writer import write_audit
+from app.core.currencies import decimals, to_minor
 from app.core.errors import AppError
 from app.db.session import TenantContext, UnitOfWork
 from app.repositories.menu import MenuRepository
@@ -35,7 +36,7 @@ COLUMNS = (
 )
 MAX_BYTES = 1_000_000
 MAX_ROWS = 500
-_PRICE = re.compile(r"^\d{1,7}(\.\d{1,2})?$")
+_PRICE = re.compile(r"^\d{1,9}(\.\d{1,3})?$")
 DIETARY = set(get_args(DietaryTag))
 ALLERGENS = set(get_args(Allergen))
 TEMPLATE = (
@@ -82,6 +83,7 @@ def _check_row(
     default_station: Any,
     groups: dict[str, Any],
     permissions: frozenset[str],
+    currency: str,
 ) -> tuple[dict[str, Any] | None, list[tuple[str, str]]]:
     """One line: (planned item, or None) and its problems as (column, message)."""
     if len(cells) != len(COLUMNS):
@@ -94,8 +96,16 @@ def _check_row(
         problems.append(("name", "Give the item a name (up to 120 characters)."))
     if len(v["description"]) > 1000:
         problems.append(("description", "At most 1000 characters."))
-    if not _PRICE.match(v["price"]):
-        problems.append(("price", "Write the price like 185.00, without a currency symbol."))
+    price_minor: int | None = None
+    if _PRICE.match(v["price"]):
+        try:
+            price_minor = to_minor(v["price"], currency)
+        except ValueError:
+            price_minor = None
+    if price_minor is None:
+        places = decimals(currency)
+        example = "185" if places == 0 else "185." + "0" * places
+        problems.append(("price", f"Write the price like {example}, without a currency symbol."))
     kind = (v["type"] or "food").lower()
     if kind not in ("food", "beverage"):
         problems.append(("type", "Use food or beverage."))
@@ -119,14 +129,13 @@ def _check_row(
         problems.append(("options", f"No option group named {', '.join(missing)}; add it under Options."))
     if problems or station is None:
         return None, problems
-    whole, _, cents = v["price"].partition(".")
     return {
         "station_from_file": bool(v["station"]),
         "category": v["category"],
         "values": {
             "name": v["name"],
             "description": v["description"] or None,
-            "price_minor": int(whole) * 100 + int((cents + "00")[:2]),
+            "price_minor": price_minor,
             "charge_category_code": kind,
             "station_id": station.id,
             "dietary_tags": sorted(set(dietary)),
@@ -151,7 +160,7 @@ async def import_csv(
     new_categories: list[str] = []
 
     for line, cells in _rows(raw):
-        row, problems = _check_row(cells, stations, default_station, groups, permissions)
+        row, problems = _check_row(cells, stations, default_station, groups, permissions, settings.currency)
         if row is None:
             errors.extend({"line": line, "field": f, "problem": p} for f, p in problems)
             continue
