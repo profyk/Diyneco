@@ -1552,6 +1552,58 @@
         "title": "BillingProfileOut",
         "type": "object"
       },
+      "BillingSettingsOut": {
+        "properties": {
+          "price_change_notice_days": {
+            "title": "Price Change Notice Days",
+            "type": "integer"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "price_change_notice_days",
+          "version",
+          "updated_at"
+        ],
+        "title": "BillingSettingsOut",
+        "type": "object"
+      },
+      "BillingSettingsPut": {
+        "additionalProperties": false,
+        "properties": {
+          "price_change_notice_days": {
+            "maximum": 365.0,
+            "minimum": 0.0,
+            "title": "Price Change Notice Days",
+            "type": "integer"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 3,
+            "title": "Reason",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version",
+          "reason",
+          "price_change_notice_days"
+        ],
+        "title": "BillingSettingsPut",
+        "type": "object"
+      },
       "BulkResult": {
         "properties": {
           "created": {
@@ -9043,50 +9095,243 @@
       "PlanCreate": {
         "additionalProperties": false,
         "properties": {
+          "can_downgrade": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Can Downgrade"
+          },
+          "can_upgrade": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Can Upgrade"
+          },
           "code": {
             "pattern": "^[a-z][a-z0-9_]{1,40}$",
             "title": "Code",
             "type": "string"
           },
-          "features": {
-            "patternProperties": {
-              "^[a-z][a-z0-9_.]{1,60}$": {
-                "type": "boolean"
+          "currency": {
+            "pattern": "^[A-Z]{3}$",
+            "title": "Currency",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "maxLength": 5000,
+                "type": "string"
+              },
+              {
+                "type": "null"
               }
-            },
-            "title": "Features",
-            "type": "object"
+            ],
+            "title": "Description"
+          },
+          "display_order": {
+            "anyOf": [
+              {
+                "maximum": 1000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Order"
+          },
+          "features": {
+            "anyOf": [
+              {
+                "patternProperties": {
+                  "^[a-z][a-z0-9_.]{1,60}$": {
+                    "type": "boolean"
+                  }
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Features"
+          },
+          "highlights": {
+            "anyOf": [
+              {
+                "items": {
+                  "maxLength": 120,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "maxItems": 20,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Highlights"
           },
           "limits": {
-            "additionalProperties": {
-              "minimum": 0.0,
-              "type": "integer"
-            },
-            "propertyNames": {
-              "enum": [
-                "rooms",
-                "devices",
-                "staff",
-                "api_keys"
-              ]
-            },
-            "title": "Limits",
-            "type": "object"
-          },
-          "monthly_price": {
-            "$ref": "#/components/schemas/Money"
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "minimum": 0.0,
+                  "type": "integer"
+                },
+                "propertyNames": {
+                  "enum": [
+                    "rooms",
+                    "devices",
+                    "staff",
+                    "api_keys"
+                  ]
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limits"
           },
           "name": {
             "maxLength": 80,
             "minLength": 1,
             "title": "Name",
             "type": "string"
+          },
+          "overage_policy": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Overage Policy"
+          },
+          "promo_discount_bp": {
+            "anyOf": [
+              {
+                "maximum": 10000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Promo Discount Bp"
+          },
+          "promo_ends_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Promo Ends On"
+          },
+          "recommended": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommended"
+          },
+          "setup_fee_minor": {
+            "anyOf": [
+              {
+                "maximum": 1000000000000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Setup Fee Minor"
+          },
+          "short_description": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Short Description"
+          },
+          "support_level": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Support Level"
+          },
+          "tax_treatment": {
+            "anyOf": [
+              {
+                "enum": [
+                  "exclusive",
+                  "inclusive"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Treatment"
+          },
+          "trial_days": {
+            "anyOf": [
+              {
+                "maximum": 365.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trial Days"
           }
         },
         "required": [
-          "code",
           "name",
-          "monthly_price"
+          "code",
+          "currency"
         ],
         "title": "PlanCreate",
         "type": "object"
@@ -9095,7 +9340,7 @@
         "properties": {
           "data": {
             "items": {
-              "$ref": "#/components/schemas/app__schemas__admin__PlanOut"
+              "$ref": "#/components/schemas/app__schemas__plans__PlanOut"
             },
             "title": "Data",
             "type": "array"
@@ -9121,6 +9366,65 @@
       "PlanPatch": {
         "additionalProperties": false,
         "properties": {
+          "can_downgrade": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Can Downgrade"
+          },
+          "can_upgrade": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Can Upgrade"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Z]{3}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "maxLength": 5000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "display_order": {
+            "anyOf": [
+              {
+                "maximum": 1000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Order"
+          },
           "features": {
             "anyOf": [
               {
@@ -9137,16 +9441,22 @@
             ],
             "title": "Features"
           },
-          "is_active": {
+          "highlights": {
             "anyOf": [
               {
-                "type": "boolean"
+                "items": {
+                  "maxLength": 120,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "maxItems": 20,
+                "type": "array"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Is Active"
+            "title": "Highlights"
           },
           "limits": {
             "anyOf": [
@@ -9171,16 +9481,6 @@
             ],
             "title": "Limits"
           },
-          "monthly_price": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Money"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
           "name": {
             "anyOf": [
               {
@@ -9193,9 +9493,158 @@
               }
             ],
             "title": "Name"
+          },
+          "overage_policy": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Overage Policy"
+          },
+          "promo_discount_bp": {
+            "anyOf": [
+              {
+                "maximum": 10000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Promo Discount Bp"
+          },
+          "promo_ends_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Promo Ends On"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "recommended": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommended"
+          },
+          "setup_fee_minor": {
+            "anyOf": [
+              {
+                "maximum": 1000000000000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Setup Fee Minor"
+          },
+          "short_description": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Short Description"
+          },
+          "support_level": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Support Level"
+          },
+          "tax_treatment": {
+            "anyOf": [
+              {
+                "enum": [
+                  "exclusive",
+                  "inclusive"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Treatment"
+          },
+          "trial_days": {
+            "anyOf": [
+              {
+                "maximum": 365.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trial Days"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
           }
         },
+        "required": [
+          "version"
+        ],
         "title": "PlanPatch",
+        "type": "object"
+      },
+      "PlanStatusChange": {
+        "additionalProperties": false,
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "minLength": 3,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "PlanStatusChange",
         "type": "object"
       },
       "PlatformAction": {
@@ -9443,6 +9892,414 @@
           "roles"
         ],
         "title": "PlatformStaffRoles",
+        "type": "object"
+      },
+      "PriceCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "effective_from": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective From"
+          },
+          "existing_policy": {
+            "default": "new_only",
+            "enum": [
+              "new_only",
+              "next_renewal"
+            ],
+            "title": "Existing Policy",
+            "type": "string"
+          },
+          "interval": {
+            "enum": [
+              "month",
+              "quarter",
+              "year"
+            ],
+            "title": "Interval",
+            "type": "string"
+          },
+          "intro_amount": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Money"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "intro_periods": {
+            "anyOf": [
+              {
+                "maximum": 36.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Intro Periods"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 3,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "interval",
+          "amount",
+          "reason"
+        ],
+        "title": "PriceCreate",
+        "type": "object"
+      },
+      "PriceOut": {
+        "properties": {
+          "amount": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "effective_from": {
+            "format": "date-time",
+            "title": "Effective From",
+            "type": "string"
+          },
+          "existing_policy": {
+            "enum": [
+              "new_only",
+              "next_renewal"
+            ],
+            "title": "Existing Policy",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "in_force": {
+            "title": "In Force",
+            "type": "boolean"
+          },
+          "interval": {
+            "enum": [
+              "month",
+              "quarter",
+              "year"
+            ],
+            "title": "Interval",
+            "type": "string"
+          },
+          "intro_amount": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SignedMoney"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "intro_periods": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Intro Periods"
+          },
+          "notice_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notice Days"
+          },
+          "per_month": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "interval",
+          "amount",
+          "intro_amount",
+          "intro_periods",
+          "per_month",
+          "effective_from",
+          "existing_policy",
+          "notice_days",
+          "reason",
+          "in_force"
+        ],
+        "title": "PriceOut",
+        "type": "object"
+      },
+      "PublicPlan": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "highlights": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Highlights",
+            "type": "array"
+          },
+          "limits": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Limits",
+            "type": "object"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "overage_policy": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Overage Policy"
+          },
+          "prices": {
+            "items": {
+              "$ref": "#/components/schemas/PublicPrice"
+            },
+            "title": "Prices",
+            "type": "array"
+          },
+          "promo_discount_bp": {
+            "title": "Promo Discount Bp",
+            "type": "integer"
+          },
+          "promo_ends_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Promo Ends On"
+          },
+          "recommended": {
+            "title": "Recommended",
+            "type": "boolean"
+          },
+          "setup_fee": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "short_description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Short Description"
+          },
+          "support_level": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Support Level"
+          },
+          "tax_treatment": {
+            "enum": [
+              "exclusive",
+              "inclusive"
+            ],
+            "title": "Tax Treatment",
+            "type": "string"
+          },
+          "trial_days": {
+            "title": "Trial Days",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "short_description",
+          "description",
+          "highlights",
+          "recommended",
+          "currency",
+          "tax_treatment",
+          "setup_fee",
+          "trial_days",
+          "support_level",
+          "overage_policy",
+          "promo_discount_bp",
+          "promo_ends_on",
+          "limits",
+          "prices"
+        ],
+        "title": "PublicPlan",
+        "type": "object"
+      },
+      "PublicPlanList": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/PublicPlan"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "tax_charged": {
+            "title": "Tax Charged",
+            "type": "boolean"
+          },
+          "tax_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Name"
+          },
+          "tax_rate_bp": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Rate Bp"
+          }
+        },
+        "required": [
+          "data",
+          "tax_charged",
+          "tax_name",
+          "tax_rate_bp"
+        ],
+        "title": "PublicPlanList",
+        "type": "object"
+      },
+      "PublicPrice": {
+        "properties": {
+          "amount": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "interval": {
+            "enum": [
+              "month",
+              "quarter",
+              "year"
+            ],
+            "title": "Interval",
+            "type": "string"
+          },
+          "intro_amount": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SignedMoney"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "intro_periods": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Intro Periods"
+          },
+          "per_month": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "saving_bp": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Saving Bp"
+          }
+        },
+        "required": [
+          "interval",
+          "amount",
+          "per_month",
+          "intro_amount",
+          "intro_periods",
+          "saving_bp"
+        ],
+        "title": "PublicPrice",
         "type": "object"
       },
       "Quote": {
@@ -12255,7 +13112,7 @@
             "type": "object"
           },
           "plan": {
-            "$ref": "#/components/schemas/app__schemas__admin__PlanOut"
+            "$ref": "#/components/schemas/app__schemas__plans__PlanOut"
           },
           "renews_on": {
             "anyOf": [
@@ -13189,51 +14046,6 @@
         "title": "Window",
         "type": "object"
       },
-      "app__schemas__admin__PlanOut": {
-        "properties": {
-          "code": {
-            "title": "Code",
-            "type": "string"
-          },
-          "features": {
-            "additionalProperties": true,
-            "title": "Features",
-            "type": "object"
-          },
-          "id": {
-            "format": "uuid",
-            "title": "Id",
-            "type": "string"
-          },
-          "is_active": {
-            "title": "Is Active",
-            "type": "boolean"
-          },
-          "limits": {
-            "additionalProperties": true,
-            "title": "Limits",
-            "type": "object"
-          },
-          "monthly_price": {
-            "$ref": "#/components/schemas/SignedMoney"
-          },
-          "name": {
-            "title": "Name",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "code",
-          "name",
-          "monthly_price",
-          "limits",
-          "features",
-          "is_active"
-        ],
-        "title": "PlanOut",
-        "type": "object"
-      },
       "app__schemas__company__Address": {
         "additionalProperties": false,
         "properties": {
@@ -13411,6 +14223,228 @@
           "code",
           "name",
           "subscription_status"
+        ],
+        "title": "PlanOut",
+        "type": "object"
+      },
+      "app__schemas__plans__PlanOut": {
+        "properties": {
+          "archived_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archived At"
+          },
+          "can_downgrade": {
+            "title": "Can Downgrade",
+            "type": "boolean"
+          },
+          "can_upgrade": {
+            "title": "Can Upgrade",
+            "type": "boolean"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "display_order": {
+            "title": "Display Order",
+            "type": "integer"
+          },
+          "features": {
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "title": "Features",
+            "type": "object"
+          },
+          "highlights": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Highlights",
+            "type": "array"
+          },
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/PriceOut"
+            },
+            "title": "History",
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "limits": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Limits",
+            "type": "object"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "overage_policy": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Overage Policy"
+          },
+          "prices": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/PriceOut"
+            },
+            "title": "Prices",
+            "type": "object"
+          },
+          "promo_discount_bp": {
+            "title": "Promo Discount Bp",
+            "type": "integer"
+          },
+          "promo_ends_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Promo Ends On"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "recommended": {
+            "title": "Recommended",
+            "type": "boolean"
+          },
+          "scheduled": {
+            "items": {
+              "$ref": "#/components/schemas/PriceOut"
+            },
+            "title": "Scheduled",
+            "type": "array"
+          },
+          "setup_fee": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "short_description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Short Description"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "published",
+              "archived"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "support_level": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Support Level"
+          },
+          "tax_treatment": {
+            "enum": [
+              "exclusive",
+              "inclusive"
+            ],
+            "title": "Tax Treatment",
+            "type": "string"
+          },
+          "trial_days": {
+            "title": "Trial Days",
+            "type": "integer"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "currency",
+          "short_description",
+          "description",
+          "highlights",
+          "status",
+          "display_order",
+          "recommended",
+          "setup_fee",
+          "trial_days",
+          "tax_treatment",
+          "support_level",
+          "overage_policy",
+          "can_upgrade",
+          "can_downgrade",
+          "promo_discount_bp",
+          "promo_ends_on",
+          "limits",
+          "features",
+          "published_at",
+          "archived_at",
+          "version",
+          "prices",
+          "scheduled",
+          "history"
         ],
         "title": "PlanOut",
         "type": "object"
@@ -13948,6 +14982,66 @@
           }
         },
         "summary": "Analytics",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/billing-settings": {
+      "get": {
+        "operationId": "get_billing_settings_api_v1_admin_billing_settings_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingSettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Billing Settings",
+        "tags": [
+          "admin"
+        ]
+      },
+      "put": {
+        "operationId": "put_billing_settings_api_v1_admin_billing_settings_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BillingSettingsPut"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingSettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Put Billing Settings",
         "tags": [
           "admin"
         ]
@@ -14679,6 +15773,7 @@
         ]
       },
       "post": {
+        "description": "A new plan starts as a draft; price it, preview it, then publish it.",
         "operationId": "create_plan_api_v1_admin_plans_post",
         "requestBody": {
           "content": {
@@ -14695,7 +15790,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/app__schemas__admin__PlanOut"
+                  "$ref": "#/components/schemas/app__schemas__plans__PlanOut"
                 }
               }
             },
@@ -14720,6 +15815,7 @@
     },
     "/api/v1/admin/plans/{plan_id}": {
       "patch": {
+        "description": "Details, limits and features. `version` must match (else 412); a published plan needs a\n`reason`. Prices change through /prices.",
         "operationId": "update_plan_api_v1_admin_plans__plan_id__patch",
         "parameters": [
           {
@@ -14748,7 +15844,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/app__schemas__admin__PlanOut"
+                  "$ref": "#/components/schemas/app__schemas__plans__PlanOut"
                 }
               }
             },
@@ -14766,6 +15862,318 @@
           }
         },
         "summary": "Update Plan",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/plans/{plan_id}/archive": {
+      "post": {
+        "description": "Takes the plan off sale; hotels already on it keep it.",
+        "operationId": "archive_plan_api_v1_admin_plans__plan_id__archive_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "plan_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Plan Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanStatusChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/app__schemas__plans__PlanOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Archive Plan",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/plans/{plan_id}/preview": {
+      "get": {
+        "operationId": "preview_plan_api_v1_admin_plans__plan_id__preview_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "plan_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Plan Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicPlan"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview Plan",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/plans/{plan_id}/prices": {
+      "post": {
+        "operationId": "add_price_api_v1_admin_plans__plan_id__prices_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "plan_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Plan Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PriceCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/app__schemas__plans__PlanOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Price",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/plans/{plan_id}/prices/{price_id}": {
+      "delete": {
+        "description": "Withdraws a scheduled price that is not yet in force.",
+        "operationId": "withdraw_price_api_v1_admin_plans__plan_id__prices__price_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "plan_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Plan Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "price_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Price Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/app__schemas__plans__PlanOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Withdraw Price",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/plans/{plan_id}/publish": {
+      "post": {
+        "description": "Puts the plan on sale. Needs a price in force; confirmed with step-up.",
+        "operationId": "publish_plan_api_v1_admin_plans__plan_id__publish_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "plan_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Plan Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanStatusChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/app__schemas__plans__PlanOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Publish Plan",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/plans/{plan_id}/restore": {
+      "post": {
+        "description": "Brings an archived plan back as a draft.",
+        "operationId": "restore_plan_api_v1_admin_plans__plan_id__restore_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "plan_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Plan Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanStatusChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/app__schemas__plans__PlanOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Restore Plan",
         "tags": [
           "admin"
         ]
@@ -20554,6 +21962,28 @@
         "summary": "List Permissions",
         "tags": [
           "hotel"
+        ]
+      }
+    },
+    "/api/v1/plans": {
+      "get": {
+        "description": "Published plans with their prices in force (public: the pricing page and signup).",
+        "operationId": "public_plans_api_v1_plans_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicPlanList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Public Plans",
+        "tags": [
+          "plans"
         ]
       }
     },

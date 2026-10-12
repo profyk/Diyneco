@@ -70,6 +70,10 @@ async def _settings(uow: UnitOfWork, lock: bool = False) -> CompanySettings:
     return (await uow.session.execute(q.with_for_update() if lock else q)).scalar_one()
 
 
+async def company_row(uow: UnitOfWork) -> CompanySettings:
+    return await _settings(uow)
+
+
 async def rate_on(uow: UnitOfWork, country: str, on: date) -> TaxRate | None:
     """The standard rate in force in a country on a day."""
     return (

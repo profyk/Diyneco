@@ -1,6 +1,6 @@
 "use client";
 
-import { currencySymbol, formatDate, formatTime, ok, parseAmount, toAmountInput } from "@diyneco/api-client";
+import { currencySymbol, formatDate, formatMoney, formatTime, ok, parseAmount, toAmountInput } from "@diyneco/api-client";
 import {
   Badge,
   Button,
@@ -548,16 +548,21 @@ function IntegrationDialog({
 function Plan() {
   const { api, can } = useSession();
   const sub = useQuery({ queryKey: ["subscription"], queryFn: () => ok(api.GET("/api/v1/subscription")) });
-  const [plan, setPlan] = useState("professional");
+  // Plans and prices come from the server (published plans only); nothing here names a plan.
+  const catalogue = useQuery({ queryKey: ["public-plans"], queryFn: () => ok(api.GET("/api/v1/plans")) });
+  const [plan, setPlan] = useState("");
   const request = useAction(() => ok(api.POST("/api/v1/subscription/change-request", { body: { plan_code: plan } })), {
     success: "Request sent. Diyneco will confirm the change.",
   });
   if (!sub.data) return <Skeleton className="h-40" />;
   const s = sub.data;
+  const current = (s.plan as { code?: string; name?: string } | null) ?? null;
+  const offered = (catalogue.data?.data ?? []).filter((p) => p.code !== current?.code);
+  const intervalName: Record<string, string> = { month: "a month", quarter: "a quarter", year: "a year" };
   return (
     <Card className="max-w-2xl p-5">
       <p className="font-display text-xl font-semibold">
-        {(s.plan as { name?: string } | null)?.name ?? "No plan"} {s.status ? <Badge tone="good">{label(s.status)}</Badge> : null}
+        {current?.name ?? "No plan"} {s.status ? <Badge tone="good">{label(s.status)}</Badge> : null}
       </p>
       {s.renews_on ? <p className="mt-1 text-sm text-muted">Renews {formatDate(s.renews_on)}</p> : null}
       <Table className="mt-4">
@@ -573,20 +578,28 @@ function Plan() {
         </tbody>
       </Table>
       {can("subscription.manage") ? (
-        <div className="mt-5 flex items-end gap-3">
-          <Field label="Change plan to">
-            {(p) => (
-              <Select {...p} value={plan} onChange={(e) => setPlan(e.target.value)}>
-                <option value="starter">Starter</option>
-                <option value="professional">Professional</option>
-                <option value="enterprise">Enterprise</option>
-              </Select>
-            )}
-          </Field>
-          <Button loading={request.isPending} onClick={() => request.mutate(undefined)}>
-            Request change
-          </Button>
-        </div>
+        offered.length ? (
+          <div className="mt-5 flex flex-wrap items-end gap-3">
+            <Field label="Change plan to">
+              {(p) => (
+                <Select {...p} value={plan} onChange={(e) => setPlan(e.target.value)}>
+                  <option value="">Choose a plan</option>
+                  {offered.map((o) => (
+                    <option key={o.code} value={o.code}>
+                      {o.name} ·{" "}
+                      {o.prices.map((pr) => `${formatMoney(pr.amount)} ${intervalName[pr.interval] ?? pr.interval}`).join(" or ")}
+                    </option>
+                  ))}
+                </Select>
+              )}
+            </Field>
+            <Button loading={request.isPending} disabled={!plan} onClick={() => request.mutate(undefined)}>
+              Request change
+            </Button>
+          </div>
+        ) : (
+          <p className="mt-5 text-sm text-muted">No other plans are offered right now.</p>
+        )
       ) : null}
       {request.error ? <ErrorNotice error={request.error} className="mt-3" /> : null}
     </Card>

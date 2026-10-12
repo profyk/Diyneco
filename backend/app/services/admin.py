@@ -8,7 +8,6 @@ context and is audited there, so the hotel sees what Diyneco staff did (DECISION
 
 from __future__ import annotations
 
-import json
 import time
 import uuid
 import zoneinfo
@@ -18,13 +17,13 @@ from typing import Any
 from sqlalchemy import insert, select, text, update
 
 from app.audit.writer import write_audit, write_platform_audit
-from app.core.currencies import is_supported
 from app.core.errors import AppError
 from app.core.state import AppState
 from app.db.session import TenantContext, UnitOfWork, set_tenant
 from app.models.tenancy import Hotel, Plan, Subscription, SupportGrant
 from app.realtime.outbox import emit, hotel_channel
 from app.repositories.hotels import HotelRepository
+from app.services import catalogue
 from app.services.pricing import money
 
 PLATFORM_TZ = zoneinfo.ZoneInfo("Africa/Johannesburg")
@@ -230,8 +229,8 @@ async def put_subscription(uow: UnitOfWork, ctx: TenantContext, body: dict[str, 
     plan = (await s.execute(select(Plan).where(Plan.id == body["plan_id"]))).scalar_one_or_none()
     if plan is None:
         raise AppError("NOT_FOUND", "Unknown plan.")
-    if not plan.is_active and body["status"] != "cancelled":
-        raise AppError("INVALID_TRANSITION", "That plan is no longer offered.")
+    if plan.status != "published" and body["status"] != "cancelled":
+        raise AppError("INVALID_TRANSITION", "That plan is not published.")
     if body.get("renews_on") and body["renews_on"] <= body["starts_on"]:
         raise AppError("VALIDATION_FAILED", "The renewal date must be after the start date.")
     current = (
@@ -282,14 +281,14 @@ async def put_subscription(uow: UnitOfWork, ctx: TenantContext, body: dict[str, 
         old_value=old,
         new_value={"plan": plan.code, "status": sub.status, "limit_overrides": sub.limit_overrides},
     )
-    return subscription_payload(sub, plan)
+    return await subscription_payload(uow, sub, plan)
 
 
-def subscription_payload(sub: Subscription, plan: Plan) -> dict[str, Any]:
+async def subscription_payload(uow: UnitOfWork, sub: Subscription, plan: Plan) -> dict[str, Any]:
     return {
         "id": sub.id,
         "hotel_id": sub.hotel_id,
-        "plan": plan_payload(plan),
+        "plan": await catalogue.plan_out(uow, plan),
         "status": sub.status,
         "starts_on": sub.starts_on,
         "renews_on": sub.renews_on,
@@ -299,102 +298,7 @@ def subscription_payload(sub: Subscription, plan: Plan) -> dict[str, Any]:
     }
 
 
-# --- Plans and flags (platform-wide) -------------------------------------------------------
-
-
-def plan_payload(p: Plan) -> dict[str, Any]:
-    return {
-        "id": p.id,
-        "code": p.code,
-        "name": p.name,
-        "monthly_price": money(p.monthly_price_minor, p.currency),
-        "limits": p.limits,
-        "features": p.features,
-        "is_active": p.is_active,
-    }
-
-
-async def list_plans(uow: UnitOfWork) -> list[dict[str, Any]]:
-    plans = (await uow.session.execute(select(Plan).order_by(Plan.monthly_price_minor, Plan.code))).scalars()
-    return [plan_payload(p) for p in plans]
-
-
-def _check_currency(code: str) -> None:
-    if not is_supported(code):
-        raise AppError("VALIDATION_FAILED", "That currency is not supported.", details={"reason": "currency"})
-
-
-async def update_plan(
-    uow: UnitOfWork, actor: dict[str, Any], plan_id: uuid.UUID, body: dict[str, Any]
-) -> dict[str, Any]:
-    """Price, billing currency, limits, features or availability of a plan. Subscriptions keep
-    pointing at the plan, so a change applies from their next billing period."""
-    s = uow.session
-    before = (await s.execute(select(Plan).where(Plan.id == plan_id))).scalar_one_or_none()
-    if before is None:
-        raise AppError("NOT_FOUND")
-    price = body.get("monthly_price")
-    if price:
-        _check_currency(price["currency"])
-    await s.execute(
-        text("SELECT app.admin_update_plan(:id, :n, :p, :c, CAST(:l AS jsonb), CAST(:f AS jsonb), :a)"),
-        {
-            "id": plan_id,
-            "n": body.get("name"),
-            "p": price["amount_minor"] if price else None,
-            "c": price["currency"] if price else None,
-            "l": json.dumps(body["limits"]) if body.get("limits") is not None else None,
-            "f": json.dumps(body["features"]) if body.get("features") is not None else None,
-            "a": body.get("is_active"),
-        },
-    )
-    s.expire_all()
-    plan = (await s.execute(select(Plan).where(Plan.id == plan_id))).scalar_one()
-    await write_platform_audit(
-        s,
-        action="plan.update",
-        entity_type="plan",
-        entity_id=plan_id,
-        new_value={
-            "code": plan.code,
-            "price_minor": plan.monthly_price_minor,
-            "currency": plan.currency,
-            "was": {"price_minor": before.monthly_price_minor, "currency": before.currency},
-        },
-        **actor,
-    )
-    return plan_payload(plan)
-
-
-async def create_plan(uow: UnitOfWork, actor: dict[str, Any], body: dict[str, Any]) -> dict[str, Any]:
-    s = uow.session
-    _check_currency(body["monthly_price"]["currency"])
-    taken = (await s.execute(select(Plan.id).where(Plan.code == body["code"]))).first()
-    if taken is not None:
-        raise AppError("VALIDATION_FAILED", "A plan with that code exists.", details={"reason": "code_taken"})
-    plan_id = (
-        await s.execute(
-            text("SELECT app.admin_create_plan(:c, :n, :p, :cur, CAST(:l AS jsonb), CAST(:f AS jsonb))"),
-            {
-                "c": body["code"],
-                "n": body["name"],
-                "p": body["monthly_price"]["amount_minor"],
-                "cur": body["monthly_price"]["currency"],
-                "l": json.dumps(body.get("limits") or {}),
-                "f": json.dumps(body.get("features") or {}),
-            },
-        )
-    ).scalar_one()
-    await write_platform_audit(
-        s,
-        action="plan.create",
-        entity_type="plan",
-        entity_id=plan_id,
-        new_value={"code": body["code"]},
-        **actor,
-    )
-    plan = (await s.execute(select(Plan).where(Plan.id == plan_id))).scalar_one()
-    return plan_payload(plan)
+# --- Feature flags (platform-wide) --------------------------------------------------------
 
 
 async def list_flags(uow: UnitOfWork) -> list[dict[str, Any]]:
@@ -604,7 +508,7 @@ async def hotel_detail(uow: UnitOfWork, ctx: TenantContext) -> dict[str, Any]:
         "phone": hotel.phone,
         "email": hotel.email,
         "owners": [{"name": o.name, "email": str(o.email)} for o in owners],
-        "subscription": subscription_payload(current[0], current[1]) if current else None,
+        "subscription": await subscription_payload(uow, current[0], current[1]) if current else None,
         "support_grants": await list_grants(uow, ctx),
         "platform_actions": [
             {

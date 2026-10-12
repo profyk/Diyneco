@@ -8,6 +8,7 @@ import { useState } from "react";
 
 import { label, useAction } from "./common";
 import { HotelDialog } from "./screens";
+import { planPriceLabel } from "./Plans";
 import { useSession } from "./session";
 
 const LIMITS = [
@@ -113,7 +114,7 @@ export function HotelDetail({ id }: { id: string }) {
           {sub ? (
             <>
               <p className="mt-3 text-sm">
-                <span className="font-medium">{sub.plan.name}</span> · {formatMoney(sub.plan.monthly_price)} a month ·{" "}
+                <span className="font-medium">{sub.plan.name}</span> · {planPriceLabel(sub.plan as never)} ·{" "}
                 <Badge tone={sub.status === "active" ? "good" : sub.status === "past_due" ? "crit" : "neutral"}>{label(sub.status)}</Badge>
               </p>
               <p className="text-xs text-muted">

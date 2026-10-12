@@ -245,17 +245,30 @@ async def test_subscription_view_and_change_request(client, factory, owner_engin
     own = await factory.auth(hotel, "hotel_owner")
     sub = (await client.get("/subscription", headers=own)).json()
     assert sub["plan"]["code"] == "starter" and sub["usage"]["rooms"] == {"used": 2, "limit": 50}
-    r = await client.post(
+    from tests.api.test_admin import platform
+    from tests.api.test_plans import published_plan
+
+    draft = await client.post(
         "/subscription/change-request", json={"plan_code": "professional"}, headers={**own, **idem()}
     )
-    assert r.status_code == 202 and r.json()["requested_plan"] == "professional"
+    assert draft.json()["error"]["code"] == "NOT_FOUND"  # seeded plans are drafts until published (D74)
+    target = await published_plan(client, factory, await platform(factory))
+    r = await client.post(
+        "/subscription/change-request", json={"plan_code": target["code"]}, headers={**own, **idem()}
+    )
+    assert r.status_code == 202 and r.json()["requested_plan"] == target["code"]
+    async with owner_engine.begin() as conn:
+        await conn.execute(
+            text("UPDATE app.subscriptions SET plan_id = :p WHERE hotel_id = :h"),
+            {"p": target["id"], "h": hotel.id},
+        )
     same = await client.post(
-        "/subscription/change-request", json={"plan_code": "starter"}, headers={**own, **idem()}
+        "/subscription/change-request", json={"plan_code": target["code"]}, headers={**own, **idem()}
     )
     assert same.json()["error"]["code"] == "INVALID_TRANSITION"
     gm = await factory.auth(hotel, "general_manager")
     denied = await client.post(
-        "/subscription/change-request", json={"plan_code": "professional"}, headers={**gm, **idem()}
+        "/subscription/change-request", json={"plan_code": target["code"]}, headers={**gm, **idem()}
     )
     assert denied.json()["error"]["code"] == "PERMISSION_DENIED"
     async with owner_engine.connect() as conn:

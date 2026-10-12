@@ -12,7 +12,7 @@ from sqlalchemy import text
 
 from tests.api.test_billing import walk_in
 from tests.api.test_checkout import pair_tablet, settle
-from tests.api.test_room_service import idem, ready_order, zar
+from tests.api.test_room_service import idem, ready_order
 
 MARKER = "Piimarker"
 GUEST_EMAIL = "piimarker.guest@example.com"
@@ -126,24 +126,17 @@ async def test_approve_suspend_reactivate(client, factory, owner_engine, mailbox
 async def test_subscription_plans_and_limits(client, factory):
     hotel = await factory.hotel(rooms=1)
     admin = await platform(factory)
-    created = await client.post(
-        "/admin/plans",
-        json={
-            "code": f"tiny_{uuid.uuid4().hex[:6]}",
-            "name": "Tiny",
-            "monthly_price": zar(49900),
-            "limits": {"rooms": 5, "devices": 5, "staff": 50, "api_keys": 1},
-        },
-        headers={**admin, **idem()},
+    from tests.api.test_plans import published_plan
+
+    plan = await published_plan(
+        client, factory, admin, amount=49900, limits={"rooms": 5, "devices": 5, "staff": 50, "api_keys": 1}
     )
-    assert created.status_code == 201, created.text
-    plan = created.json()
     dup = await client.post(
         "/admin/plans",
-        json={"code": plan["code"], "name": "Again", "monthly_price": zar(1)},
+        json={"code": plan["code"], "name": "Again", "currency": "ZAR"},
         headers={**admin, **idem()},
     )
-    assert dup.json()["error"]["details"]["reason"] == "code_taken"
+    assert dup.json()["error"]["details"]["fields"][0]["field"] == "code"
     assert plan["code"] in [
         p["code"] for p in (await client.get("/admin/plans", headers=admin)).json()["data"]
     ]

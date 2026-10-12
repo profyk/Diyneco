@@ -23,13 +23,17 @@
 - Subscription billing, slice 1 (D72, D73): Diyneco's company and VAT settings and
   effective-dated tax rates, edited in the Admin panel ("Company & tax") with step-up, a
   reason and an audit trail. Seeded with the company names only.
+- Subscription billing, slice 2 (D74): Plans & Pricing in the Admin panel: plan details,
+  monthly, quarterly and annual prices with an append-only price history, scheduled
+  changes, preview, publish and archive; public `GET /plans`. The Merchant app's plan
+  picker now lists published plans from the server instead of fixed names.
 
 ### Next
 
 - Interface translations (message catalogues per language, English first).
 - Browser end-to-end tests (Playwright) against a seeded API.
-- Subscription billing slices 2-8 (D73): Plans & Pricing, subscriptions, invoices and credit
-  notes, payments (EFT, Stitch sandbox), renewals and reminders, billing dashboard, hotel
+- Subscription billing slices 3-8 (D73): subscriptions (signup trial without a plan replaces
+  the hard-coded `starter` default), invoices and credit notes, payments (EFT, Stitch sandbox), renewals and reminders, billing dashboard, hotel
   billing screens.
 
 ### Known gaps

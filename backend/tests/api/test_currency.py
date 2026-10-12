@@ -10,6 +10,7 @@ from sqlalchemy.exc import IntegrityError
 from tests.api.test_admin import platform
 from tests.api.test_billing import walk_in
 from tests.api.test_hotel_endpoints import signup_body
+from tests.api.test_plans import published_plan
 from tests.api.test_room_service import idem
 
 
@@ -89,28 +90,22 @@ async def test_plans_bill_in_their_own_currency_and_mrr_is_per_currency(client, 
     admin = await platform(factory)
     import uuid as _uuid
 
-    code = f"usd_{_uuid.uuid4().hex[:6]}"
-    plan = (
-        await client.post(
-            "/admin/plans",
-            json={"code": code, "name": "Global", "monthly_price": {"amount_minor": 9900, "currency": "USD"}},
-            headers={**admin, **idem()},
-        )
-    ).json()
-    assert plan["monthly_price"] == {"amount_minor": 9900, "currency": "USD"}
+    plan = await published_plan(client, factory, admin, amount=9900, currency="USD")
+    assert plan["prices"]["month"]["amount"] == {"amount_minor": 9900, "currency": "USD"}
     bad = await client.post(
         "/admin/plans",
-        json={"code": f"{code}x", "name": "Bad", "monthly_price": {"amount_minor": 1, "currency": "XYZ"}},
+        json={"code": f"bad_{_uuid.uuid4().hex[:6]}", "name": "Bad", "currency": "XYZ"},
         headers={**admin, **idem()},
     )
     assert bad.json()["error"]["code"] == "VALIDATION_FAILED"
-    moved = await client.patch(
+    # A plan's currency is fixed once it has a price; a new plan bills in another currency.
+    fixed = await client.patch(
         f"/admin/plans/{plan['id']}",
-        json={"monthly_price": {"amount_minor": 8900, "currency": "EUR"}},
+        json={"version": plan["version"], "currency": "EUR", "reason": "Move to euro"},
         headers=admin,
     )
-    assert moved.status_code == 200, moved.text
-    assert moved.json()["monthly_price"] == {"amount_minor": 8900, "currency": "EUR"}
+    assert fixed.json()["error"]["details"]["fields"][0]["field"] == "currency"
+    plan = await published_plan(client, factory, admin, amount=8900, currency="EUR")
 
     hotel = await factory.hotel(rooms=1)
     async with owner_engine.begin() as conn:

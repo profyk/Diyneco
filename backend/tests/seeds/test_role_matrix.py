@@ -107,8 +107,9 @@ async def test_catalogue_seeds(owner_engine):
             await conn.execute(
                 # Other tests may add plans through the admin API; check the seeded ones.
                 text(
-                    "SELECT code, monthly_price_minor, features FROM app.plans "
-                    "WHERE code IN ('starter', 'professional', 'enterprise') ORDER BY code"
+                    "SELECT p.code, p.status, (SELECT array_agg(x.interval || ':' || x.amount_minor || x.currency) "
+                    "FROM app.plan_prices x WHERE x.plan_id = p.id) AS prices FROM app.plans p "
+                    "WHERE p.code IN ('starter', 'professional', 'enterprise') ORDER BY p.code"
                 )
             )
         ).all()
@@ -120,7 +121,12 @@ async def test_catalogue_seeds(owner_engine):
             )
         ).all()
     assert [p.code for p in plans] == ["enterprise", "professional", "starter"]
-    assert all(p.features.get("placeholder") is True for p in plans)  # prices still to be decided
+    # The owner's proposed monthly prices (D74), unpublished until a Super Admin publishes them.
+    assert {p.code: (p.status, p.prices) for p in plans} == {
+        "starter": ("draft", ["month:49900ZAR"]),
+        "professional": ("draft", ["month:99900ZAR"]),
+        "enterprise": ("draft", ["month:199900ZAR"]),
+    }
     by_code = {c.code: c for c in cats}
     assert by_code["tip"].revenue_group == "tip" and by_code["tip"].is_revenue is False
     assert by_code["payment"].is_revenue is False

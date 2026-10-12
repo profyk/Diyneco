@@ -87,6 +87,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/billing-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Billing Settings */
+        get: operations["get_billing_settings_api_v1_admin_billing_settings_get"];
+        /** Put Billing Settings */
+        put: operations["put_billing_settings_api_v1_admin_billing_settings_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/company": {
         parameters: {
             query?: never;
@@ -365,7 +383,10 @@ export interface paths {
         /** Plans */
         get: operations["plans_api_v1_admin_plans_get"];
         put?: never;
-        /** Create Plan */
+        /**
+         * Create Plan
+         * @description A new plan starts as a draft; price it, preview it, then publish it.
+         */
         post: operations["create_plan_api_v1_admin_plans_post"];
         delete?: never;
         options?: never;
@@ -386,8 +407,126 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Update Plan */
+        /**
+         * Update Plan
+         * @description Details, limits and features. `version` must match (else 412); a published plan needs a
+         *     `reason`. Prices change through /prices.
+         */
         patch: operations["update_plan_api_v1_admin_plans__plan_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/admin/plans/{plan_id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Archive Plan
+         * @description Takes the plan off sale; hotels already on it keep it.
+         */
+        post: operations["archive_plan_api_v1_admin_plans__plan_id__archive_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/plans/{plan_id}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Preview Plan */
+        get: operations["preview_plan_api_v1_admin_plans__plan_id__preview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/plans/{plan_id}/prices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add Price */
+        post: operations["add_price_api_v1_admin_plans__plan_id__prices_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/plans/{plan_id}/prices/{price_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Withdraw Price
+         * @description Withdraws a scheduled price that is not yet in force.
+         */
+        delete: operations["withdraw_price_api_v1_admin_plans__plan_id__prices__price_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/plans/{plan_id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Publish Plan
+         * @description Puts the plan on sale. Needs a price in force; confirmed with step-up.
+         */
+        post: operations["publish_plan_api_v1_admin_plans__plan_id__publish_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/plans/{plan_id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Restore Plan
+         * @description Brings an archived plan back as a draft.
+         */
+        post: operations["restore_plan_api_v1_admin_plans__plan_id__restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/admin/staff": {
@@ -2410,6 +2549,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Public Plans
+         * @description Published plans with their prices in force (public: the pricing page and signup).
+         */
+        get: operations["public_plans_api_v1_plans_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/reports/daily-close": {
         parameters: {
             query?: never;
@@ -3684,6 +3843,27 @@ export interface components {
             registration_number: string | null;
             /** Vat Number */
             vat_number: string | null;
+        };
+        /** BillingSettingsOut */
+        BillingSettingsOut: {
+            /** Price Change Notice Days */
+            price_change_notice_days: number;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Version */
+            version: number;
+        };
+        /** BillingSettingsPut */
+        BillingSettingsPut: {
+            /** Price Change Notice Days */
+            price_change_notice_days: number;
+            /** Reason */
+            reason: string;
+            /** Version */
+            version: number;
         };
         /** BulkResult */
         BulkResult: {
@@ -6208,42 +6388,107 @@ export interface components {
         };
         /** PlanCreate */
         PlanCreate: {
+            /** Can Downgrade */
+            can_downgrade?: boolean | null;
+            /** Can Upgrade */
+            can_upgrade?: boolean | null;
             /** Code */
             code: string;
+            /** Currency */
+            currency: string;
+            /** Description */
+            description?: string | null;
+            /** Display Order */
+            display_order?: number | null;
             /** Features */
             features?: {
                 [key: string]: boolean;
-            };
+            } | null;
+            /** Highlights */
+            highlights?: string[] | null;
             /** Limits */
             limits?: {
                 [key: string]: number;
-            };
-            monthly_price: components["schemas"]["Money"];
+            } | null;
             /** Name */
             name: string;
+            /** Overage Policy */
+            overage_policy?: string | null;
+            /** Promo Discount Bp */
+            promo_discount_bp?: number | null;
+            /** Promo Ends On */
+            promo_ends_on?: string | null;
+            /** Recommended */
+            recommended?: boolean | null;
+            /** Setup Fee Minor */
+            setup_fee_minor?: number | null;
+            /** Short Description */
+            short_description?: string | null;
+            /** Support Level */
+            support_level?: string | null;
+            /** Tax Treatment */
+            tax_treatment?: ("exclusive" | "inclusive") | null;
+            /** Trial Days */
+            trial_days?: number | null;
         };
         /** PlanList */
         PlanList: {
             /** Data */
-            data: components["schemas"]["app__schemas__admin__PlanOut"][];
+            data: components["schemas"]["app__schemas__plans__PlanOut"][];
             /** Next Cursor */
             next_cursor?: string | null;
         };
         /** PlanPatch */
         PlanPatch: {
+            /** Can Downgrade */
+            can_downgrade?: boolean | null;
+            /** Can Upgrade */
+            can_upgrade?: boolean | null;
+            /** Currency */
+            currency?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Display Order */
+            display_order?: number | null;
             /** Features */
             features?: {
                 [key: string]: boolean;
             } | null;
-            /** Is Active */
-            is_active?: boolean | null;
+            /** Highlights */
+            highlights?: string[] | null;
             /** Limits */
             limits?: {
                 [key: string]: number;
             } | null;
-            monthly_price?: components["schemas"]["Money"] | null;
             /** Name */
             name?: string | null;
+            /** Overage Policy */
+            overage_policy?: string | null;
+            /** Promo Discount Bp */
+            promo_discount_bp?: number | null;
+            /** Promo Ends On */
+            promo_ends_on?: string | null;
+            /** Reason */
+            reason?: string | null;
+            /** Recommended */
+            recommended?: boolean | null;
+            /** Setup Fee Minor */
+            setup_fee_minor?: number | null;
+            /** Short Description */
+            short_description?: string | null;
+            /** Support Level */
+            support_level?: string | null;
+            /** Tax Treatment */
+            tax_treatment?: ("exclusive" | "inclusive") | null;
+            /** Trial Days */
+            trial_days?: number | null;
+            /** Version */
+            version: number;
+        };
+        /** PlanStatusChange */
+        PlanStatusChange: {
+            /** Reason */
+            reason: string;
         };
         /** PlatformAction */
         PlatformAction: {
@@ -6333,6 +6578,127 @@ export interface components {
         PlatformStaffRoles: {
             /** Roles */
             roles: string[];
+        };
+        /** PriceCreate */
+        PriceCreate: {
+            amount: components["schemas"]["Money"];
+            /** Effective From */
+            effective_from?: string | null;
+            /**
+             * Existing Policy
+             * @default new_only
+             * @enum {string}
+             */
+            existing_policy: "new_only" | "next_renewal";
+            /**
+             * Interval
+             * @enum {string}
+             */
+            interval: "month" | "quarter" | "year";
+            intro_amount?: components["schemas"]["Money"] | null;
+            /** Intro Periods */
+            intro_periods?: number | null;
+            /** Reason */
+            reason: string;
+        };
+        /** PriceOut */
+        PriceOut: {
+            amount: components["schemas"]["SignedMoney"];
+            /**
+             * Effective From
+             * Format: date-time
+             */
+            effective_from: string;
+            /**
+             * Existing Policy
+             * @enum {string}
+             */
+            existing_policy: "new_only" | "next_renewal";
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** In Force */
+            in_force: boolean;
+            /**
+             * Interval
+             * @enum {string}
+             */
+            interval: "month" | "quarter" | "year";
+            intro_amount: components["schemas"]["SignedMoney"] | null;
+            /** Intro Periods */
+            intro_periods: number | null;
+            /** Notice Days */
+            notice_days: number | null;
+            per_month: components["schemas"]["SignedMoney"];
+            /** Reason */
+            reason: string;
+        };
+        /** PublicPlan */
+        PublicPlan: {
+            /** Code */
+            code: string;
+            /** Currency */
+            currency: string;
+            /** Description */
+            description: string | null;
+            /** Highlights */
+            highlights: string[];
+            /** Limits */
+            limits: {
+                [key: string]: number;
+            };
+            /** Name */
+            name: string;
+            /** Overage Policy */
+            overage_policy: string | null;
+            /** Prices */
+            prices: components["schemas"]["PublicPrice"][];
+            /** Promo Discount Bp */
+            promo_discount_bp: number;
+            /** Promo Ends On */
+            promo_ends_on: string | null;
+            /** Recommended */
+            recommended: boolean;
+            setup_fee: components["schemas"]["SignedMoney"];
+            /** Short Description */
+            short_description: string | null;
+            /** Support Level */
+            support_level: string | null;
+            /**
+             * Tax Treatment
+             * @enum {string}
+             */
+            tax_treatment: "exclusive" | "inclusive";
+            /** Trial Days */
+            trial_days: number;
+        };
+        /** PublicPlanList */
+        PublicPlanList: {
+            /** Data */
+            data: components["schemas"]["PublicPlan"][];
+            /** Tax Charged */
+            tax_charged: boolean;
+            /** Tax Name */
+            tax_name: string | null;
+            /** Tax Rate Bp */
+            tax_rate_bp: number | null;
+        };
+        /** PublicPrice */
+        PublicPrice: {
+            amount: components["schemas"]["SignedMoney"];
+            /**
+             * Interval
+             * @enum {string}
+             */
+            interval: "month" | "quarter" | "year";
+            intro_amount: components["schemas"]["SignedMoney"] | null;
+            /** Intro Periods */
+            intro_periods: number | null;
+            per_month: components["schemas"]["SignedMoney"];
+            /** Saving Bp */
+            saving_bp: number | null;
         };
         /** Quote */
         Quote: {
@@ -7229,7 +7595,7 @@ export interface components {
             limits: {
                 [key: string]: unknown;
             };
-            plan: components["schemas"]["app__schemas__admin__PlanOut"];
+            plan: components["schemas"]["app__schemas__plans__PlanOut"];
             /** Renews On */
             renews_on: string | null;
             /**
@@ -7580,29 +7946,6 @@ export interface components {
             /** To */
             to: string;
         };
-        /** PlanOut */
-        app__schemas__admin__PlanOut: {
-            /** Code */
-            code: string;
-            /** Features */
-            features: {
-                [key: string]: unknown;
-            };
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /** Is Active */
-            is_active: boolean;
-            /** Limits */
-            limits: {
-                [key: string]: unknown;
-            };
-            monthly_price: components["schemas"]["SignedMoney"];
-            /** Name */
-            name: string;
-        };
         /** Address */
         app__schemas__company__Address: {
             /** City */
@@ -7641,6 +7984,77 @@ export interface components {
             name: string;
             /** Subscription Status */
             subscription_status: string;
+        };
+        /** PlanOut */
+        app__schemas__plans__PlanOut: {
+            /** Archived At */
+            archived_at: string | null;
+            /** Can Downgrade */
+            can_downgrade: boolean;
+            /** Can Upgrade */
+            can_upgrade: boolean;
+            /** Code */
+            code: string;
+            /** Currency */
+            currency: string;
+            /** Description */
+            description: string | null;
+            /** Display Order */
+            display_order: number;
+            /** Features */
+            features: {
+                [key: string]: boolean;
+            };
+            /** Highlights */
+            highlights: string[];
+            /** History */
+            history: components["schemas"]["PriceOut"][];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Limits */
+            limits: {
+                [key: string]: number;
+            };
+            /** Name */
+            name: string;
+            /** Overage Policy */
+            overage_policy: string | null;
+            /** Prices */
+            prices: {
+                [key: string]: components["schemas"]["PriceOut"];
+            };
+            /** Promo Discount Bp */
+            promo_discount_bp: number;
+            /** Promo Ends On */
+            promo_ends_on: string | null;
+            /** Published At */
+            published_at: string | null;
+            /** Recommended */
+            recommended: boolean;
+            /** Scheduled */
+            scheduled: components["schemas"]["PriceOut"][];
+            setup_fee: components["schemas"]["SignedMoney"];
+            /** Short Description */
+            short_description: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "draft" | "published" | "archived";
+            /** Support Level */
+            support_level: string | null;
+            /**
+             * Tax Treatment
+             * @enum {string}
+             */
+            tax_treatment: "exclusive" | "inclusive";
+            /** Trial Days */
+            trial_days: number;
+            /** Version */
+            version: number;
         };
         /** DeliveryList */
         app__schemas__reports__DeliveryList: {
@@ -7907,6 +8321,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Analytics"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_billing_settings_api_v1_admin_billing_settings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingSettingsOut"];
+                };
+            };
+        };
+    };
+    put_billing_settings_api_v1_admin_billing_settings_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BillingSettingsPut"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingSettingsOut"];
                 };
             };
             /** @description Validation Error */
@@ -8504,7 +8971,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["app__schemas__admin__PlanOut"];
+                    "application/json": components["schemas"]["app__schemas__plans__PlanOut"];
                 };
             };
             /** @description Validation Error */
@@ -8539,7 +9006,210 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["app__schemas__admin__PlanOut"];
+                    "application/json": components["schemas"]["app__schemas__plans__PlanOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    archive_plan_api_v1_admin_plans__plan_id__archive_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlanStatusChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["app__schemas__plans__PlanOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_plan_api_v1_admin_plans__plan_id__preview_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicPlan"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_price_api_v1_admin_plans__plan_id__prices_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PriceCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["app__schemas__plans__PlanOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    withdraw_price_api_v1_admin_plans__plan_id__prices__price_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: string;
+                price_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["app__schemas__plans__PlanOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    publish_plan_api_v1_admin_plans__plan_id__publish_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlanStatusChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["app__schemas__plans__PlanOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restore_plan_api_v1_admin_plans__plan_id__restore_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlanStatusChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["app__schemas__plans__PlanOut"];
                 };
             };
             /** @description Validation Error */
@@ -12576,6 +13246,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PermissionList"];
+                };
+            };
+        };
+    };
+    public_plans_api_v1_plans_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicPlanList"];
                 };
             };
         };

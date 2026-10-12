@@ -18,10 +18,6 @@ from app.schemas.admin import (
     Health,
     HotelStatusOut,
     Metrics,
-    PlanCreate,
-    PlanList,
-    PlanOut,
-    PlanPatch,
     SubscriptionOut,
     SubscriptionPut,
     SupportAccessOut,
@@ -125,28 +121,6 @@ async def put_subscription(
     hotel_id: uuid.UUID, body: SubscriptionPut, request: Request, uow: Uow, principal: BillingManage
 ) -> dict[str, Any]:
     return await svc.put_subscription(uow, principal.for_hotel(request, hotel_id), body.model_dump())
-
-
-@router.get("/plans", response_model=PlanList)
-async def plans(uow: Uow, principal: BillingManage) -> dict[str, Any]:
-    return {"data": await svc.list_plans(uow), "next_cursor": None}
-
-
-@router.post("/plans", status_code=201, response_model=PlanOut)
-async def create_plan(
-    idem: IdemUser, body: PlanCreate, request: Request, uow: Uow, principal: BillingManage
-) -> Response:
-    result = await svc.create_plan(uow, principal.platform_actor(request), body.model_dump())
-    return await idem.complete(uow, 201, PlanOut.model_validate(result).model_dump(mode="json"))
-
-
-@router.patch("/plans/{plan_id}", response_model=PlanOut)
-async def update_plan(
-    plan_id: uuid.UUID, body: PlanPatch, request: Request, uow: Uow, principal: BillingManage
-) -> dict[str, Any]:
-    return await svc.update_plan(
-        uow, principal.platform_actor(request), plan_id, body.model_dump(exclude_unset=True)
-    )
 
 
 @router.get("/feature-flags", response_model=FlagList)

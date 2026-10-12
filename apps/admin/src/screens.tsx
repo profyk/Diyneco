@@ -26,9 +26,10 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { label, useAction } from "./common";
+import { planPriceLabel } from "./Plans";
 import { useSession } from "./session";
 
-function useCurrencies() {
+export function useCurrencies() {
   const { api } = useSession();
   return useQuery({ queryKey: ["currencies"], queryFn: () => ok(api.GET("/api/v1/currencies")), staleTime: Infinity });
 }
@@ -250,7 +251,7 @@ export function HotelDialog({
                   <option value="">Choose a plan</option>
                   {plans.data?.data.map((pl) => (
                     <option key={pl.id} value={pl.id}>
-                      {pl.name} · {formatMoney(pl.monthly_price)} a month
+                      {pl.name} · {planPriceLabel(pl as never)}{pl.status === "published" ? "" : ` (${pl.status})`}
                     </option>
                   ))}
                 </Select>
@@ -307,153 +308,6 @@ export function HotelDialog({
         ) : null}
         {error ? <ErrorNotice error={error} /> : null}
       </div>
-    </Dialog>
-  );
-}
-
-// --- Plans ---------------------------------------------------------------------------------
-
-export function Plans() {
-  const { api } = useSession();
-  const plans = useQuery({ queryKey: ["plans"], queryFn: () => ok(api.GET("/api/v1/admin/plans")) });
-  const [editing, setEditing] = useState<string | "new" | null>(null);
-  return (
-    <>
-      <PageHeader
-        title="Plans & billing"
-        description="Each plan bills in the currency you choose for it. Prices are data, never code."
-        actions={<Button onClick={() => setEditing("new")}>New plan</Button>}
-      />
-      <Card>
-        <Table>
-          <thead>
-            <tr>
-              <Th>Plan</Th>
-              <Th className="text-right">Monthly price</Th>
-              <Th>Currency</Th>
-              <Th>Limits</Th>
-              <Th>Status</Th>
-              <Th />
-            </tr>
-          </thead>
-          <tbody>
-            {plans.data?.data.map((p) => (
-              <tr key={p.id}>
-                <Td>
-                  <p className="font-medium">{p.name}</p>
-                  <p className="font-mono text-xs text-muted">{p.code}</p>
-                </Td>
-                <Td className="text-right tabular-nums">{formatMoney(p.monthly_price)}</Td>
-                <Td>{p.monthly_price.currency}</Td>
-                <Td className="text-xs text-muted">
-                  {Object.entries(p.limits)
-                    .map(([k, v]) => `${v} ${k.replace("_", " ")}`)
-                    .join(" · ")}
-                </Td>
-                <Td>
-                  <Badge tone={p.is_active ? "good" : "neutral"}>{p.is_active ? "Offered" : "Retired"}</Badge>
-                  {p.features.placeholder ? <Badge tone="warn" className="ml-1">Placeholder price</Badge> : null}
-                </Td>
-                <Td className="text-right">
-                  <Button size="sm" variant="secondary" onClick={() => setEditing(p.id)}>
-                    Edit
-                  </Button>
-                </Td>
-              </tr>
-            ))}
-          </tbody>
-        </Table>
-      </Card>
-      {editing ? (
-        <PlanDialog plan={editing === "new" ? null : (plans.data?.data.find((p) => p.id === editing) ?? null)} onClose={() => setEditing(null)} />
-      ) : null}
-    </>
-  );
-}
-
-function PlanDialog({
-  plan,
-  onClose,
-}: {
-  plan: { id: string; code: string; name: string; monthly_price: { amount_minor: number; currency: string }; limits: Record<string, unknown>; is_active: boolean } | null;
-  onClose: () => void;
-}) {
-  const { api } = useSession();
-  const currencies = useCurrencies();
-  const [code, setCode] = useState("");
-  const [name, setName] = useState(plan?.name ?? "");
-  const [price, setPrice] = useState(plan ? toAmountInput(plan.monthly_price) : "");
-  const [currency, setCurrency] = useState(plan?.monthly_price.currency ?? "");
-  const [limits, setLimits] = useState<Record<string, string>>(
-    Object.fromEntries(["rooms", "devices", "staff", "api_keys"].map((k) => [k, String(plan?.limits[k] ?? "")])),
-  );
-  const [active, setActive] = useState(plan?.is_active ?? true);
-  const minor = parseAmount(price, currency || "USD");
-  const limitValues = Object.fromEntries(Object.entries(limits).filter(([, v]) => v !== "").map(([k, v]) => [k, Number(v)]));
-  const save = useAction(
-    async () =>
-      plan
-        ? ok(
-            api.PATCH("/api/v1/admin/plans/{plan_id}", {
-              params: { path: { plan_id: plan.id } },
-              body: { name, monthly_price: { amount_minor: minor ?? 0, currency }, limits: limitValues, is_active: active },
-            }),
-          )
-        : ok(
-            api.POST("/api/v1/admin/plans", {
-              body: { code, name, monthly_price: { amount_minor: minor ?? 0, currency }, limits: limitValues, features: {} },
-            }),
-          ),
-    { success: "Plan saved.", onDone: onClose },
-  );
-  return (
-    <Dialog
-      open
-      onClose={onClose}
-      size="lg"
-      title={plan ? `Edit ${plan.name}` : "New plan"}
-      description="Hotels on this plan are billed in its currency from their next period."
-      footer={
-        <Button disabled={!name || minor === null || !currency || (!plan && !/^[a-z][a-z0-9_]{1,40}$/.test(code))} loading={save.isPending} onClick={() => save.mutate(undefined)}>
-          Save plan
-        </Button>
-      }
-    >
-      <div className="grid gap-4 sm:grid-cols-2">
-        {!plan ? (
-          <Field label="Code" hint="Lowercase, e.g. boutique">
-            {(p) => <Input {...p} value={code} onChange={(e) => setCode(e.target.value)} />}
-          </Field>
-        ) : null}
-        <Field label="Name">{(p) => <Input {...p} value={name} onChange={(e) => setName(e.target.value)} />}</Field>
-        <Field label="Billing currency">
-          {(p) => (
-            <Select {...p} value={currency} onChange={(e) => setCurrency(e.target.value)}>
-              <option value="">Choose a currency</option>
-              {currencies.data?.data.map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.code} · {c.name}
-                </option>
-              ))}
-            </Select>
-          )}
-        </Field>
-        <Field label={`Monthly price${currency ? ` (${currencySymbol(currency)})` : ""}`}>
-          {(p) => <Input {...p} inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} />}
-        </Field>
-        {Object.keys(limits).map((k) => (
-          <Field key={k} label={`Limit: ${k.replace("_", " ")}`} hint="Empty means no limit">
-            {(p) => <Input {...p} type="number" min={0} value={limits[k]} onChange={(e) => setLimits({ ...limits, [k]: e.target.value })} />}
-          </Field>
-        ))}
-        {plan ? (
-          <label className="flex items-center gap-2 text-sm sm:col-span-2">
-            <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />
-            Offered to hotels
-          </label>
-        ) : null}
-      </div>
-      {save.error ? <ErrorNotice error={save.error} className="mt-4" /> : null}
     </Dialog>
   );
 }

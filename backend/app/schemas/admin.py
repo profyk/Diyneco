@@ -8,7 +8,8 @@ from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, Field, StringConstraints
 
-from app.schemas.common import Money, SignedMoney, StrictModel
+from app.schemas.common import SignedMoney, StrictModel
+from app.schemas.plans import PlanOut
 
 FlagKey = Annotated[str, StringConstraints(pattern=r"^[a-z][a-z0-9_.]{1,60}$")]
 
@@ -66,39 +67,6 @@ class HotelStatusOut(BaseModel):
     name: str
     status: str
     status_reason: str | None
-
-
-class PlanCreate(StrictModel):
-    code: Annotated[str, StringConstraints(pattern=r"^[a-z][a-z0-9_]{1,40}$")]
-    name: Annotated[str, StringConstraints(min_length=1, max_length=80)]
-    monthly_price: Money
-    limits: dict[Literal["rooms", "devices", "staff", "api_keys"], Annotated[int, Field(ge=0)]] = Field(
-        default_factory=dict
-    )
-    features: dict[FlagKey, bool] = Field(default_factory=dict)
-
-
-class PlanPatch(StrictModel):
-    name: Annotated[str, StringConstraints(min_length=1, max_length=80)] | None = None
-    monthly_price: Money | None = None
-    limits: dict[Literal["rooms", "devices", "staff", "api_keys"], Annotated[int, Field(ge=0)]] | None = None
-    features: dict[FlagKey, bool] | None = None
-    is_active: bool | None = None
-
-
-class PlanOut(BaseModel):
-    id: uuid.UUID
-    code: str
-    name: str
-    monthly_price: SignedMoney
-    limits: dict[str, Any]
-    features: dict[str, Any]
-    is_active: bool
-
-
-class PlanList(BaseModel):
-    data: list[PlanOut]
-    next_cursor: str | None = None
 
 
 class SubscriptionPut(StrictModel):

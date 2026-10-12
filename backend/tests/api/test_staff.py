@@ -309,8 +309,8 @@ async def test_staff_plan_limit_counts_pending_invitations(client, factory, owne
         plan = (
             await conn.execute(
                 text(
-                    "INSERT INTO app.plans (code, name, monthly_price_minor, currency, limits) "
-                    "VALUES (:c, 'Tiny', 0, 'ZAR', '{\"staff\": 2}') RETURNING id"
+                    "INSERT INTO app.plans (code, name, currency, limits) "
+                    "VALUES (:c, 'Tiny', 'ZAR', '{\"staff\": 2}') RETURNING id"
                 ),
                 {"c": f"tiny_{secrets.token_hex(3)}"},
             )

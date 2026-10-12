@@ -13,7 +13,7 @@ from app.db.session import TenantContext, UnitOfWork
 from app.models.tenancy import Plan
 from app.realtime.outbox import emit
 from app.repositories.hotels import HotelRepository
-from app.services.admin import plan_payload
+from app.services import catalogue
 from app.services.plans import _COUNT_SQL
 
 
@@ -38,7 +38,7 @@ async def view(uow: UnitOfWork, ctx: TenantContext) -> dict[str, Any]:
         }
     plan, sub = current
     return {
-        "plan": plan_payload(plan),
+        "plan": await catalogue.plan_out(uow, plan),
         "status": sub.status,
         "starts_on": sub.starts_on,
         "renews_on": sub.renews_on,
@@ -50,7 +50,7 @@ async def view(uow: UnitOfWork, ctx: TenantContext) -> dict[str, Any]:
 async def request_change(uow: UnitOfWork, ctx: TenantContext, body: dict[str, Any]) -> dict[str, Any]:
     plan = (
         await uow.session.execute(
-            select(Plan).where(Plan.code == body["plan_code"], Plan.is_active.is_(True))
+            select(Plan).where(Plan.code == body["plan_code"], Plan.status == "published")
         )
     ).scalar_one_or_none()
     if plan is None:

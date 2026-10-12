@@ -37,13 +37,60 @@ class Plan(Base):
     id: Mapped[uuid.UUID] = _pk()
     code: Mapped[str]
     name: Mapped[str]
-    monthly_price_minor: Mapped[int] = mapped_column(BigInteger)
     currency: Mapped[str] = _currency()
+    short_description: Mapped[str | None]
+    description: Mapped[str | None]
+    highlights: Mapped[list[str]] = mapped_column(JSONB, server_default=text("'[]'"))
+    status: Mapped[str] = mapped_column(server_default=text("'draft'"))
+    display_order: Mapped[int] = mapped_column(Integer, server_default=text("0"))
+    recommended: Mapped[bool] = mapped_column(server_default=text("false"))
+    setup_fee_minor: Mapped[int] = mapped_column(BigInteger, server_default=text("0"))
+    trial_days: Mapped[int] = mapped_column(Integer, server_default=text("0"))
+    tax_treatment: Mapped[str] = mapped_column(server_default=text("'exclusive'"))
+    support_level: Mapped[str | None]
+    overage_policy: Mapped[str | None]
+    can_upgrade: Mapped[bool] = mapped_column(server_default=text("true"))
+    can_downgrade: Mapped[bool] = mapped_column(server_default=text("true"))
+    promo_discount_bp: Mapped[int] = mapped_column(Integer, server_default=text("0"))
+    promo_ends_on: Mapped[date | None]
     limits: Mapped[dict[str, Any]] = mapped_column(JSONB, server_default=text("'{}'"))
     features: Mapped[dict[str, Any]] = mapped_column(JSONB, server_default=text("'{}'"))
-    is_active: Mapped[bool] = mapped_column(server_default=text("true"))
+    published_at: Mapped[datetime | None]
+    archived_at: Mapped[datetime | None]
+    version: Mapped[int] = mapped_column(Integer, server_default=text("1"))
     created_at: Mapped[datetime] = _created()
     updated_at: Mapped[datetime] = _updated()
+
+
+class PlanPrice(Base):
+    """A plan's price for one billing interval from a moment on (append-only, D74)."""
+
+    __tablename__ = "plan_prices"
+    id: Mapped[uuid.UUID] = _pk()
+    plan_id: Mapped[uuid.UUID]
+    interval: Mapped[str]
+    amount_minor: Mapped[int] = mapped_column(BigInteger)
+    currency: Mapped[str] = mapped_column(CHAR(3))
+    intro_amount_minor: Mapped[int | None] = mapped_column(BigInteger)
+    intro_periods: Mapped[int | None] = mapped_column(Integer)
+    effective_from: Mapped[datetime]
+    existing_policy: Mapped[str]
+    notice_days: Mapped[int | None] = mapped_column(Integer)
+    reason: Mapped[str]
+    created_by: Mapped[uuid.UUID | None]
+    created_at: Mapped[datetime] = _created()
+    withdrawn_at: Mapped[datetime | None]
+
+
+class BillingSettings(Base):
+    """Platform billing policies (one row, D74; later slices add trial, grace and reminders)."""
+
+    __tablename__ = "billing_settings"
+    id: Mapped[bool] = mapped_column(primary_key=True, server_default=text("true"))
+    price_change_notice_days: Mapped[int] = mapped_column(Integer)
+    version: Mapped[int] = mapped_column(Integer, server_default=text("1"))
+    updated_at: Mapped[datetime] = _updated()
+    updated_by: Mapped[uuid.UUID | None]
 
 
 class Hotel(Base):
