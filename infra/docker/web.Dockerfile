@@ -12,12 +12,14 @@ ARG APP
 ARG NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_STORAGE_URL=
 RUN test -n "$APP" && test -n "$NEXT_PUBLIC_API_URL" || (echo "APP and NEXT_PUBLIC_API_URL are required" && exit 1)
-ENV NEXT_TELEMETRY_DISABLED=1 NEXT_OUTPUT=standalone \
+ENV NEXT_TELEMETRY_DISABLED=1 NEXT_OUTPUT=standalone PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 \
     NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL NEXT_PUBLIC_STORAGE_URL=$NEXT_PUBLIC_STORAGE_URL
 RUN corepack enable
 WORKDIR /repo
 COPY . .
-RUN pnpm install --frozen-lockfile --filter "./apps/${APP}..."
+# The whole workspace: the apps use the shared packages through their source (transpilePackages),
+# so those packages' own dependencies must be installed too.
+RUN pnpm install --frozen-lockfile
 RUN pnpm --filter "./apps/${APP}" build && mkdir -p "apps/${APP}/public"
 
 FROM node:24-slim
