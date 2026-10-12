@@ -87,6 +87,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/company": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Company */
+        get: operations["get_company_api_v1_admin_company_get"];
+        /**
+         * Put Company
+         * @description Replaces the editable settings. `version` must match (else 412); `reason` is audited.
+         */
+        put: operations["put_company_api_v1_admin_company_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/company/logo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start Logo Upload
+         * @description Returns a signed URL; PUT the PNG or JPEG there within its lifetime.
+         */
+        post: operations["start_logo_upload_api_v1_admin_company_logo_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/feature-flags": {
         parameters: {
             query?: never;
@@ -447,6 +488,41 @@ export interface paths {
         put: operations["change_roles_api_v1_admin_staff__user_id__roles_put"];
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/tax-rates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Tax Rates */
+        get: operations["list_tax_rates_api_v1_admin_tax_rates_get"];
+        put?: never;
+        /** Schedule Tax Rate */
+        post: operations["schedule_tax_rate_api_v1_admin_tax_rates_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/tax-rates/{rate_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Withdraw Tax Rate */
+        delete: operations["withdraw_tax_rate_api_v1_admin_tax_rates__rate_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -3177,7 +3253,7 @@ export interface components {
             next_cursor?: string | null;
         };
         /** Address */
-        Address: {
+        "Address-Output": {
             /** City */
             city?: string | null;
             /** Country */
@@ -3537,6 +3613,21 @@ export interface components {
             /** Available */
             available: boolean;
         };
+        /** BankDetails */
+        BankDetails: {
+            /** Account Holder */
+            account_holder?: string | null;
+            /** Account Number */
+            account_number?: string | null;
+            /** Account Type */
+            account_type?: ("cheque" | "current" | "savings" | "business") | null;
+            /** Bank Name */
+            bank_name?: string | null;
+            /** Branch Code */
+            branch_code?: string | null;
+            /** Swift Code */
+            swift_code?: string | null;
+        };
         /** Billing */
         Billing: {
             /** Billing Profile Id */
@@ -3796,7 +3887,7 @@ export interface components {
             override: boolean;
             /** Override Reason */
             override_reason?: string | null;
-            recipient_address?: components["schemas"]["Address"] | null;
+            recipient_address?: components["schemas"]["app__schemas__hotel__Address"] | null;
         };
         /** CheckoutSummary */
         CheckoutSummary: {
@@ -3924,6 +4015,130 @@ export interface components {
             /** Staff Id */
             staff_id: string | null;
             tips: components["schemas"]["SignedMoney"];
+        };
+        /** CompanyLogoUpload */
+        CompanyLogoUpload: {
+            /**
+             * Content Type
+             * @enum {string}
+             */
+            content_type: "image/png" | "image/jpeg";
+            /** Size Bytes */
+            size_bytes: number;
+        };
+        /** CompanySettingsOut */
+        CompanySettingsOut: {
+            bank_details: components["schemas"]["BankDetails"];
+            /** Billing Email */
+            billing_email: string | null;
+            /** Billing Phone */
+            billing_phone: string | null;
+            business_address: components["schemas"]["Address-Output"];
+            /** Country */
+            country: string;
+            /** Credit Note Prefix */
+            credit_note_prefix: string;
+            /** Currency */
+            currency: string;
+            /** Invoice Example */
+            invoice_example: string;
+            /** Invoice Prefix */
+            invoice_prefix: string;
+            /** Legal Name */
+            legal_name: string;
+            /** Logo Url */
+            logo_url: string | null;
+            /** Missing */
+            missing: string[];
+            /** Number Padding */
+            number_padding: number;
+            /**
+             * Number Reset
+             * @enum {string}
+             */
+            number_reset: "never" | "yearly";
+            /** Payment Instructions */
+            payment_instructions: string | null;
+            /** Payment Terms Days */
+            payment_terms_days: number;
+            registered_address: components["schemas"]["Address-Output"];
+            /** Registration Number */
+            registration_number: string | null;
+            tax_today: components["schemas"]["TaxToday"];
+            /** Timezone */
+            timezone: string;
+            /** Trading Name */
+            trading_name: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Vat Effective Date */
+            vat_effective_date: string | null;
+            /** Vat Number */
+            vat_number: string | null;
+            /** Vat Registered */
+            vat_registered: boolean;
+            /** Version */
+            version: number;
+        };
+        /** CompanySettingsPut */
+        CompanySettingsPut: {
+            bank_details?: components["schemas"]["BankDetails"];
+            /** Billing Email */
+            billing_email?: string | null;
+            /** Billing Phone */
+            billing_phone?: string | null;
+            business_address?: components["schemas"]["app__schemas__company__Address"];
+            /**
+             * Credit Note Prefix
+             * @default CN
+             */
+            credit_note_prefix: string;
+            /**
+             * Invoice Prefix
+             * @default INV
+             */
+            invoice_prefix: string;
+            /** Legal Name */
+            legal_name: string;
+            /**
+             * Number Padding
+             * @default 6
+             */
+            number_padding: number;
+            /**
+             * Number Reset
+             * @default never
+             * @enum {string}
+             */
+            number_reset: "never" | "yearly";
+            /** Payment Instructions */
+            payment_instructions?: string | null;
+            /**
+             * Payment Terms Days
+             * @default 7
+             */
+            payment_terms_days: number;
+            /** Reason */
+            reason: string;
+            registered_address?: components["schemas"]["app__schemas__company__Address"];
+            /** Registration Number */
+            registration_number?: string | null;
+            /** Trading Name */
+            trading_name: string;
+            /** Vat Effective Date */
+            vat_effective_date?: string | null;
+            /** Vat Number */
+            vat_number?: string | null;
+            /**
+             * Vat Registered
+             * @default false
+             */
+            vat_registered: boolean;
+            /** Version */
+            version: number;
         };
         /** CountryList */
         CountryList: {
@@ -4579,7 +4794,7 @@ export interface components {
         };
         /** HotelPatch */
         HotelPatch: {
-            address?: components["schemas"]["Address"] | null;
+            address?: components["schemas"]["app__schemas__hotel__Address"] | null;
             /** Email */
             email?: string | null;
             /** Legal Name */
@@ -6662,7 +6877,7 @@ export interface components {
         };
         /** SignupHotel */
         SignupHotel: {
-            address?: components["schemas"]["Address"] | null;
+            address?: components["schemas"]["app__schemas__hotel__Address"] | null;
             /** Country */
             country: string;
             /** Currency */
@@ -7117,6 +7332,71 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /** TaxRateCreate */
+        TaxRateCreate: {
+            /** Country */
+            country: string;
+            /**
+             * Effective From
+             * Format: date
+             */
+            effective_from: string;
+            /** Rate Bp */
+            rate_bp: number;
+            /** Reason */
+            reason: string;
+            /** Tax Name */
+            tax_name: string;
+        };
+        /** TaxRateList */
+        TaxRateList: {
+            /** Data */
+            data: components["schemas"]["TaxRateOut"][];
+        };
+        /** TaxRateOut */
+        TaxRateOut: {
+            /**
+             * Category
+             * @enum {string}
+             */
+            category: "standard" | "zero_rated" | "exempt";
+            /** Country */
+            country: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Effective From
+             * Format: date
+             */
+            effective_from: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** In Force */
+            in_force: boolean;
+            /** Rate Bp */
+            rate_bp: number;
+            /** Reason */
+            reason: string;
+            /** Scheduled */
+            scheduled: boolean;
+            /** Tax Name */
+            tax_name: string;
+        };
+        /** TaxToday */
+        TaxToday: {
+            /** Charged */
+            charged: boolean;
+            /** Rate Bp */
+            rate_bp: number | null;
+            /** Tax Name */
+            tax_name: string | null;
+        };
         /** TokenResponse */
         TokenResponse: {
             /** Access Token */
@@ -7322,6 +7602,36 @@ export interface components {
             monthly_price: components["schemas"]["SignedMoney"];
             /** Name */
             name: string;
+        };
+        /** Address */
+        app__schemas__company__Address: {
+            /** City */
+            city?: string | null;
+            /** Country */
+            country?: string | null;
+            /** Line1 */
+            line1?: string | null;
+            /** Line2 */
+            line2?: string | null;
+            /** Postal Code */
+            postal_code?: string | null;
+            /** Province */
+            province?: string | null;
+        };
+        /** Address */
+        app__schemas__hotel__Address: {
+            /** City */
+            city?: string | null;
+            /** Country */
+            country?: string | null;
+            /** Line1 */
+            line1?: string | null;
+            /** Line2 */
+            line2?: string | null;
+            /** Postal Code */
+            postal_code?: string | null;
+            /** Province */
+            province?: string | null;
         };
         /** PlanOut */
         app__schemas__hotel__PlanOut: {
@@ -7597,6 +7907,92 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Analytics"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_company_api_v1_admin_company_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanySettingsOut"];
+                };
+            };
+        };
+    };
+    put_company_api_v1_admin_company_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompanySettingsPut"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanySettingsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_logo_upload_api_v1_admin_company_logo_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompanyLogoUpload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LogoUploadOut"];
                 };
             };
             /** @description Validation Error */
@@ -8345,6 +8741,90 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PlatformStaffOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_tax_rates_api_v1_admin_tax_rates_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaxRateList"];
+                };
+            };
+        };
+    };
+    schedule_tax_rate_api_v1_admin_tax_rates_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaxRateCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaxRateList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    withdraw_tax_rate_api_v1_admin_tax_rates__rate_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rate_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaxRateList"];
                 };
             };
             /** @description Validation Error */

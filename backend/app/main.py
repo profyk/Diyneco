@@ -13,6 +13,7 @@ from app.api.v1 import (
     admin,
     auth,
     billing,
+    company,
     dev_storage,
     devices,
     guest,
@@ -123,6 +124,7 @@ def create_app(settings: Settings | None = None, state: AppState | None = None) 
     api.include_router(legal.router)
     api.include_router(legal.admin_router)
     api.include_router(platform_staff.router)
+    api.include_router(company.router)
     api.include_router(platform_staff.public_router)
     if isinstance(app_state.storage, LocalStorage):
         api.include_router(dev_storage.router)  # development only (build_storage refuses elsewhere)

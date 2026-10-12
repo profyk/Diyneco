@@ -128,13 +128,13 @@
         "title": "ActivityList",
         "type": "object"
       },
-      "Address": {
+      "Address-Output": {
         "additionalProperties": false,
         "properties": {
           "city": {
             "anyOf": [
               {
-                "maxLength": 100,
+                "maxLength": 120,
                 "type": "string"
               },
               {
@@ -158,7 +158,7 @@
           "line1": {
             "anyOf": [
               {
-                "maxLength": 200,
+                "maxLength": 120,
                 "type": "string"
               },
               {
@@ -170,7 +170,7 @@
           "line2": {
             "anyOf": [
               {
-                "maxLength": 200,
+                "maxLength": 120,
                 "type": "string"
               },
               {
@@ -182,7 +182,7 @@
           "postal_code": {
             "anyOf": [
               {
-                "maxLength": 20,
+                "maxLength": 12,
                 "type": "string"
               },
               {
@@ -194,7 +194,7 @@
           "province": {
             "anyOf": [
               {
-                "maxLength": 100,
+                "maxLength": 120,
                 "type": "string"
               },
               {
@@ -1264,6 +1264,90 @@
         "title": "AvailabilityChange",
         "type": "object"
       },
+      "BankDetails": {
+        "additionalProperties": false,
+        "properties": {
+          "account_holder": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Holder"
+          },
+          "account_number": {
+            "anyOf": [
+              {
+                "pattern": "^\\d{6,16}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Number"
+          },
+          "account_type": {
+            "anyOf": [
+              {
+                "enum": [
+                  "cheque",
+                  "current",
+                  "savings",
+                  "business"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Type"
+          },
+          "bank_name": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bank Name"
+          },
+          "branch_code": {
+            "anyOf": [
+              {
+                "pattern": "^\\d{4,8}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Branch Code"
+          },
+          "swift_code": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Z0-9]{8}([A-Z0-9]{3})?$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Swift Code"
+          }
+        },
+        "title": "BankDetails",
+        "type": "object"
+      },
       "Billing": {
         "additionalProperties": false,
         "properties": {
@@ -2065,7 +2149,7 @@
           "recipient_address": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/Address"
+                "$ref": "#/components/schemas/app__schemas__hotel__Address"
               },
               {
                 "type": "null"
@@ -2436,6 +2520,379 @@
           "tips"
         ],
         "title": "CloseTips",
+        "type": "object"
+      },
+      "CompanyLogoUpload": {
+        "additionalProperties": false,
+        "properties": {
+          "content_type": {
+            "enum": [
+              "image/png",
+              "image/jpeg"
+            ],
+            "title": "Content Type",
+            "type": "string"
+          },
+          "size_bytes": {
+            "maximum": 1048576.0,
+            "minimum": 1.0,
+            "title": "Size Bytes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "content_type",
+          "size_bytes"
+        ],
+        "title": "CompanyLogoUpload",
+        "type": "object"
+      },
+      "CompanySettingsOut": {
+        "properties": {
+          "bank_details": {
+            "$ref": "#/components/schemas/BankDetails"
+          },
+          "billing_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Billing Email"
+          },
+          "billing_phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Billing Phone"
+          },
+          "business_address": {
+            "$ref": "#/components/schemas/Address-Output"
+          },
+          "country": {
+            "title": "Country",
+            "type": "string"
+          },
+          "credit_note_prefix": {
+            "title": "Credit Note Prefix",
+            "type": "string"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "invoice_example": {
+            "title": "Invoice Example",
+            "type": "string"
+          },
+          "invoice_prefix": {
+            "title": "Invoice Prefix",
+            "type": "string"
+          },
+          "legal_name": {
+            "title": "Legal Name",
+            "type": "string"
+          },
+          "logo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo Url"
+          },
+          "missing": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing",
+            "type": "array"
+          },
+          "number_padding": {
+            "title": "Number Padding",
+            "type": "integer"
+          },
+          "number_reset": {
+            "enum": [
+              "never",
+              "yearly"
+            ],
+            "title": "Number Reset",
+            "type": "string"
+          },
+          "payment_instructions": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Instructions"
+          },
+          "payment_terms_days": {
+            "title": "Payment Terms Days",
+            "type": "integer"
+          },
+          "registered_address": {
+            "$ref": "#/components/schemas/Address-Output"
+          },
+          "registration_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registration Number"
+          },
+          "tax_today": {
+            "$ref": "#/components/schemas/TaxToday"
+          },
+          "timezone": {
+            "title": "Timezone",
+            "type": "string"
+          },
+          "trading_name": {
+            "title": "Trading Name",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "vat_effective_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vat Effective Date"
+          },
+          "vat_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vat Number"
+          },
+          "vat_registered": {
+            "title": "Vat Registered",
+            "type": "boolean"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "legal_name",
+          "trading_name",
+          "registration_number",
+          "country",
+          "currency",
+          "timezone",
+          "registered_address",
+          "business_address",
+          "billing_email",
+          "billing_phone",
+          "logo_url",
+          "vat_registered",
+          "vat_number",
+          "vat_effective_date",
+          "invoice_prefix",
+          "credit_note_prefix",
+          "number_padding",
+          "number_reset",
+          "payment_terms_days",
+          "bank_details",
+          "payment_instructions",
+          "version",
+          "updated_at",
+          "invoice_example",
+          "tax_today",
+          "missing"
+        ],
+        "title": "CompanySettingsOut",
+        "type": "object"
+      },
+      "CompanySettingsPut": {
+        "additionalProperties": false,
+        "properties": {
+          "bank_details": {
+            "$ref": "#/components/schemas/BankDetails"
+          },
+          "billing_email": {
+            "anyOf": [
+              {
+                "format": "email",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Billing Email"
+          },
+          "billing_phone": {
+            "anyOf": [
+              {
+                "pattern": "^\\+?[0-9 ()-]{7,30}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Billing Phone"
+          },
+          "business_address": {
+            "$ref": "#/components/schemas/app__schemas__company__Address"
+          },
+          "credit_note_prefix": {
+            "default": "CN",
+            "pattern": "^[A-Z0-9]{1,10}$",
+            "title": "Credit Note Prefix",
+            "type": "string"
+          },
+          "invoice_prefix": {
+            "default": "INV",
+            "pattern": "^[A-Z0-9]{1,10}$",
+            "title": "Invoice Prefix",
+            "type": "string"
+          },
+          "legal_name": {
+            "maxLength": 200,
+            "minLength": 2,
+            "title": "Legal Name",
+            "type": "string"
+          },
+          "number_padding": {
+            "default": 6,
+            "maximum": 10.0,
+            "minimum": 4.0,
+            "title": "Number Padding",
+            "type": "integer"
+          },
+          "number_reset": {
+            "default": "never",
+            "enum": [
+              "never",
+              "yearly"
+            ],
+            "title": "Number Reset",
+            "type": "string"
+          },
+          "payment_instructions": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Instructions"
+          },
+          "payment_terms_days": {
+            "default": 7,
+            "maximum": 90.0,
+            "minimum": 0.0,
+            "title": "Payment Terms Days",
+            "type": "integer"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 3,
+            "title": "Reason",
+            "type": "string"
+          },
+          "registered_address": {
+            "$ref": "#/components/schemas/app__schemas__company__Address"
+          },
+          "registration_number": {
+            "anyOf": [
+              {
+                "maxLength": 40,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registration Number"
+          },
+          "trading_name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Trading Name",
+            "type": "string"
+          },
+          "vat_effective_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vat Effective Date"
+          },
+          "vat_number": {
+            "anyOf": [
+              {
+                "maxLength": 30,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vat Number"
+          },
+          "vat_registered": {
+            "default": false,
+            "title": "Vat Registered",
+            "type": "boolean"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version",
+          "reason",
+          "legal_name",
+          "trading_name"
+        ],
+        "title": "CompanySettingsPut",
         "type": "object"
       },
       "CountryList": {
@@ -4450,7 +4907,7 @@
           "address": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/Address"
+                "$ref": "#/components/schemas/app__schemas__hotel__Address"
               },
               {
                 "type": "null"
@@ -10718,7 +11175,7 @@
           "address": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/Address"
+                "$ref": "#/components/schemas/app__schemas__hotel__Address"
               },
               {
                 "type": "null"
@@ -12076,6 +12533,167 @@
         "title": "SuspendRequest",
         "type": "object"
       },
+      "TaxRateCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "country": {
+            "pattern": "^[A-Z]{2}$",
+            "title": "Country",
+            "type": "string"
+          },
+          "effective_from": {
+            "format": "date",
+            "title": "Effective From",
+            "type": "string"
+          },
+          "rate_bp": {
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Rate Bp",
+            "type": "integer"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 3,
+            "title": "Reason",
+            "type": "string"
+          },
+          "tax_name": {
+            "maxLength": 30,
+            "minLength": 2,
+            "title": "Tax Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "country",
+          "tax_name",
+          "rate_bp",
+          "effective_from",
+          "reason"
+        ],
+        "title": "TaxRateCreate",
+        "type": "object"
+      },
+      "TaxRateList": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/TaxRateOut"
+            },
+            "title": "Data",
+            "type": "array"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "TaxRateList",
+        "type": "object"
+      },
+      "TaxRateOut": {
+        "properties": {
+          "category": {
+            "enum": [
+              "standard",
+              "zero_rated",
+              "exempt"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "country": {
+            "title": "Country",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "effective_from": {
+            "format": "date",
+            "title": "Effective From",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "in_force": {
+            "title": "In Force",
+            "type": "boolean"
+          },
+          "rate_bp": {
+            "title": "Rate Bp",
+            "type": "integer"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "scheduled": {
+            "title": "Scheduled",
+            "type": "boolean"
+          },
+          "tax_name": {
+            "title": "Tax Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "country",
+          "tax_name",
+          "category",
+          "rate_bp",
+          "effective_from",
+          "reason",
+          "created_at",
+          "in_force",
+          "scheduled"
+        ],
+        "title": "TaxRateOut",
+        "type": "object"
+      },
+      "TaxToday": {
+        "properties": {
+          "charged": {
+            "title": "Charged",
+            "type": "boolean"
+          },
+          "rate_bp": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rate Bp"
+          },
+          "tax_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Name"
+          }
+        },
+        "required": [
+          "charged",
+          "tax_name",
+          "rate_bp"
+        ],
+        "title": "TaxToday",
+        "type": "object"
+      },
       "TokenResponse": {
         "properties": {
           "access_token": {
@@ -12614,6 +13232,164 @@
           "is_active"
         ],
         "title": "PlanOut",
+        "type": "object"
+      },
+      "app__schemas__company__Address": {
+        "additionalProperties": false,
+        "properties": {
+          "city": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Z]{2}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
+          "line1": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Line1"
+          },
+          "line2": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Line2"
+          },
+          "postal_code": {
+            "anyOf": [
+              {
+                "maxLength": 12,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Postal Code"
+          },
+          "province": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Province"
+          }
+        },
+        "title": "Address",
+        "type": "object"
+      },
+      "app__schemas__hotel__Address": {
+        "additionalProperties": false,
+        "properties": {
+          "city": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Z]{2}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
+          "line1": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Line1"
+          },
+          "line2": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Line2"
+          },
+          "postal_code": {
+            "anyOf": [
+              {
+                "maxLength": 20,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Postal Code"
+          },
+          "province": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Province"
+          }
+        },
+        "title": "Address",
         "type": "object"
       },
       "app__schemas__hotel__PlanOut": {
@@ -13172,6 +13948,109 @@
           }
         },
         "summary": "Analytics",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/company": {
+      "get": {
+        "operationId": "get_company_api_v1_admin_company_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanySettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Company",
+        "tags": [
+          "admin"
+        ]
+      },
+      "put": {
+        "description": "Replaces the editable settings. `version` must match (else 412); `reason` is audited.",
+        "operationId": "put_company_api_v1_admin_company_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompanySettingsPut"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanySettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Put Company",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/company/logo": {
+      "post": {
+        "description": "Returns a signed URL; PUT the PNG or JPEG there within its lifetime.",
+        "operationId": "start_logo_upload_api_v1_admin_company_logo_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompanyLogoUpload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogoUploadOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Start Logo Upload",
         "tags": [
           "admin"
         ]
@@ -14150,6 +15029,109 @@
           }
         },
         "summary": "Change Roles",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/tax-rates": {
+      "get": {
+        "operationId": "list_tax_rates_api_v1_admin_tax_rates_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaxRateList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Tax Rates",
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "operationId": "schedule_tax_rate_api_v1_admin_tax_rates_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaxRateCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaxRateList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Schedule Tax Rate",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/tax-rates/{rate_id}": {
+      "delete": {
+        "operationId": "withdraw_tax_rate_api_v1_admin_tax_rates__rate_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "rate_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Rate Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaxRateList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Withdraw Tax Rate",
         "tags": [
           "admin"
         ]

@@ -20,13 +20,17 @@
 - Diyneco staff accounts (D71): Super Admins invite platform staff, change their roles,
   deactivate and reactivate them from the Admin panel ("Diyneco staff"); invitees set their
   password on `/accept-invite`; the database keeps at least one active Super Admin.
+- Subscription billing, slice 1 (D72, D73): Diyneco's company and VAT settings and
+  effective-dated tax rates, edited in the Admin panel ("Company & tax") with step-up, a
+  reason and an audit trail. Seeded with the company names only.
 
 ### Next
 
 - Interface translations (message catalogues per language, English first).
 - Browser end-to-end tests (Playwright) against a seeded API.
-- Subscription plans, billing and invoicing of hotels by Diyneco Tech (Pty) Ltd (brief received
-  2026-10-12).
+- Subscription billing slices 2-8 (D73): Plans & Pricing, subscriptions, invoices and credit
+  notes, payments (EFT, Stitch sandbox), renewals and reminders, billing dashboard, hotel
+  billing screens.
 
 ### Known gaps
 

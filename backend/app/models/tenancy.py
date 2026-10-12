@@ -308,3 +308,49 @@ class LegalAcceptance(Base):
     accepted_at: Mapped[datetime] = _created()
     ip: Mapped[str | None] = mapped_column(INET)
     user_agent: Mapped[str | None]
+
+
+class CompanySettings(Base):
+    """Diyneco's own identity as the seller of subscriptions (one row, control plane, D72)."""
+
+    __tablename__ = "company_settings"
+    id: Mapped[bool] = mapped_column(primary_key=True, server_default=text("true"))
+    legal_name: Mapped[str]
+    trading_name: Mapped[str]
+    registration_number: Mapped[str | None]
+    country: Mapped[str] = mapped_column(CHAR(2))
+    currency: Mapped[str] = mapped_column(CHAR(3))
+    timezone: Mapped[str]
+    registered_address: Mapped[dict[str, Any]] = mapped_column(JSONB, server_default=text("'{}'"))
+    business_address: Mapped[dict[str, Any]] = mapped_column(JSONB, server_default=text("'{}'"))
+    billing_email: Mapped[str | None] = mapped_column(CITEXT)
+    billing_phone: Mapped[str | None]
+    logo_path: Mapped[str | None]
+    vat_registered: Mapped[bool] = mapped_column(server_default=text("false"))
+    vat_number: Mapped[str | None]
+    vat_effective_date: Mapped[date | None]
+    invoice_prefix: Mapped[str]
+    credit_note_prefix: Mapped[str]
+    number_padding: Mapped[int] = mapped_column(Integer)
+    number_reset: Mapped[str]
+    payment_terms_days: Mapped[int] = mapped_column(Integer)
+    bank_details: Mapped[dict[str, Any]] = mapped_column(JSONB, server_default=text("'{}'"))
+    payment_instructions: Mapped[str | None]
+    version: Mapped[int] = mapped_column(Integer, server_default=text("1"))
+    updated_at: Mapped[datetime] = _updated()
+    updated_by: Mapped[uuid.UUID | None]
+
+
+class TaxRate(Base):
+    """A tax rate in force from a date (append-only; the latest row on or before a day applies)."""
+
+    __tablename__ = "tax_rates"
+    id: Mapped[uuid.UUID] = _pk()
+    country: Mapped[str] = mapped_column(CHAR(2))
+    tax_name: Mapped[str]
+    category: Mapped[str]
+    rate_bp: Mapped[int] = mapped_column(Integer)
+    effective_from: Mapped[date]
+    reason: Mapped[str]
+    created_by: Mapped[uuid.UUID | None]
+    created_at: Mapped[datetime] = _created()

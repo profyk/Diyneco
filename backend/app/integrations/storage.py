@@ -1,8 +1,8 @@
 """Object storage behind one interface (security spec, Data protection and Tenant isolation).
 
-Keys are always `hotels/{hotel_id}/...` and are built here from the tenant context, never
-from client input. Buckets are private: clients upload and download through signed URLs
-minted after a tenant check, valid for 5 minutes.
+Keys are always `hotels/{hotel_id}/...` (or `platform/...` for Diyneco's own files) and are
+built here from the tenant context, never from client input. Buckets are private: clients
+upload and download through signed URLs minted after a tenant check, valid for 5 minutes.
 
 - `supabase`: Supabase Storage through its REST API with the service-role key, which lives
   only in the backend.
@@ -52,6 +52,14 @@ def hotel_key(hotel_id: uuid.UUID, *parts: str) -> str:
         if not p or "/" in p or p in (".", "..") or "\\" in p:
             raise ValueError("invalid storage key part")
     return "/".join(("hotels", str(hotel_id), *parts))
+
+
+def platform_key(*parts: str) -> str:
+    """Keys for Diyneco's own files (company logo, subscription invoices), outside every hotel."""
+    for p in parts:
+        if not p or "/" in p or p in (".", "..") or "\\" in p:
+            raise ValueError("invalid storage key part")
+    return "/".join(("platform", *parts))
 
 
 class SupabaseStorage:
