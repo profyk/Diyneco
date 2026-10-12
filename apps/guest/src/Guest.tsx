@@ -9,6 +9,7 @@ import {
   formatTime,
   newIdempotencyKey,
   ok,
+  setDisplayLocale,
 } from "@diyneco/api-client";
 import { Badge, Button, cn, Dialog, ErrorNotice, Field, Input, Spinner, Textarea } from "@diyneco/shared-ui";
 import { QueryClient, QueryClientProvider, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -114,7 +115,9 @@ function Room({ onUnpaired }: { onUnpaired: () => void }) {
     queryKey: ["session"],
     queryFn: async () => {
       await getDeviceToken();
-      return ok(api.GET("/api/v1/guest/session"));
+      const out = await ok(api.GET("/api/v1/guest/session"));
+      setDisplayLocale(out.hotel.locale as string | undefined, out.hotel.timezone as string | undefined);
+      return out;
     },
     refetchInterval: 60_000,
     retry: (n, err) => !(err instanceof DeviceRevoked) && n < 2,

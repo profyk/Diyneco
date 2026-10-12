@@ -767,10 +767,17 @@ async def me(
         if hotel_id
         else None
     )
-    currency = (
+    local = (
         (
-            await s.execute(select(HotelSettings.currency).where(HotelSettings.hotel_id == hotel_id))
-        ).scalar_one_or_none()
+            await s.execute(
+                select(
+                    HotelSettings.currency,
+                    HotelSettings.locale,
+                    HotelSettings.timezone,
+                    HotelSettings.tax_label,
+                ).where(HotelSettings.hotel_id == hotel_id)
+            )
+        ).one_or_none()
         if hotel_id
         else None
     )
@@ -784,7 +791,15 @@ async def me(
         }
         if user
         else None,
-        "hotel": {"id": hotel.id, "name": hotel.name, "status": hotel.status, "currency": currency}
+        "hotel": {
+            "id": hotel.id,
+            "name": hotel.name,
+            "status": hotel.status,
+            "currency": local.currency if local else None,
+            "locale": local.locale if local else None,
+            "timezone": local.timezone if local else None,
+            "tax_label": local.tax_label if local else None,
+        }
         if hotel
         else None,
         "roles": list(roles),

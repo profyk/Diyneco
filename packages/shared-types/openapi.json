@@ -6605,6 +6605,10 @@
             "title": "Id",
             "type": "string"
           },
+          "locale": {
+            "title": "Locale",
+            "type": "string"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -6612,13 +6616,24 @@
           "status": {
             "title": "Status",
             "type": "string"
+          },
+          "tax_label": {
+            "title": "Tax Label",
+            "type": "string"
+          },
+          "timezone": {
+            "title": "Timezone",
+            "type": "string"
           }
         },
         "required": [
           "id",
           "name",
           "status",
-          "currency"
+          "currency",
+          "locale",
+          "timezone",
+          "tax_label"
         ],
         "title": "MeHotel",
         "type": "object"

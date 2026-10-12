@@ -167,3 +167,10 @@ def test_bills_name_the_hotels_tax_and_print_every_currency():
         "vat_rate_bp": 1000,
     }
     assert invoice_pdf.render(doc).startswith(b"%PDF")
+
+
+async def test_me_carries_the_hotels_locale_time_zone_and_tax_name(client, factory):
+    hotel = await factory.hotel(roles=("general_manager",))
+    gm = await factory.auth(hotel, "general_manager")
+    me = (await client.get("/auth/me", headers=gm)).json()["hotel"]
+    assert (me["locale"], me["timezone"], me["tax_label"]) == ("en-ZA", "Africa/Johannesburg", "VAT")

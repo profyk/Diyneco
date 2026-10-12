@@ -8,6 +8,7 @@ export {
   formatMoney,
   formatTime,
   money,
+  setDisplayLocale,
   parseAmount,
   toAmountInput,
 } from "./money";

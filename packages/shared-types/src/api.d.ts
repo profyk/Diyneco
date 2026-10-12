@@ -5163,10 +5163,16 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** Locale */
+            locale: string;
             /** Name */
             name: string;
             /** Status */
             status: string;
+            /** Tax Label */
+            tax_label: string;
+            /** Timezone */
+            timezone: string;
         };
         /**
          * MeOut

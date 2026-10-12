@@ -5,7 +5,7 @@
  * httpOnly cookie the API sets for allowed web origins, so a page reload restores the
  * session with POST /auth/refresh and nothing secret ever touches local storage.
  */
-import { type Api, ApiError, type components, createApi, type ErrorBody, ok } from "@diyneco/api-client";
+import { type Api, ApiError, type components, createApi, type ErrorBody, ok, setDisplayLocale } from "@diyneco/api-client";
 import { StepUpProvider, useStepUp } from "@diyneco/shared-ui";
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 
@@ -84,6 +84,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         setState({ status: "mfa-enrol" });
         return;
       }
+      setDisplayLocale(me.hotel?.locale, me.hotel?.timezone);
       setState({ status: "signed-in", me, hotels: hotels ?? [] });
     },
     [api],

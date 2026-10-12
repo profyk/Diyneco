@@ -64,7 +64,13 @@ async def session(st: AppState, uow: UnitOfWork, ctx: TenantContext, device: Dev
         and settings.room_charging_enabled
         and stay is not None
         and not stay.charges_blocked,
-        "hotel": {"id": str(hotel.id), "name": hotel.name, "logo_url": logo},
+        "hotel": {
+            "id": str(hotel.id),
+            "name": hotel.name,
+            "logo_url": logo,
+            "locale": settings.locale,
+            "timezone": settings.timezone,
+        },
         "room": {"id": str(room.id), "number": room.number},
         # Only what the welcome screen needs: no guest name or contact details on a shared screen.
         "stay": {"id": str(stay.id), "departure_date": str(stay.departure_date)}

@@ -118,6 +118,9 @@ class MeHotel(BaseModel):
     name: str
     status: str
     currency: str
+    locale: str  # BCP 47; apps format numbers, dates and money with it (D69)
+    timezone: str  # IANA; apps show times in the hotel's zone
+    tax_label: str
 
 
 class MeOut(BaseModel):

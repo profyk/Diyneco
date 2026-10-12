@@ -1,5 +1,36 @@
 # Progress
 
+## 2026-10-12: Worldwide hotels (D69), legal documents (D70), locale formatting
+
+### Done
+
+- Hotels anywhere (D69): country required at signup (`GET /countries`, 67 countries) setting
+  the data region and suggesting currency, time zone, locale and tax; ISO minor units (0, 2 or
+  3 decimals) everywhere money is parsed or printed; tax numbers checked per country; bills
+  name the hotel's tax (VAT, GST, IVA...). Signup validation now runs before the email lookup,
+  so a known address gets the same answers as a new one.
+- Legal documents (D70): platform drafts and publishes versioned terms, privacy notice, DPA,
+  acceptable use and guest documents per country (frozen once published); signup and the
+  Merchant app require acceptance of current versions; tablets show the guest documents;
+  acceptances are append-only and audited. Admin panel screen "Legal documents".
+- Formatting follows the hotel: `/auth/me` and the tablet session return `locale`, `timezone`
+  and `tax_label`; the apps format money, dates and times with them. Typed amounts accept
+  either decimal sign ("1.234,50" and "1,234.50"), refusing extra decimals; unit tests for the
+  API client run in CI.
+
+### Next
+
+- Interface translations (message catalogues per language, English first).
+- Browser end-to-end tests (Playwright) against a seeded API.
+- Platform staff management in the Admin panel; subscription invoicing of hotels.
+
+### Known gaps
+
+- `tests/api/test_realtime.py::test_tablet_sees_only_its_room_with_replay_and_live_events`
+  failed once under full-suite load on this 2 GB laptop and passed on three reruns: a timing
+  margin to widen if it recurs in CI.
+- The kitchen display still shows times in the browser's zone (it is always in the hotel).
+
 ## 2026-10-10: Gap audit, fixes and full-scale operations screens
 
 ### Done

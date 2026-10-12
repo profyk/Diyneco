@@ -53,7 +53,7 @@ agreed path, built when the first hotel outside a region signs up or when load r
 | Time | All timestamps `timestamptz` in UTC; business dates and schedules in the hotel's IANA time zone; the platform reports in UTC | **Built** |
 | Tax | Tax is VAT/GST/sales-tax style, inclusive or exclusive, per hotel: `tax_label` (VAT, GST, IVA...), rate in basis points, registration number validated by the country's pattern when one is known, otherwise by a general rule | **Built** (D69) |
 | Invoices | Sequential, gap-free numbering per hotel and prefix; the simplified ("abridged") invoice threshold applies only where the hotel sets one (South Africa sets R5,000; elsewhere 0 means always a full invoice) | **Built** |
-| Language | `hotel_settings.locale` (BCP 47, e.g. `en-ZA`, `fr-FR`) drives number, date and currency formatting on every screen; interface text uses message catalogues per language, English first | Formatting **Built**; translations next |
+| Language | `hotel_settings.locale` (BCP 47, e.g. `en-ZA`, `fr-FR`) drives number, date and currency formatting on every screen (staff apps and tablets; set from `/auth/me` and the tablet session); interface text uses message catalogues per language, English first | Formatting **Built**; translations next |
 | Phone | E.164 stored as entered (`+` and digits) | **Built** |
 | Addresses | Free-form lines plus city, region, postal code and country code; no country-specific fields | **Built** |
 
