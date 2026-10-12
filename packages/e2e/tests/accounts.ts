@@ -21,9 +21,20 @@ export function totp(secret: string): string {
 export async function signIn(page: Page, email: string, password: string): Promise<void> {
   // Typing before the page has hydrated would be wiped by React; wait for the app to settle.
   await page.waitForLoadState("networkidle");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(password);
-  await page.getByRole("button", { name: "Sign in" }).click();
+  for (let attempt = 0; attempt < 2; attempt++) {
+    await page.getByLabel("Email").fill(email);
+    await page.getByLabel("Password").fill(password);
+    await page.getByRole("button", { name: "Sign in" }).click();
+    // The API allows 10 sign-ins a minute per address; the whole suite signs in from one.
+    // Wait the window out once rather than loosening the limit for tests.
+    const limited = page.getByText(/Too many requests/);
+    try {
+      await limited.waitFor({ state: "visible", timeout: 3_000 });
+    } catch {
+      return;
+    }
+    await page.waitForTimeout(61_000);
+  }
 }
 
 export async function signInAdmin(page: Page): Promise<void> {
