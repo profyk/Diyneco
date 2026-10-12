@@ -98,7 +98,7 @@ def settings_payload(st: HotelSettings) -> dict[str, Any]:
 
 
 async def hotel_payload(repo: HotelRepository, hotel: Hotel, storage: Storage, bucket: str) -> dict[str, Any]:
-    plan = await repo.current_plan()
+    current = await repo.current_subscription()
     return {
         "id": hotel.id,
         "name": hotel.name,
@@ -111,8 +111,12 @@ async def hotel_payload(repo: HotelRepository, hotel: Hotel, storage: Storage, b
         "logo_url": await storage.signed_download(bucket, hotel.logo_path) if hotel.logo_path else None,
         "country": hotel.country,
         "data_region": hotel.data_region,
-        "plan": {"code": plan[0].code, "name": plan[0].name, "subscription_status": plan[1].status}
-        if plan
+        "plan": {
+            "code": current[1].code if current[1] else None,
+            "name": current[1].name if current[1] else None,
+            "subscription_status": current[0].status,
+        }
+        if current
         else None,
         "created_at": hotel.created_at,
         "version": hotel.version,

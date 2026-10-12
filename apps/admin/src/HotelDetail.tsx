@@ -114,12 +114,19 @@ export function HotelDetail({ id }: { id: string }) {
           {sub ? (
             <>
               <p className="mt-3 text-sm">
-                <span className="font-medium">{sub.plan.name}</span> · {planPriceLabel(sub.plan as never)} ·{" "}
+                {sub.plan ? (
+                  <>
+                    <span className="font-medium">{sub.plan.name}</span> · {planPriceLabel(sub.plan as never)} ·{" "}
+                  </>
+                ) : (
+                  <span className="font-medium">Free trial, no plan yet · </span>
+                )}
                 <Badge tone={sub.status === "active" ? "good" : sub.status === "past_due" ? "crit" : "neutral"}>{label(sub.status)}</Badge>
               </p>
               <p className="text-xs text-muted">
                 Since {formatDate(sub.starts_on)}
                 {sub.renews_on ? ` · renews ${formatDate(sub.renews_on)}` : ""}
+                {sub.trial_ends_on ? ` · trial ends ${formatDate(sub.trial_ends_on)}` : ""}
               </p>
               <div className="mt-4 flex flex-col gap-3">
                 {LIMITS.map(([k, t]) => (
@@ -177,11 +184,11 @@ export function HotelDetail({ id }: { id: string }) {
         )}
       </Card>
       {managing ? <HotelDialog hotel={h} onClose={() => setManaging(false)} /> : null}
-      {limitsOpen && sub ? (
+      {limitsOpen && sub && sub.plan ? (
         <LimitsDialog
           hotelId={h.id}
           planId={sub.plan.id}
-          status={sub.status as "trialing" | "active" | "past_due"}
+          status={sub.status as "trial" | "active" | "past_due" | "suspended"}
           startsOn={sub.starts_on}
           renewsOn={sub.renews_on}
           planLimits={sub.plan.limits as Record<string, number | undefined>}
@@ -196,7 +203,7 @@ export function HotelDetail({ id }: { id: string }) {
 function LimitsDialog(props: {
   hotelId: string;
   planId: string;
-  status: "trialing" | "active" | "past_due";
+  status: "trial" | "active" | "past_due" | "suspended";
   startsOn: string;
   renewsOn: string | null;
   planLimits: Record<string, number | undefined>;

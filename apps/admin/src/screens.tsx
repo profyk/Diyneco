@@ -178,7 +178,7 @@ export function Hotels() {
   );
 }
 
-export type Sub = "trialing" | "active" | "past_due" | "cancelled";
+export type Sub = "trial" | "active" | "past_due" | "suspended" | "cancelled";
 
 export function HotelDialog({
   hotel,
@@ -260,9 +260,10 @@ export function HotelDialog({
             <Field label="Status">
               {(p) => (
                 <Select {...p} value={status} onChange={(e) => setStatus(e.target.value as typeof status)}>
-                  <option value="trialing">Trial</option>
+                  <option value="trial">Trial</option>
                   <option value="active">Active</option>
                   <option value="past_due">Past due</option>
+                  <option value="suspended">Suspended</option>
                   <option value="cancelled">Cancelled</option>
                 </Select>
               )}

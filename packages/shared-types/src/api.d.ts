@@ -3264,6 +3264,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/subscription/billing-contact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Billing Contact */
+        get: operations["get_billing_contact_api_v1_subscription_billing_contact_get"];
+        /**
+         * Put Billing Contact
+         * @description Who Diyneco bills; `version` must match (0 the first time).
+         */
+        put: operations["put_billing_contact_api_v1_subscription_billing_contact_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/subscription/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel Subscription
+         * @description A trial ends at once; a paid subscription ends at the end of its current period.
+         */
+        post: operations["cancel_subscription_api_v1_subscription_cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/subscription/change-request": {
         parameters: {
             query?: never;
@@ -3275,6 +3316,43 @@ export interface paths {
         put?: never;
         /** Change Request */
         post: operations["change_request_api_v1_subscription_change_request_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/subscription/quote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Subscription Quote
+         * @description What the hotel would pay for a published plan today, computed on the server (D76).
+         */
+        post: operations["subscription_quote_api_v1_subscription_quote_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/subscription/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resume Subscription */
+        post: operations["resume_subscription_api_v1_subscription_resume_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3823,6 +3901,41 @@ export interface components {
              */
             type: "personal" | "company";
         };
+        /** BillingContactOut */
+        BillingContactOut: {
+            /** Address */
+            address: {
+                [key: string]: unknown;
+            };
+            /** Billing Email */
+            billing_email: string | null;
+            /** Contact Name */
+            contact_name: string | null;
+            /** Legal Name */
+            legal_name: string | null;
+            /** Phone */
+            phone: string | null;
+            /** Vat Number */
+            vat_number: string | null;
+            /** Version */
+            version: number;
+        };
+        /** BillingContactPut */
+        BillingContactPut: {
+            address?: components["schemas"]["ContactAddress"];
+            /** Billing Email */
+            billing_email?: string | null;
+            /** Contact Name */
+            contact_name?: string | null;
+            /** Legal Name */
+            legal_name?: string | null;
+            /** Phone */
+            phone?: string | null;
+            /** Vat Number */
+            vat_number?: string | null;
+            /** Version */
+            version: number;
+        };
         /** BillingProfileCreate */
         BillingProfileCreate: {
             /** Billing Address */
@@ -3869,6 +3982,12 @@ export interface components {
         BillingSettingsOut: {
             /** Price Change Notice Days */
             price_change_notice_days: number;
+            /** Trial Days */
+            trial_days: number;
+            /** Trial Limits */
+            trial_limits: {
+                [key: string]: number;
+            };
             /**
              * Updated At
              * Format: date-time
@@ -3883,6 +4002,12 @@ export interface components {
             price_change_notice_days: number;
             /** Reason */
             reason: string;
+            /** Trial Days */
+            trial_days: number;
+            /** Trial Limits */
+            trial_limits: {
+                [key: string]: number;
+            };
             /** Version */
             version: number;
         };
@@ -3892,6 +4017,11 @@ export interface components {
             created: number;
             /** Data */
             data: components["schemas"]["RoomOut"][];
+        };
+        /** CancelRequest */
+        CancelRequest: {
+            /** Reason */
+            reason: string;
         };
         /** CartLine */
         CartLine: {
@@ -4340,6 +4470,21 @@ export interface components {
             vat_registered: boolean;
             /** Version */
             version: number;
+        };
+        /** ContactAddress */
+        ContactAddress: {
+            /** City */
+            city?: string | null;
+            /** Country */
+            country?: string | null;
+            /** Line1 */
+            line1?: string | null;
+            /** Line2 */
+            line2?: string | null;
+            /** Postal Code */
+            postal_code?: string | null;
+            /** Province */
+            province?: string | null;
         };
         /** CountryList */
         CountryList: {
@@ -5021,6 +5166,12 @@ export interface components {
         };
         /** HotelSubscription */
         HotelSubscription: {
+            /** Cancel At Period End */
+            cancel_at_period_end: boolean;
+            /** Current Period Start */
+            current_period_start: string | null;
+            /** Interval */
+            interval: ("month" | "quarter" | "year") | null;
             /** Limits */
             limits: {
                 [key: string]: unknown;
@@ -5029,12 +5180,15 @@ export interface components {
             plan: {
                 [key: string]: unknown;
             } | null;
+            price: components["schemas"]["SignedMoney"] | null;
             /** Renews On */
             renews_on: string | null;
             /** Starts On */
             starts_on: string | null;
             /** Status */
-            status: string | null;
+            status: ("trial" | "pending_payment" | "active" | "past_due" | "suspended" | "cancellation_scheduled") | null;
+            /** Trial Ends On */
+            trial_ends_on: string | null;
             /** Usage */
             usage: {
                 [key: string]: components["schemas"]["Usage"];
@@ -6735,30 +6889,12 @@ export interface components {
         Quote: {
             fee: components["schemas"]["Money"];
             /** Lines */
-            lines: components["schemas"]["QuoteLine"][];
+            lines: components["schemas"]["app__schemas__orders__QuoteLine"][];
             /** Needs Approval */
             needs_approval: boolean;
             subtotal: components["schemas"]["Money"];
             total: components["schemas"]["Money"];
             vat_included: components["schemas"]["Money"];
-        };
-        /** QuoteLine */
-        QuoteLine: {
-            line_total: components["schemas"]["Money"];
-            /**
-             * Menu Item Id
-             * Format: uuid
-             */
-            menu_item_id: string;
-            /** Modifiers */
-            modifiers: components["schemas"]["QuoteModifier"][];
-            /** Name */
-            name: string;
-            /** Note */
-            note: string | null;
-            /** Quantity */
-            quantity: number;
-            unit_price: components["schemas"]["Money"];
         };
         /** QuoteModifier */
         QuoteModifier: {
@@ -6773,10 +6909,51 @@ export interface components {
             name: string;
             price_delta: components["schemas"]["Money"];
         };
-        /** QuoteRequest */
-        QuoteRequest: {
+        /** QuoteOut */
+        QuoteOut: {
+            /** Currency */
+            currency: string;
+            /**
+             * Interval
+             * @enum {string}
+             */
+            interval: "month" | "quarter" | "year";
+            /** Intro Periods */
+            intro_periods: number | null;
             /** Lines */
-            lines: components["schemas"]["CartLine"][];
+            lines: components["schemas"]["app__schemas__reports__QuoteLine"][];
+            /**
+             * Period End
+             * Format: date
+             */
+            period_end: string;
+            /**
+             * Period Start
+             * Format: date
+             */
+            period_start: string;
+            /** Plan Code */
+            plan_code: string;
+            /** Plan Name */
+            plan_name: string;
+            /** Prices Include Tax */
+            prices_include_tax: boolean;
+            /** Renews At Minor */
+            renews_at_minor: number;
+            /** Subtotal Minor */
+            subtotal_minor: number;
+            /** Tax Charged */
+            tax_charged: boolean;
+            /** Tax Minor */
+            tax_minor: number;
+            /** Tax Name */
+            tax_name: string | null;
+            /** Tax Rate Bp */
+            tax_rate_bp: number | null;
+            /** Total Minor */
+            total_minor: number;
+            /** Trial Days */
+            trial_days: number;
         };
         /** ReasonBody */
         ReasonBody: {
@@ -7626,7 +7803,7 @@ export interface components {
             limits: {
                 [key: string]: unknown;
             };
-            plan: components["schemas"]["app__schemas__plans__PlanOut"];
+            plan: components["schemas"]["app__schemas__plans__PlanOut"] | null;
             /** Renews On */
             renews_on: string | null;
             /**
@@ -7636,6 +7813,8 @@ export interface components {
             starts_on: string;
             /** Status */
             status: string;
+            /** Trial Ends On */
+            trial_ends_on?: string | null;
         };
         /** SubscriptionPut */
         SubscriptionPut: {
@@ -7659,7 +7838,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "trialing" | "active" | "past_due" | "cancelled";
+            status: "trial" | "active" | "past_due" | "suspended" | "cancelled";
         };
         /** SupportAccessOut */
         SupportAccessOut: {
@@ -8010,11 +8189,34 @@ export interface components {
         /** PlanOut */
         app__schemas__hotel__PlanOut: {
             /** Code */
-            code: string;
+            code: string | null;
             /** Name */
-            name: string;
+            name: string | null;
             /** Subscription Status */
             subscription_status: string;
+        };
+        /** QuoteLine */
+        app__schemas__orders__QuoteLine: {
+            line_total: components["schemas"]["Money"];
+            /**
+             * Menu Item Id
+             * Format: uuid
+             */
+            menu_item_id: string;
+            /** Modifiers */
+            modifiers: components["schemas"]["QuoteModifier"][];
+            /** Name */
+            name: string;
+            /** Note */
+            note: string | null;
+            /** Quantity */
+            quantity: number;
+            unit_price: components["schemas"]["Money"];
+        };
+        /** QuoteRequest */
+        app__schemas__orders__QuoteRequest: {
+            /** Lines */
+            lines: components["schemas"]["CartLine"][];
         };
         /** PlanOut */
         app__schemas__plans__PlanOut: {
@@ -8121,6 +8323,31 @@ export interface components {
             state: string;
             /** Status Code */
             status_code: number | null;
+        };
+        /** QuoteLine */
+        app__schemas__reports__QuoteLine: {
+            /** Amount Minor */
+            amount_minor: number;
+            /** Code */
+            code: string;
+            /** Description */
+            description: string;
+            /** Discount Minor */
+            discount_minor: number;
+            /** Tax Minor */
+            tax_minor: number;
+            /** Total Minor */
+            total_minor: number;
+        };
+        /** QuoteRequest */
+        app__schemas__reports__QuoteRequest: {
+            /**
+             * Interval
+             * @enum {string}
+             */
+            interval: "month" | "quarter" | "year";
+            /** Plan Code */
+            plan_code: string;
         };
         /** DeliveryList */
         app__schemas__room_service__DeliveryList: {
@@ -11130,7 +11357,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["QuoteRequest"];
+                "application/json": components["schemas"]["app__schemas__orders__QuoteRequest"];
             };
         };
         responses: {
@@ -14803,6 +15030,92 @@ export interface operations {
             };
         };
     };
+    get_billing_contact_api_v1_subscription_billing_contact_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingContactOut"];
+                };
+            };
+        };
+    };
+    put_billing_contact_api_v1_subscription_billing_contact_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BillingContactPut"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingContactOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_subscription_api_v1_subscription_cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HotelSubscription"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     change_request_api_v1_subscription_change_request_post: {
         parameters: {
             query?: never;
@@ -14832,6 +15145,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    subscription_quote_api_v1_subscription_quote_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["app__schemas__reports__QuoteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuoteOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resume_subscription_api_v1_subscription_resume_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HotelSubscription"];
                 };
             };
         };

@@ -18,6 +18,9 @@ from app.schemas.reports import (
     ApiKeyCreated,
     ApiKeyList,
     AuditList,
+    BillingContactOut,
+    BillingContactPut,
+    CancelRequest,
     ChangeRequest,
     ChangeRequestOut,
     DailyClosePut,
@@ -30,6 +33,8 @@ from app.schemas.reports import (
     OpenBalances,
     OrdersReport,
     PaymentsReport,
+    QuoteOut,
+    QuoteRequest,
     RevenueReport,
     RoomServiceReport,
     WebhookCreate,
@@ -160,6 +165,44 @@ async def audit_logs(
 @router.get("/subscription", response_model=HotelSubscription)
 async def get_subscription(request: Request, uow: Uow, principal: SubscriptionRead) -> dict[str, Any]:
     return await subscription.view(uow, principal.tenant(request))
+
+
+@router.post("/subscription/quote", response_model=QuoteOut)
+async def subscription_quote(
+    body: QuoteRequest, request: Request, uow: Uow, principal: SubscriptionRead
+) -> dict[str, Any]:
+    """What the hotel would pay for a published plan today, computed on the server (D76)."""
+    return await subscription.quote(uow, principal.tenant(request), body.plan_code, body.interval)
+
+
+@router.post("/subscription/cancel", response_model=HotelSubscription)
+async def cancel_subscription(
+    idem: IdemUser, body: CancelRequest, request: Request, uow: Uow, principal: SubscriptionManage, _s: StepUp
+) -> Response:
+    """A trial ends at once; a paid subscription ends at the end of its current period."""
+    result = await subscription.cancel(uow, principal.tenant(request), body.reason)
+    return await idem.complete(uow, 200, HotelSubscription.model_validate(result).model_dump(mode="json"))
+
+
+@router.post("/subscription/resume", response_model=HotelSubscription)
+async def resume_subscription(
+    idem: IdemUser, request: Request, uow: Uow, principal: SubscriptionManage
+) -> Response:
+    result = await subscription.resume(uow, principal.tenant(request))
+    return await idem.complete(uow, 200, HotelSubscription.model_validate(result).model_dump(mode="json"))
+
+
+@router.get("/subscription/billing-contact", response_model=BillingContactOut)
+async def get_billing_contact(request: Request, uow: Uow, principal: SubscriptionRead) -> dict[str, Any]:
+    return await subscription.billing_contact(uow, principal.tenant(request))
+
+
+@router.put("/subscription/billing-contact", response_model=BillingContactOut)
+async def put_billing_contact(
+    body: BillingContactPut, request: Request, uow: Uow, principal: SubscriptionManage
+) -> dict[str, Any]:
+    """Who Diyneco bills; `version` must match (0 the first time)."""
+    return await subscription.put_billing_contact(uow, principal.tenant(request), body.model_dump())
 
 
 @router.post("/subscription/change-request", status_code=202, response_model=ChangeRequestOut)

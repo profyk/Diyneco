@@ -562,9 +562,20 @@ function Plan() {
   return (
     <Card className="max-w-2xl p-5">
       <p className="font-display text-xl font-semibold">
-        {current?.name ?? "No plan"} {s.status ? <Badge tone="good">{label(s.status)}</Badge> : null}
+        {current?.name ?? (s.status === "trial" ? "Free trial" : "No plan")}{" "}
+        {s.status ? <Badge tone={s.status === "past_due" || s.status === "suspended" ? "crit" : "good"}>{label(s.status)}</Badge> : null}
       </p>
-      {s.renews_on ? <p className="mt-1 text-sm text-muted">Renews {formatDate(s.renews_on)}</p> : null}
+      {s.trial_ends_on ? <p className="mt-1 text-sm text-muted">Trial ends {formatDate(s.trial_ends_on)}</p> : null}
+      {s.price ? (
+        <p className="mt-1 text-sm text-muted">
+          {formatMoney(s.price)} {s.interval === "year" ? "a year" : s.interval === "quarter" ? "a quarter" : "a month"}
+        </p>
+      ) : null}
+      {s.renews_on ? (
+        <p className="mt-1 text-sm text-muted">
+          {s.cancel_at_period_end ? "Ends" : "Renews"} {formatDate(s.renews_on)}
+        </p>
+      ) : null}
       <Table className="mt-4">
         <tbody>
           {Object.entries(s.usage).map(([k, u]) => (

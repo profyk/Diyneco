@@ -18,6 +18,7 @@ from app.models.base import (
     Integer,
     LargeBinary,
     Mapped,
+    SmallInteger,
     Text,
     date,
     datetime,
@@ -88,6 +89,8 @@ class BillingSettings(Base):
     __tablename__ = "billing_settings"
     id: Mapped[bool] = mapped_column(primary_key=True, server_default=text("true"))
     price_change_notice_days: Mapped[int] = mapped_column(Integer)
+    trial_days: Mapped[int] = mapped_column(Integer)
+    trial_limits: Mapped[dict[str, Any]] = mapped_column(JSONB)
     version: Mapped[int] = mapped_column(Integer, server_default=text("1"))
     updated_at: Mapped[datetime] = _updated()
     updated_by: Mapped[uuid.UUID | None]
@@ -141,17 +144,49 @@ class HotelSettings(Base):
 
 
 class Subscription(Base):
+    """A hotel's subscription (D76). A trial may have no plan; a sold subscription keeps the
+    price agreed when it was sold, whatever the plan's price does later."""
+
     __tablename__ = "subscriptions"
     id: Mapped[uuid.UUID] = _pk()
     hotel_id: Mapped[uuid.UUID]
-    plan_id: Mapped[uuid.UUID]
+    plan_id: Mapped[uuid.UUID | None]
     status: Mapped[str]
     starts_on: Mapped[date]
     renews_on: Mapped[date | None]
     cancelled_at: Mapped[datetime | None]
     limit_overrides: Mapped[dict[str, Any]] = mapped_column(JSONB, server_default=text("'{}'"))
+    interval: Mapped[str | None]
+    plan_price_id: Mapped[uuid.UUID | None]
+    amount_minor: Mapped[int | None] = mapped_column(BigInteger)
+    currency: Mapped[str | None] = mapped_column(CHAR(3))
+    intro_amount_minor: Mapped[int | None] = mapped_column(BigInteger)
+    intro_periods_left: Mapped[int] = mapped_column(Integer, server_default=text("0"))
+    tax_treatment: Mapped[str | None]
+    anchor_day: Mapped[int | None] = mapped_column(SmallInteger)
+    current_period_start: Mapped[date | None]
+    trial_ends_on: Mapped[date | None]
+    cancel_reason: Mapped[str | None]
+    ended_on: Mapped[date | None]
+    version: Mapped[int] = mapped_column(Integer, server_default=text("1"))
     created_at: Mapped[datetime] = _created()
     updated_at: Mapped[datetime] = _updated()
+
+
+class SubscriptionBillingContact(Base):
+    """Who Diyneco bills for a hotel's subscription (D76); invoices copy it when issued."""
+
+    __tablename__ = "subscription_billing_contacts"
+    hotel_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    legal_name: Mapped[str | None]
+    vat_number: Mapped[str | None]
+    billing_email: Mapped[str | None] = mapped_column(CITEXT)
+    phone: Mapped[str | None]
+    contact_name: Mapped[str | None]
+    address: Mapped[dict[str, Any]] = mapped_column(JSONB, server_default=text("'{}'"))
+    version: Mapped[int] = mapped_column(Integer, server_default=text("1"))
+    updated_at: Mapped[datetime] = _updated()
+    updated_by: Mapped[uuid.UUID | None]
 
 
 class FeatureFlag(Base):

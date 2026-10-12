@@ -478,23 +478,27 @@ async def set_status(
 # --- Billing settings ----------------------------------------------------------------------
 
 
+SETTINGS_FIELDS = ("price_change_notice_days", "trial_days", "trial_limits")
+
+
 async def billing_settings(uow: UnitOfWork) -> dict[str, Any]:
     s = (await uow.session.execute(select(BillingSettings))).scalar_one()
-    return {
-        "price_change_notice_days": s.price_change_notice_days,
-        "version": s.version,
-        "updated_at": s.updated_at,
-    }
+    return {**{f: getattr(s, f) for f in SETTINGS_FIELDS}, "version": s.version, "updated_at": s.updated_at}
 
 
 async def put_billing_settings(
     uow: UnitOfWork, actor: dict[str, Any], body: dict[str, Any]
 ) -> dict[str, Any]:
+    """Applies to changes from now on: trials already running keep their end date."""
     s = (await uow.session.execute(select(BillingSettings).with_for_update())).scalar_one()
     if body["version"] != s.version:
         raise AppError("PRECONDITION_FAILED")
-    before = s.price_change_notice_days
-    s.price_change_notice_days = body["price_change_notice_days"]
+    before = {f: getattr(s, f) for f in SETTINGS_FIELDS}
+    changed = {f: body[f] for f in SETTINGS_FIELDS if before[f] != body[f]}
+    if not changed:
+        raise AppError("VALIDATION_FAILED", "Nothing changed.")
+    for f, v in changed.items():
+        setattr(s, f, v)
     s.version += 1
     s.updated_by = actor["actor_id"]
     await write_platform_audit(
@@ -503,11 +507,7 @@ async def put_billing_settings(
         action="platform.billing_settings_changed",
         entity_type="billing_settings",
         entity_id=None,
-        new_value={
-            "reason": body["reason"],
-            "from": {"price_change_notice_days": before},
-            "to": {"price_change_notice_days": s.price_change_notice_days},
-        },
+        new_value={"reason": body["reason"], "from": {f: before[f] for f in changed}, "to": changed},
     )
     await uow.session.flush()
     return await billing_settings(uow)

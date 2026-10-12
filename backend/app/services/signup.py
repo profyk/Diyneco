@@ -12,7 +12,7 @@ import re
 import secrets
 import uuid
 import zoneinfo
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from sqlalchemy import insert, select, text
@@ -27,13 +27,12 @@ from app.core.state import AppState
 from app.db.session import TenantContext, UnitOfWork, set_tenant
 from app.models.domain import OrderNumberSequence
 from app.models.events import EventSeq
-from app.models.tenancy import Hotel, HotelSettings, HotelUser, Plan, Subscription, User, UserRole
+from app.models.tenancy import BillingSettings, Hotel, HotelSettings, HotelUser, Subscription, User, UserRole
 from app.realtime.outbox import emit
 from app.repositories.roles import RoleRepository
 from app.services import legal
 from app.services.auth import ClientInfo, send_verification_email
 
-DEFAULT_PLAN = "starter"
 SIGNUP_RESPONSE = {
     "status": "verification_sent",
     "message": "Check your email to confirm your address, then sign in.",
@@ -149,10 +148,17 @@ async def signup(
             abridged_invoice_max_minor=place.abridged_invoice_max_minor,
         )
     )
-    plan_id = (await s.execute(select(Plan.id).where(Plan.code == DEFAULT_PLAN))).scalar_one()
+    # A free trial with no plan (D73, D76): its length and limits are billing settings, and
+    # nothing is invoiced until the hotel subscribes to a published plan.
+    trial_days = (await s.execute(select(BillingSettings.trial_days))).scalar_one()
+    today = datetime.now(UTC).date()
     await s.execute(
         insert(Subscription).values(
-            hotel_id=hotel_id, plan_id=plan_id, status="trialing", starts_on=datetime.now(UTC).date()
+            hotel_id=hotel_id,
+            plan_id=None,
+            status="trial",
+            starts_on=today,
+            trial_ends_on=today + timedelta(days=trial_days),
         )
     )
     await s.execute(insert(EventSeq).values(hotel_id=hotel_id))
@@ -182,7 +188,7 @@ async def signup(
         "hotel.signup",
         "hotel",
         hotel_id,
-        new_value={"name": hotel["name"], "plan": DEFAULT_PLAN, "status": "pending_approval"},
+        new_value={"name": hotel["name"], "subscription": "trial", "status": "pending_approval"},
     )
     if documents:
         await legal.accept(uow, ctx, documents, user_agent=client.user_agent, country=place.code)

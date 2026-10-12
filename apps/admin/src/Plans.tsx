@@ -679,31 +679,71 @@ function StatusDialog({ plan, action, onClose }: { plan: Plan; action: "publish"
 function NoticeSettings() {
   const { api } = useSession();
   const q = useQuery({ queryKey: ["billing-settings"], queryFn: () => ok(api.GET("/api/v1/admin/billing-settings")) });
-  const [days, setDays] = useState<string | null>(null);
+  const [edit, setEdit] = useState<{ notice: string; trial: string; limits: Record<string, string> } | null>(null);
   const [reason, setReason] = useState("");
   const save = useAction(
-    () =>
-      ok(
+    () => {
+      if (!q.data || !edit) throw new Error("not loaded");
+      return ok(
         api.PUT("/api/v1/admin/billing-settings", {
-          body: { version: q.data?.version ?? 0, price_change_notice_days: Number(days), reason },
+          body: {
+            version: q.data.version,
+            price_change_notice_days: Number(edit.notice),
+            trial_days: Number(edit.trial),
+            trial_limits: Object.fromEntries(
+              Object.entries(edit.limits)
+                .filter(([, v]) => v !== "")
+                .map(([k, v]) => [k, Number(v)]),
+            ),
+            reason,
+          },
         }),
-      ),
-    { success: "Saved.", onDone: () => (setDays(null), setReason("")) },
+      );
+    },
+    { success: "Saved. New trials and price changes use it; running trials keep their end date.", onDone: () => (setEdit(null), setReason("")) },
   );
   if (!q.data) return null;
-  const value = days ?? String(q.data.price_change_notice_days);
+  const current = edit ?? {
+    notice: String(q.data.price_change_notice_days),
+    trial: String(q.data.trial_days),
+    limits: Object.fromEntries(LIMITS.map((k) => [k, q.data.trial_limits[k] !== undefined ? String(q.data.trial_limits[k]) : ""])),
+  };
+  const set = (patch: Partial<typeof current>) => setEdit({ ...current, ...patch });
   return (
     <Card className="mt-6">
       <CardHeader
-        title="Notice before a price change reaches existing hotels"
-        description="Used when a new price is set to apply to existing subscribers at their next renewal."
+        title="Trial and price-change policy"
+        description="A new hotel starts a free trial without a plan. Notice applies when a new price reaches existing hotels at renewal."
       />
-      <div className="grid gap-3 p-5 sm:grid-cols-3 sm:items-end">
-        <Field label="Days of notice">{(p) => <Input {...p} type="number" min={0} max={365} value={value} onChange={(e) => setDays(e.target.value)} />}</Field>
-        <Field label="Reason">{(p) => <Input {...p} value={reason} onChange={(e) => setReason(e.target.value)} />}</Field>
-        <Button loading={save.isPending} disabled={days === null || reason.trim().length < 3} onClick={() => save.mutate(undefined)}>
-          Save
-        </Button>
+      <div className="grid gap-3 p-5 sm:grid-cols-3">
+        <Field label="Free trial (days)">
+          {(p) => <Input {...p} type="number" min={0} max={365} value={current.trial} onChange={(e) => set({ trial: e.target.value })} />}
+        </Field>
+        <Field label="Notice before a price change (days)">
+          {(p) => <Input {...p} type="number" min={0} max={365} value={current.notice} onChange={(e) => set({ notice: e.target.value })} />}
+        </Field>
+        <span />
+        {LIMITS.map((k) => (
+          <Field key={k} label={`Trial limit: ${k.replace("_", " ")}`} hint="Empty: no limit">
+            {(p) => (
+              <Input
+                {...p}
+                type="number"
+                min={0}
+                value={current.limits[k]}
+                onChange={(e) => set({ limits: { ...current.limits, [k]: e.target.value } })}
+              />
+            )}
+          </Field>
+        ))}
+        <Field label="Reason" className="sm:col-span-2">
+          {(p) => <Input {...p} value={reason} onChange={(e) => setReason(e.target.value)} />}
+        </Field>
+        <div className="flex items-end">
+          <Button loading={save.isPending} disabled={edit === null || reason.trim().length < 3} onClick={() => save.mutate(undefined)}>
+            Save
+          </Button>
+        </div>
       </div>
       {save.error ? <ErrorNotice error={save.error} className="mx-5 mb-5" /> : null}
     </Card>

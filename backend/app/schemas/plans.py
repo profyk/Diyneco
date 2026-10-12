@@ -122,6 +122,8 @@ class PlanStatusChange(StrictModel):
 
 class BillingSettingsOut(BaseModel):
     price_change_notice_days: int
+    trial_days: int
+    trial_limits: dict[str, int]
     version: int
     updated_at: datetime
 
@@ -130,6 +132,9 @@ class BillingSettingsPut(StrictModel):
     version: int
     reason: Reason
     price_change_notice_days: Annotated[int, Field(ge=0, le=365)]
+    # The free trial a new hotel starts with (D73, D76): its length and its limits.
+    trial_days: Annotated[int, Field(ge=0, le=365)]
+    trial_limits: dict[LimitKey, Annotated[int, Field(ge=0)]]
 
 
 class PublicPrice(BaseModel):

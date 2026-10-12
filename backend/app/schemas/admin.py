@@ -71,7 +71,7 @@ class HotelStatusOut(BaseModel):
 
 class SubscriptionPut(StrictModel):
     plan_id: uuid.UUID
-    status: Literal["trialing", "active", "past_due", "cancelled"]
+    status: Literal["trial", "active", "past_due", "suspended", "cancelled"]
     starts_on: date
     renews_on: date | None = None
     # Left out: the current overrides are kept. {} clears them.
@@ -83,13 +83,14 @@ class SubscriptionPut(StrictModel):
 class SubscriptionOut(BaseModel):
     id: uuid.UUID
     hotel_id: uuid.UUID
-    plan: PlanOut
+    plan: PlanOut | None  # a trial may have no plan (D76)
     status: str
     starts_on: date
     renews_on: date | None
     cancelled_at: datetime | None
     limits: dict[str, Any]
     limit_overrides: dict[str, Any]
+    trial_ends_on: date | None = None
 
 
 class FlagOut(BaseModel):

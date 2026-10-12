@@ -11,6 +11,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import TenantContext
 from app.models.tenancy import Hotel, HotelSettings, Plan, Subscription
 
+# A hotel's subscription is current in these statuses; cancelled and expired ones are history.
+CURRENT_STATUSES = ("trial", "pending_payment", "active", "past_due", "suspended", "cancellation_scheduled")
+
 
 class HotelRepository:
     def __init__(self, session: AsyncSession, ctx: TenantContext) -> None:
@@ -20,15 +23,14 @@ class HotelRepository:
     async def get(self) -> Hotel | None:
         return (await self.s.execute(select(Hotel).where(Hotel.id == self.ctx.hotel_id))).scalar_one_or_none()
 
-    async def current_plan(self) -> tuple[Plan, Subscription] | None:
+    async def current_subscription(self) -> tuple[Subscription, Plan | None] | None:
+        """The hotel's current subscription (any status but cancelled or expired) and its plan,
+        which a trial may not have (D76)."""
         row = (
             await self.s.execute(
-                select(Plan, Subscription)
-                .join(Subscription, Subscription.plan_id == Plan.id)
-                .where(
-                    Subscription.hotel_id == self.ctx.hotel_id,
-                    Subscription.status.in_(("trialing", "active", "past_due")),
-                )
+                select(Subscription, Plan)
+                .outerjoin(Plan, Plan.id == Subscription.plan_id)
+                .where(Subscription.hotel_id == self.ctx.hotel_id, Subscription.status.in_(CURRENT_STATUSES))
             )
         ).first()
         return (row[0], row[1]) if row else None

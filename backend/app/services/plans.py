@@ -6,12 +6,13 @@ unexpired invitations (an invitation reserves a seat, so accepting one never bre
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
-from sqlalchemy import text
+from sqlalchemy import select, text
 
 from app.core.errors import AppError
 from app.db.session import TenantContext, UnitOfWork
+from app.models.tenancy import BillingSettings
 from app.repositories.hotels import HotelRepository
 
 Resource = Literal["rooms", "devices", "staff", "api_keys"]
@@ -28,11 +29,24 @@ _COUNT_SQL: dict[str, str] = {
 }
 
 
+async def current_limits(uow: UnitOfWork, ctx: TenantContext) -> dict[str, Any] | None:
+    """The hotel's limits: its plan's, or the trial limits from billing settings for a trial
+    without a plan, with the platform's per-hotel overrides on top. None: no subscription."""
+    current = await HotelRepository(uow.session, ctx).current_subscription()
+    if current is None:
+        return None
+    sub, plan = current
+    if plan is not None:
+        base = plan.limits
+    else:
+        base = (await uow.session.execute(select(BillingSettings.trial_limits))).scalar_one()
+    return {**base, **(sub.limit_overrides or {})}  # platform overrides win
+
+
 async def ensure_capacity(uow: UnitOfWork, ctx: TenantContext, resource: Resource, adding: int = 1) -> None:
-    plan = await HotelRepository(uow.session, ctx).current_plan()
-    if plan is None:
+    limits = await current_limits(uow, ctx)
+    if limits is None:
         raise AppError("PLAN_LIMIT_REACHED", "This hotel has no active plan.", details={"resource": resource})
-    limits = {**plan[0].limits, **(plan[1].limit_overrides or {})}  # platform overrides win
     limit = limits.get(resource)
     if limit is None:
         return  # no limit configured for this resource

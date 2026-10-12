@@ -35,6 +35,11 @@
   screens and confirms actions with the staff member's password.
 - Browser end-to-end tests (`packages/e2e`, Playwright) run in CI against production builds and
   a seeded API: cross-app sign-in refusals, plan pricing and publishing, sign-out.
+- Subscription billing, slice 3 (D76): plan-free signup trial with configurable length and
+  limits, the eight subscription statuses, agreed-price snapshot and month-end billing
+  anchor, server-side quotes with VAT, cancellation and resume, billing contact.
+- Fixed (D77): confirmed actions with an Idempotency-Key failed after the PIN or password
+  prompt because the refusal was replayed to the retry.
 - Deployment: container images for all five web apps (`infra/docker/web.Dockerfile`, Next.js
   standalone, non-root) built, started and scanned in CI; `scripts/create_platform_admin.py`
   for the first Super Admin; launch checklist updated.
@@ -42,8 +47,7 @@
 ### Next
 
 - Interface translations (message catalogues per language, English first).
-- Subscription billing slices 3-8 (D73): subscriptions (signup trial without a plan replaces
-  the hard-coded `starter` default), invoices and credit notes, payments (EFT, Stitch sandbox), renewals and reminders, billing dashboard, hotel
+- Subscription billing slices 4-8 (D73): invoices and credit notes, payments (EFT, Stitch sandbox), renewals and reminders, billing dashboard, hotel
   billing screens.
 
 ### Known gaps

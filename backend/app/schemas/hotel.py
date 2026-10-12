@@ -90,8 +90,9 @@ class SignupResponse(BaseModel):
 
 
 class PlanOut(BaseModel):
-    code: str
-    name: str
+    # Empty during a trial without a plan (D76).
+    code: str | None
+    name: str | None
     subscription_status: str
 
 

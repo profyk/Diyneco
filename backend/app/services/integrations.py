@@ -157,8 +157,9 @@ async def create_key(
             details={"permissions": lacking},
         )
     if body["environment"] == "production":
-        current = await HotelRepository(uow.session, ctx).current_plan()
-        if current is None or not current[0].features.get("api_production_keys"):
+        current = await HotelRepository(uow.session, ctx).current_subscription()
+        plan = current[1] if current else None
+        if plan is None or not plan.features.get("api_production_keys"):
             raise AppError(
                 "PLAN_LIMIT_REACHED",
                 "Your plan does not include production API keys.",

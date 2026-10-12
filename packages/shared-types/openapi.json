@@ -1401,6 +1401,162 @@
         "title": "Billing",
         "type": "object"
       },
+      "BillingContactOut": {
+        "properties": {
+          "address": {
+            "additionalProperties": true,
+            "title": "Address",
+            "type": "object"
+          },
+          "billing_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Billing Email"
+          },
+          "contact_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Name"
+          },
+          "legal_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Legal Name"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "vat_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vat Number"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "legal_name",
+          "vat_number",
+          "billing_email",
+          "phone",
+          "contact_name",
+          "address",
+          "version"
+        ],
+        "title": "BillingContactOut",
+        "type": "object"
+      },
+      "BillingContactPut": {
+        "additionalProperties": false,
+        "properties": {
+          "address": {
+            "$ref": "#/components/schemas/ContactAddress"
+          },
+          "billing_email": {
+            "anyOf": [
+              {
+                "format": "email",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Billing Email"
+          },
+          "contact_name": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Name"
+          },
+          "legal_name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Legal Name"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "pattern": "^\\+?[0-9 ()-]{7,30}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "vat_number": {
+            "anyOf": [
+              {
+                "maxLength": 30,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vat Number"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version"
+        ],
+        "title": "BillingContactPut",
+        "type": "object"
+      },
       "BillingProfileCreate": {
         "additionalProperties": false,
         "properties": {
@@ -1558,6 +1714,17 @@
             "title": "Price Change Notice Days",
             "type": "integer"
           },
+          "trial_days": {
+            "title": "Trial Days",
+            "type": "integer"
+          },
+          "trial_limits": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Trial Limits",
+            "type": "object"
+          },
           "updated_at": {
             "format": "date-time",
             "title": "Updated At",
@@ -1570,6 +1737,8 @@
         },
         "required": [
           "price_change_notice_days",
+          "trial_days",
+          "trial_limits",
           "version",
           "updated_at"
         ],
@@ -1591,6 +1760,28 @@
             "title": "Reason",
             "type": "string"
           },
+          "trial_days": {
+            "maximum": 365.0,
+            "minimum": 0.0,
+            "title": "Trial Days",
+            "type": "integer"
+          },
+          "trial_limits": {
+            "additionalProperties": {
+              "minimum": 0.0,
+              "type": "integer"
+            },
+            "propertyNames": {
+              "enum": [
+                "rooms",
+                "devices",
+                "staff",
+                "api_keys"
+              ]
+            },
+            "title": "Trial Limits",
+            "type": "object"
+          },
           "version": {
             "title": "Version",
             "type": "integer"
@@ -1599,7 +1790,9 @@
         "required": [
           "version",
           "reason",
-          "price_change_notice_days"
+          "price_change_notice_days",
+          "trial_days",
+          "trial_limits"
         ],
         "title": "BillingSettingsPut",
         "type": "object"
@@ -1623,6 +1816,22 @@
           "data"
         ],
         "title": "BulkResult",
+        "type": "object"
+      },
+      "CancelRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "minLength": 3,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "CancelRequest",
         "type": "object"
       },
       "CartLine": {
@@ -2945,6 +3154,85 @@
           "trading_name"
         ],
         "title": "CompanySettingsPut",
+        "type": "object"
+      },
+      "ContactAddress": {
+        "additionalProperties": false,
+        "properties": {
+          "city": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Z]{2}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
+          "line1": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Line1"
+          },
+          "line2": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Line2"
+          },
+          "postal_code": {
+            "anyOf": [
+              {
+                "maxLength": 12,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Postal Code"
+          },
+          "province": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Province"
+          }
+        },
+        "title": "ContactAddress",
         "type": "object"
       },
       "CountryList": {
@@ -5059,6 +5347,38 @@
       },
       "HotelSubscription": {
         "properties": {
+          "cancel_at_period_end": {
+            "title": "Cancel At Period End",
+            "type": "boolean"
+          },
+          "current_period_start": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Period Start"
+          },
+          "interval": {
+            "anyOf": [
+              {
+                "enum": [
+                  "month",
+                  "quarter",
+                  "year"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interval"
+          },
           "limits": {
             "additionalProperties": true,
             "title": "Limits",
@@ -5075,6 +5395,16 @@
               }
             ],
             "title": "Plan"
+          },
+          "price": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SignedMoney"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "renews_on": {
             "anyOf": [
@@ -5103,6 +5433,14 @@
           "status": {
             "anyOf": [
               {
+                "enum": [
+                  "trial",
+                  "pending_payment",
+                  "active",
+                  "past_due",
+                  "suspended",
+                  "cancellation_scheduled"
+                ],
                 "type": "string"
               },
               {
@@ -5110,6 +5448,18 @@
               }
             ],
             "title": "Status"
+          },
+          "trial_ends_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trial Ends On"
           },
           "usage": {
             "additionalProperties": {
@@ -5124,6 +5474,11 @@
           "status",
           "starts_on",
           "renews_on",
+          "trial_ends_on",
+          "interval",
+          "price",
+          "current_period_start",
+          "cancel_at_period_end",
           "limits",
           "usage"
         ],
@@ -10333,7 +10688,7 @@
           },
           "lines": {
             "items": {
-              "$ref": "#/components/schemas/QuoteLine"
+              "$ref": "#/components/schemas/app__schemas__orders__QuoteLine"
             },
             "title": "Lines",
             "type": "array"
@@ -10361,58 +10716,6 @@
           "needs_approval"
         ],
         "title": "Quote",
-        "type": "object"
-      },
-      "QuoteLine": {
-        "properties": {
-          "line_total": {
-            "$ref": "#/components/schemas/Money"
-          },
-          "menu_item_id": {
-            "format": "uuid",
-            "title": "Menu Item Id",
-            "type": "string"
-          },
-          "modifiers": {
-            "items": {
-              "$ref": "#/components/schemas/QuoteModifier"
-            },
-            "title": "Modifiers",
-            "type": "array"
-          },
-          "name": {
-            "title": "Name",
-            "type": "string"
-          },
-          "note": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Note"
-          },
-          "quantity": {
-            "title": "Quantity",
-            "type": "integer"
-          },
-          "unit_price": {
-            "$ref": "#/components/schemas/Money"
-          }
-        },
-        "required": [
-          "menu_item_id",
-          "name",
-          "quantity",
-          "unit_price",
-          "line_total",
-          "modifiers",
-          "note"
-        ],
-        "title": "QuoteLine",
         "type": "object"
       },
       "QuoteModifier": {
@@ -10443,23 +10746,128 @@
         "title": "QuoteModifier",
         "type": "object"
       },
-      "QuoteRequest": {
-        "additionalProperties": false,
+      "QuoteOut": {
         "properties": {
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "interval": {
+            "enum": [
+              "month",
+              "quarter",
+              "year"
+            ],
+            "title": "Interval",
+            "type": "string"
+          },
+          "intro_periods": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Intro Periods"
+          },
           "lines": {
             "items": {
-              "$ref": "#/components/schemas/CartLine"
+              "$ref": "#/components/schemas/app__schemas__reports__QuoteLine"
             },
-            "maxItems": 500,
-            "minItems": 1,
             "title": "Lines",
             "type": "array"
+          },
+          "period_end": {
+            "format": "date",
+            "title": "Period End",
+            "type": "string"
+          },
+          "period_start": {
+            "format": "date",
+            "title": "Period Start",
+            "type": "string"
+          },
+          "plan_code": {
+            "title": "Plan Code",
+            "type": "string"
+          },
+          "plan_name": {
+            "title": "Plan Name",
+            "type": "string"
+          },
+          "prices_include_tax": {
+            "title": "Prices Include Tax",
+            "type": "boolean"
+          },
+          "renews_at_minor": {
+            "title": "Renews At Minor",
+            "type": "integer"
+          },
+          "subtotal_minor": {
+            "title": "Subtotal Minor",
+            "type": "integer"
+          },
+          "tax_charged": {
+            "title": "Tax Charged",
+            "type": "boolean"
+          },
+          "tax_minor": {
+            "title": "Tax Minor",
+            "type": "integer"
+          },
+          "tax_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Name"
+          },
+          "tax_rate_bp": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Rate Bp"
+          },
+          "total_minor": {
+            "title": "Total Minor",
+            "type": "integer"
+          },
+          "trial_days": {
+            "title": "Trial Days",
+            "type": "integer"
           }
         },
         "required": [
-          "lines"
+          "plan_code",
+          "plan_name",
+          "interval",
+          "currency",
+          "lines",
+          "subtotal_minor",
+          "tax_minor",
+          "total_minor",
+          "tax_charged",
+          "tax_name",
+          "tax_rate_bp",
+          "prices_include_tax",
+          "period_start",
+          "period_end",
+          "renews_at_minor",
+          "intro_periods",
+          "trial_days"
         ],
-        "title": "QuoteRequest",
+        "title": "QuoteOut",
         "type": "object"
       },
       "ReasonBody": {
@@ -13136,7 +13544,14 @@
             "type": "object"
           },
           "plan": {
-            "$ref": "#/components/schemas/app__schemas__plans__PlanOut"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/app__schemas__plans__PlanOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "renews_on": {
             "anyOf": [
@@ -13158,6 +13573,18 @@
           "status": {
             "title": "Status",
             "type": "string"
+          },
+          "trial_ends_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trial Ends On"
           }
         },
         "required": [
@@ -13224,9 +13651,10 @@
           },
           "status": {
             "enum": [
-              "trialing",
+              "trial",
               "active",
               "past_due",
+              "suspended",
               "cancelled"
             ],
             "title": "Status",
@@ -14231,12 +14659,26 @@
       "app__schemas__hotel__PlanOut": {
         "properties": {
           "code": {
-            "title": "Code",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
           },
           "name": {
-            "title": "Name",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
           },
           "subscription_status": {
             "title": "Subscription Status",
@@ -14249,6 +14691,77 @@
           "subscription_status"
         ],
         "title": "PlanOut",
+        "type": "object"
+      },
+      "app__schemas__orders__QuoteLine": {
+        "properties": {
+          "line_total": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "menu_item_id": {
+            "format": "uuid",
+            "title": "Menu Item Id",
+            "type": "string"
+          },
+          "modifiers": {
+            "items": {
+              "$ref": "#/components/schemas/QuoteModifier"
+            },
+            "title": "Modifiers",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "quantity": {
+            "title": "Quantity",
+            "type": "integer"
+          },
+          "unit_price": {
+            "$ref": "#/components/schemas/Money"
+          }
+        },
+        "required": [
+          "menu_item_id",
+          "name",
+          "quantity",
+          "unit_price",
+          "line_total",
+          "modifiers",
+          "note"
+        ],
+        "title": "QuoteLine",
+        "type": "object"
+      },
+      "app__schemas__orders__QuoteRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/CartLine"
+            },
+            "maxItems": 500,
+            "minItems": 1,
+            "title": "Lines",
+            "type": "array"
+          }
+        },
+        "required": [
+          "lines"
+        ],
+        "title": "QuoteRequest",
         "type": "object"
       },
       "app__schemas__plans__PlanOut": {
@@ -14571,6 +15084,69 @@
           "state"
         ],
         "title": "DeliveryOut",
+        "type": "object"
+      },
+      "app__schemas__reports__QuoteLine": {
+        "properties": {
+          "amount_minor": {
+            "title": "Amount Minor",
+            "type": "integer"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "discount_minor": {
+            "title": "Discount Minor",
+            "type": "integer"
+          },
+          "tax_minor": {
+            "title": "Tax Minor",
+            "type": "integer"
+          },
+          "total_minor": {
+            "title": "Total Minor",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "code",
+          "description",
+          "amount_minor",
+          "discount_minor",
+          "tax_minor",
+          "total_minor"
+        ],
+        "title": "QuoteLine",
+        "type": "object"
+      },
+      "app__schemas__reports__QuoteRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "interval": {
+            "enum": [
+              "month",
+              "quarter",
+              "year"
+            ],
+            "title": "Interval",
+            "type": "string"
+          },
+          "plan_code": {
+            "pattern": "^[a-z][a-z0-9_]{1,40}$",
+            "title": "Plan Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "plan_code",
+          "interval"
+        ],
+        "title": "QuoteRequest",
         "type": "object"
       },
       "app__schemas__room_service__DeliveryList": {
@@ -18803,7 +19379,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/QuoteRequest"
+                "$ref": "#/components/schemas/app__schemas__orders__QuoteRequest"
               }
             }
           },
@@ -24316,6 +24892,109 @@
         ]
       }
     },
+    "/api/v1/subscription/billing-contact": {
+      "get": {
+        "operationId": "get_billing_contact_api_v1_subscription_billing_contact_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingContactOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Billing Contact",
+        "tags": [
+          "reports"
+        ]
+      },
+      "put": {
+        "description": "Who Diyneco bills; `version` must match (0 the first time).",
+        "operationId": "put_billing_contact_api_v1_subscription_billing_contact_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BillingContactPut"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingContactOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Put Billing Contact",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
+    "/api/v1/subscription/cancel": {
+      "post": {
+        "description": "A trial ends at once; a paid subscription ends at the end of its current period.",
+        "operationId": "cancel_subscription_api_v1_subscription_cancel_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HotelSubscription"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cancel Subscription",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
     "/api/v1/subscription/change-request": {
       "post": {
         "operationId": "change_request_api_v1_subscription_change_request_post",
@@ -24352,6 +25031,69 @@
           }
         },
         "summary": "Change Request",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
+    "/api/v1/subscription/quote": {
+      "post": {
+        "description": "What the hotel would pay for a published plan today, computed on the server (D76).",
+        "operationId": "subscription_quote_api_v1_subscription_quote_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/app__schemas__reports__QuoteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuoteOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Subscription Quote",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
+    "/api/v1/subscription/resume": {
+      "post": {
+        "operationId": "resume_subscription_api_v1_subscription_resume_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HotelSubscription"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Resume Subscription",
         "tags": [
           "reports"
         ]

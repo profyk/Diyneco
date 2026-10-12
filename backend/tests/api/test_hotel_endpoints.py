@@ -45,7 +45,7 @@ async def test_signup_creates_pending_hotel_owner_and_outbox_event(client, owner
                     "SELECT h.id, h.status, s.invoice_prefix, p.code AS plan, sub.status AS sub_status, r.code AS role, "
                     "es.last_seq FROM app.users u JOIN app.hotel_users hu ON hu.user_id = u.id "
                     "JOIN app.hotels h ON h.id = hu.hotel_id JOIN app.hotel_settings s ON s.hotel_id = h.id "
-                    "JOIN app.subscriptions sub ON sub.hotel_id = h.id JOIN app.plans p ON p.id = sub.plan_id "
+                    "JOIN app.subscriptions sub ON sub.hotel_id = h.id LEFT JOIN app.plans p ON p.id = sub.plan_id "
                     "JOIN app.user_roles ur ON ur.hotel_user_id = hu.id JOIN app.roles r ON r.id = ur.role_id "
                     "JOIN app.event_seq es ON es.hotel_id = h.id WHERE u.email = :e"
                 ),
@@ -60,8 +60,8 @@ async def test_signup_creates_pending_hotel_owner_and_outbox_event(client, owner
     assert (row.status, row.invoice_prefix, row.plan, row.sub_status, row.role) == (
         "pending_approval",
         "GEH",
-        "starter",
-        "trialing",
+        None,  # a free trial without a plan (D73, D76)
+        "trial",
         "hotel_owner",
     )
     assert [(e.type, e.seq, e.channels) for e in events] == [("TENANT_CREATED", 1, ["platform"])]

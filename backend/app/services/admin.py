@@ -20,9 +20,9 @@ from app.audit.writer import write_audit, write_platform_audit
 from app.core.errors import AppError
 from app.core.state import AppState
 from app.db.session import TenantContext, UnitOfWork, set_tenant
-from app.models.tenancy import Hotel, Plan, Subscription, SupportGrant
+from app.models.tenancy import BillingSettings, Hotel, Plan, Subscription, SupportGrant
 from app.realtime.outbox import emit, hotel_channel
-from app.repositories.hotels import HotelRepository
+from app.repositories.hotels import CURRENT_STATUSES, HotelRepository
 from app.services import catalogue
 from app.services.pricing import money
 
@@ -238,7 +238,7 @@ async def put_subscription(uow: UnitOfWork, ctx: TenantContext, body: dict[str, 
             select(Subscription)
             .where(
                 Subscription.hotel_id == ctx.hotel_id,
-                Subscription.status.in_(("trialing", "active", "past_due")),
+                Subscription.status.in_(CURRENT_STATUSES),
             )
             .with_for_update()
         )
@@ -284,18 +284,23 @@ async def put_subscription(uow: UnitOfWork, ctx: TenantContext, body: dict[str, 
     return await subscription_payload(uow, sub, plan)
 
 
-async def subscription_payload(uow: UnitOfWork, sub: Subscription, plan: Plan) -> dict[str, Any]:
+async def subscription_payload(uow: UnitOfWork, sub: Subscription, plan: Plan | None) -> dict[str, Any]:
     return {
         "id": sub.id,
         "hotel_id": sub.hotel_id,
-        "plan": await catalogue.plan_out(uow, plan),
+        "plan": await catalogue.plan_out(uow, plan) if plan is not None else None,
         "status": sub.status,
         "starts_on": sub.starts_on,
         "renews_on": sub.renews_on,
         "cancelled_at": sub.cancelled_at,
-        "limits": {**plan.limits, **sub.limit_overrides},
+        "limits": {**(plan.limits if plan is not None else await _trial_limits(uow)), **sub.limit_overrides},
         "limit_overrides": sub.limit_overrides,
+        "trial_ends_on": sub.trial_ends_on,
     }
+
+
+async def _trial_limits(uow: UnitOfWork) -> dict[str, Any]:
+    return dict((await uow.session.execute(select(BillingSettings.trial_limits))).scalar_one())
 
 
 # --- Feature flags (platform-wide) --------------------------------------------------------
@@ -483,11 +488,8 @@ async def hotel_detail(uow: UnitOfWork, ctx: TenantContext) -> dict[str, Any]:
     current = (
         await s.execute(
             select(Subscription, Plan)
-            .join(Plan, Plan.id == Subscription.plan_id)
-            .where(
-                Subscription.hotel_id == ctx.hotel_id,
-                Subscription.status.in_(("trialing", "active", "past_due")),
-            )
+            .outerjoin(Plan, Plan.id == Subscription.plan_id)
+            .where(Subscription.hotel_id == ctx.hotel_id, Subscription.status.in_(CURRENT_STATUSES))
         )
     ).first()
     actions = (

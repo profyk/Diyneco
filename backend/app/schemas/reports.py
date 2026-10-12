@@ -7,7 +7,7 @@ from datetime import date as Day
 from datetime import datetime
 from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, Field, StringConstraints
+from pydantic import BaseModel, EmailStr, Field, StringConstraints
 
 from app.schemas.common import Money, SignedMoney, StrictModel
 
@@ -272,12 +272,88 @@ class Usage(BaseModel):
 
 
 class HotelSubscription(BaseModel):
-    plan: dict[str, Any] | None
-    status: str | None
+    plan: dict[str, Any] | None  # empty during a trial without a plan (D76)
+    status: (
+        Literal["trial", "pending_payment", "active", "past_due", "suspended", "cancellation_scheduled"]
+        | None
+    )
     starts_on: Day | None
     renews_on: Day | None
+    trial_ends_on: Day | None
+    interval: Literal["month", "quarter", "year"] | None
+    # The price agreed when the plan was bought; later plan price changes do not alter it.
+    price: SignedMoney | None
+    current_period_start: Day | None
+    cancel_at_period_end: bool
     limits: dict[str, Any]
     usage: dict[str, Usage]
+
+
+class QuoteRequest(StrictModel):
+    plan_code: Annotated[str, StringConstraints(pattern=r"^[a-z][a-z0-9_]{1,40}$")]
+    interval: Literal["month", "quarter", "year"]
+
+
+class QuoteLine(BaseModel):
+    code: str
+    description: str
+    amount_minor: int
+    discount_minor: int
+    tax_minor: int
+    total_minor: int
+
+
+class QuoteOut(BaseModel):
+    plan_code: str
+    plan_name: str
+    interval: Literal["month", "quarter", "year"]
+    currency: str
+    lines: list[QuoteLine]
+    subtotal_minor: int
+    tax_minor: int
+    total_minor: int
+    tax_charged: bool
+    tax_name: str | None
+    tax_rate_bp: int | None
+    prices_include_tax: bool
+    period_start: Day
+    period_end: Day
+    renews_at_minor: int
+    intro_periods: int | None
+    trial_days: int
+
+
+class CancelRequest(StrictModel):
+    reason: Annotated[str, StringConstraints(strip_whitespace=True, min_length=3, max_length=500)]
+
+
+class ContactAddress(StrictModel):
+    line1: Annotated[str, StringConstraints(strip_whitespace=True, max_length=120)] | None = None
+    line2: Annotated[str, StringConstraints(strip_whitespace=True, max_length=120)] | None = None
+    city: Annotated[str, StringConstraints(strip_whitespace=True, max_length=120)] | None = None
+    province: Annotated[str, StringConstraints(strip_whitespace=True, max_length=120)] | None = None
+    postal_code: Annotated[str, StringConstraints(strip_whitespace=True, max_length=12)] | None = None
+    country: Annotated[str, StringConstraints(pattern=r"^[A-Z]{2}$")] | None = None
+
+
+class BillingContactPut(StrictModel):
+    version: int
+    legal_name: Annotated[str, StringConstraints(strip_whitespace=True, max_length=200)] | None = None
+    vat_number: Annotated[str, StringConstraints(strip_whitespace=True, max_length=30)] | None = None
+    billing_email: EmailStr | None = None
+    phone: Annotated[str, StringConstraints(pattern=r"^\+?[0-9 ()-]{7,30}$")] | None = None
+    contact_name: Annotated[str, StringConstraints(strip_whitespace=True, max_length=120)] | None = None
+    address: ContactAddress = Field(default_factory=ContactAddress)
+
+
+class BillingContactOut(BaseModel):
+    legal_name: str | None
+    vat_number: str | None
+    billing_email: str | None
+    phone: str | None
+    contact_name: str | None
+    address: dict[str, Any]
+    version: int
 
 
 class ChangeRequest(StrictModel):

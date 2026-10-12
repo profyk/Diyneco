@@ -284,13 +284,17 @@ async def test_published_plan_edits_need_a_reason_and_the_current_version(client
     assert stale.json()["error"]["code"] == "PRECONDITION_FAILED"
 
 
+def _settings_body(s: dict) -> dict:
+    return {k: s[k] for k in ("version", "price_change_notice_days", "trial_days", "trial_limits")}
+
+
 async def test_notice_period_is_configured_in_the_admin_panel(client, factory):
     admin = await platform(factory)
     s = (await client.get("/admin/billing-settings", headers=admin)).json()
     try:
         out = await client.put(
             "/admin/billing-settings",
-            json={"version": s["version"], "price_change_notice_days": 60, "reason": "Longer notice"},
+            json={**_settings_body(s), "price_change_notice_days": 60, "reason": "Longer notice"},
             headers=step_up(factory, admin),
         )
         assert out.status_code == 200, out.text
@@ -313,7 +317,7 @@ async def test_notice_period_is_configured_in_the_admin_panel(client, factory):
         await client.put(
             "/admin/billing-settings",
             json={
-                "version": now["version"],
+                **_settings_body(now),
                 "price_change_notice_days": s["price_change_notice_days"],
                 "reason": "Reset",
             },
