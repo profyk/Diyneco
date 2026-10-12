@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { accounts, ADMIN_URL, API_URL, confirmIfAsked, signIn, signInAdmin } from "./accounts";
+import { accounts, ADMIN_URL, API_URL, confirmIfAsked, expectNoErrorUntil, signIn, signInAdmin } from "./accounts";
 
 test("a hotel account cannot sign in to the Admin panel", async ({ page }) => {
   await page.goto(ADMIN_URL);
@@ -36,7 +36,8 @@ test("a Super Admin prices, previews and publishes a plan, then signs out", asyn
     await prices.getByLabel("Reason", { exact: true }).fill("E2E price");
     await prices.getByRole("button", { name: "Save price" }).click();
     await confirmIfAsked(page, accounts.admin.password);
-    await expect(prices.getByLabel(/^Price per/)).toHaveValue("");
+    const field = prices.getByLabel(/^Price per/);
+    await expectNoErrorUntil(page.locator("body"), async () => (await field.inputValue()) === "");
   }
   await expect(prices.getByText(/4[\s,. ]?990[.,]00/).first()).toBeVisible();
   await page.keyboard.press("Escape");
