@@ -5,7 +5,10 @@
 - Same key + different request: 409 IDEMPOTENCY_CONFLICT.
 - Same key while the first request is still running: 409 IDEMPOTENCY_IN_PROGRESS.
 - A claim older than 60 s that never completed is treated as abandoned and retaken.
-- 2xx and 4xx outcomes are stored; 5xx releases the key so the client can retry it.
+- 2xx and 4xx outcomes are stored; 5xx releases the key so the client can retry it. So do
+  refusals that ask the client to retry the same request once it has done something
+  (RETRY_SAME_KEY: confirm with a PIN or password, sign in again, wait out a rate limit):
+  storing them would replay the refusal to the very retry they asked for.
 
 The claim is written and committed in its own short transaction, so concurrent requests see
 it at once. Completion is written inside the request's own transaction, so the stored
@@ -100,14 +103,15 @@ class IdempotencyClaim:
         return JSONResponse(encoded, status_code=status_code)
 
     async def fail(self, err: BaseException) -> None:
-        """After the request's transaction rolled back: keep a 4xx outcome, release on 5xx."""
+        """After the request's transaction rolled back: keep a 4xx outcome, release on 5xx
+        and on refusals the client is meant to retry with the same key."""
         async with self.sessionmaker() as s, s.begin():
             where = (
                 IdempotencyKey.principal_key == self.principal_key,
                 IdempotencyKey.key == self.key,
                 IdempotencyKey.status == "in_progress",
             )
-            if isinstance(err, AppError) and err.status < 500:
+            if isinstance(err, AppError) and err.status < 500 and err.code not in RETRY_SAME_KEY:
                 await s.execute(
                     update(IdempotencyKey)
                     .where(*where)
@@ -119,6 +123,9 @@ class IdempotencyClaim:
                 )
             else:
                 await s.execute(delete(IdempotencyKey).where(*where))
+
+
+RETRY_SAME_KEY = frozenset({"STEP_UP_REQUIRED", "UNAUTHENTICATED", "MFA_REQUIRED", "RATE_LIMITED"})
 
 
 async def claim(

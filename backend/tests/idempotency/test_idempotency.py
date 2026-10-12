@@ -159,3 +159,27 @@ async def test_keys_are_scoped_per_principal(app_state):
     first = await claim(app_state.db.sessionmaker, f"user:{uuid.uuid4()}", key, "POST", "/api/v1/x", fp_a)
     second = await claim(app_state.db.sessionmaker, f"user:{uuid.uuid4()}", key, "POST", "/api/v1/x", fp_b)
     assert first.principal_key != second.principal_key
+
+
+async def test_a_step_up_refusal_lets_the_same_key_retry(client, factory):
+    """The app answers STEP_UP_REQUIRED by asking for a PIN or password and retrying the same
+    request with the same key: the refusal must not be replayed to that retry."""
+    from tests.api.test_admin import platform, step_up
+    from tests.api.test_plans import draft_plan
+
+    admin = await platform(factory)
+    plan = await draft_plan(client, admin)
+    key = {"Idempotency-Key": str(uuid.uuid4())}
+    body = {
+        "interval": "month",
+        "amount": {"amount_minor": 49900, "currency": "ZAR"},
+        "reason": "Launch price",
+    }
+    url = f"/admin/plans/{plan['id']}/prices"
+    first = await client.post(url, json=body, headers={**admin, **key})
+    assert first.json()["error"]["code"] == "STEP_UP_REQUIRED"
+    retried = await client.post(url, json=body, headers={**step_up(factory, admin), **key})
+    assert retried.status_code == 201, retried.text
+    assert "Idempotent-Replayed" not in retried.headers
+    again = await client.post(url, json=body, headers={**step_up(factory, admin), **key})
+    assert again.status_code == 201 and again.headers["Idempotent-Replayed"] == "true"
