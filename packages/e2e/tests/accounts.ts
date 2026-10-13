@@ -11,6 +11,8 @@ export const API_URL = process.env.API_URL ?? "http://localhost:8000";
 export const accounts = JSON.parse(readFileSync(fileURLToPath(new URL("../.accounts.json", import.meta.url)), "utf8")) as {
   admin: { email: string; password: string; totp_secret: string };
   receptionist: { email: string; password: string };
+  owner: { email: string; password: string; totp_secret: string };
+  plan: { code: string; name: string };
   pin: string;
 };
 
@@ -43,6 +45,14 @@ export async function signInAdmin(page: Page): Promise<void> {
   await page.getByLabel("Code").fill(totp(accounts.admin.totp_secret));
   await page.getByRole("button", { name: "Verify" }).click();
   await page.getByRole("link", { name: "Plans & Pricing" }).first().waitFor();
+}
+
+export async function signInOwner(page: Page): Promise<void> {
+  await page.goto(MERCHANT_URL);
+  await signIn(page, accounts.owner.email, accounts.owner.password);
+  await page.getByLabel("Code").fill(totp(accounts.owner.totp_secret));
+  await page.getByRole("button", { name: "Verify" }).click();
+  await page.getByRole("button", { name: "Sign out" }).first().waitFor({ state: "attached" });
 }
 
 /** Answers the confirmation dialog if it appears. */
