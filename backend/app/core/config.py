@@ -51,8 +51,11 @@ class Settings(BaseSettings):
     jwt_active_kid: str
     pairing_code_pepper: str
     kms_master_key_id: str
-    kms_provider: str = "local"
+    kms_provider: Literal["local", "aws"] = "local"
     kms_local_master_key: str | None = None
+    # AWS KMS (production): KMS_MASTER_KEY_ID is the key's ARN; credentials are the standard
+    # AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY of a principal limited to that key.
+    aws_region: str | None = None
 
     # Realtime and jobs
     redis_url: str | None = None
@@ -117,6 +120,8 @@ class Settings(BaseSettings):
         }
         if self.kms_provider == "local":
             required["KMS_LOCAL_MASTER_KEY"] = self.kms_local_master_key
+        else:
+            required["AWS_REGION"] = self.aws_region
         if self.app_env != "development":
             required.update(
                 {

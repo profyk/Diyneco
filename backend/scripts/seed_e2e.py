@@ -26,8 +26,7 @@ from sqlalchemy import insert, select, text, update
 
 from app.core import crypto
 from app.core.config import get_settings
-from app.core.crypto import LocalKms
-from app.core.state import Keyring
+from app.core.state import Keyring, keyring_for
 from app.db.session import Database
 from app.models import tenancy as t
 from app.services import mfa
@@ -41,7 +40,7 @@ async def main() -> int:
         return 1
     url = settings.migrations_database_url.replace("postgresql+psycopg://", "postgresql+asyncpg://")
     db = Database(url, "diyneco-e2e-seed")
-    keyring = Keyring(kms=LocalKms(settings.kms_local_master_key or "", settings.kms_master_key_id), db=db)
+    keyring = keyring_for(settings, db)
     email = f"e2e.admin.{secrets.token_hex(4)}@diyneco.example"
     password = f"E2e-Admin-{secrets.token_hex(6)}"
     secret = mfa.new_secret()

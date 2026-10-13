@@ -110,6 +110,8 @@ def test_settings_fail_fast():
         ({"kms_local_master_key": "short"}, "KMS_LOCAL_MASTER_KEY"),
         ({"app_env": "production"}, "REDIS_URL"),
         ({"cors_allowed_origins": "*"}, "wildcard"),
+        ({"kms_provider": "aws"}, "AWS_REGION"),
+        ({"kms_provider": "vault", "aws_region": "af-south-1"}, "kms_provider"),
     ):
         with pytest.raises(ValidationError) as err:
             _settings(**override)

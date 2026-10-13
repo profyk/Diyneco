@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass, field
 
 from sqlalchemy import select, text
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from app.core.config import Settings
-from app.core.crypto import LocalKms, decrypt_field, encrypt_field, new_data_key
+from app.core.crypto import Kms, build_kms, decrypt_field, encrypt_field, new_data_key
 from app.core.jwt import JwtKeys
 from app.core.ratelimit import RateLimiter
 from app.db.session import Database
@@ -24,7 +25,7 @@ class Keyring:
     own short transaction before first use, so a key is never cached that the database
     does not hold."""
 
-    kms: LocalKms
+    kms: Kms
     db: Database
     _cache: dict[str, bytes] = field(default_factory=dict)
 
@@ -32,17 +33,18 @@ class Keyring:
         if scope in self._cache:
             return self._cache[scope]
         async with self.db.sessionmaker() as s, s.begin():
-            await s.execute(
-                pg_insert(DataKey)
-                .values(
-                    scope=scope, wrapped_key=self.kms.wrap(new_data_key(), scope), kms_key_id=self.kms.key_id
+            query = select(DataKey.wrapped_key).where(DataKey.scope == scope)
+            wrapped = (await s.execute(query)).scalar_one_or_none()
+            if wrapped is None:
+                # Only a new scope calls the KMS to wrap; a concurrent first use keeps one key.
+                fresh = await asyncio.to_thread(self.kms.wrap, new_data_key(), scope)
+                await s.execute(
+                    pg_insert(DataKey)
+                    .values(scope=scope, wrapped_key=fresh, kms_key_id=self.kms.key_id)
+                    .on_conflict_do_nothing(index_elements=["scope"])
                 )
-                .on_conflict_do_nothing(index_elements=["scope"])
-            )
-            wrapped = (
-                await s.execute(select(DataKey.wrapped_key).where(DataKey.scope == scope))
-            ).scalar_one()
-        key = self.kms.unwrap(wrapped, scope)
+                wrapped = (await s.execute(query)).scalar_one()
+        key = await asyncio.to_thread(self.kms.unwrap, wrapped, scope)
         self._cache[scope] = key
         return key
 
@@ -51,6 +53,13 @@ class Keyring:
 
     async def decrypt(self, scope: str, ciphertext: bytes, context: str) -> bytes:
         return decrypt_field(await self.data_key(scope), ciphertext, context)
+
+
+def keyring_for(settings: Settings, db: Database) -> Keyring:
+    kms = build_kms(
+        settings.kms_provider, settings.kms_master_key_id, settings.kms_local_master_key, settings.aws_region
+    )
+    return Keyring(kms=kms, db=db)
 
 
 @dataclass

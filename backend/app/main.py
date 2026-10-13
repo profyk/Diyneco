@@ -34,14 +34,13 @@ from app.api.v1 import (
     sub_payments,
 )
 from app.core.config import Settings, get_settings
-from app.core.crypto import LocalKms
 from app.core.errors import install_error_handlers
 from app.core.jwt import JwtKeys
 from app.core.logging import configure_logging
 from app.core.middleware import RequestContextMiddleware
 from app.core.monitoring import init_monitoring
 from app.core.ratelimit import build_rate_limiter
-from app.core.state import AppState, Keyring
+from app.core.state import AppState, keyring_for
 from app.db.session import Database
 from app.integrations.storage import LocalStorage, build_storage
 from app.notifications.email import EmailProvider, Mailer, build_email_provider
@@ -53,9 +52,6 @@ API_PREFIX = "/api/v1"
 
 def build_state(settings: Settings, email_provider: EmailProvider | None = None) -> AppState:
     db = Database(settings.database_url, "diyneco-api")
-    if settings.kms_provider != "local":
-        raise RuntimeError(f"KMS provider {settings.kms_provider!r} is not implemented yet")
-    kms = LocalKms(settings.kms_local_master_key or "", settings.kms_master_key_id)
     if email_provider is None:
         email_provider = build_email_provider(
             settings.email_provider,
@@ -68,7 +64,7 @@ def build_state(settings: Settings, email_provider: EmailProvider | None = None)
         settings=settings,
         db=db,
         jwt=jwt,
-        keyring=Keyring(kms=kms, db=db),
+        keyring=keyring_for(settings, db),
         limiter=build_rate_limiter(settings.redis_url),
         mailer=Mailer(provider=email_provider, sender=settings.email_from),
         storage=build_storage(settings, jwt),

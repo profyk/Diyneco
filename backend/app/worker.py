@@ -26,11 +26,10 @@ from sqlalchemy import CursorResult, delete, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.config import Settings, get_settings
-from app.core.crypto import LocalKms
 from app.core.jwt import JwtKeys
 from app.core.logging import configure_logging
 from app.core.monitoring import init_monitoring
-from app.core.state import Keyring
+from app.core.state import Keyring, keyring_for
 from app.db.session import Database, UnitOfWork, set_tenant
 from app.integrations.storage import Storage, build_storage
 from app.models.events import IdempotencyKey
@@ -183,7 +182,6 @@ async def _main() -> None:
     if not settings.worker_database_url:
         raise SystemExit("WORKER_DATABASE_URL is not set")
     db = Database(settings.worker_database_url, "diyneco-worker")
-    kms = LocalKms(settings.kms_local_master_key or "", settings.kms_master_key_id)
     provider = build_email_provider(
         settings.email_provider,
         smtp_url=settings.email_smtp_url,
@@ -192,7 +190,7 @@ async def _main() -> None:
     )
     worker = Worker(
         db,
-        keyring=Keyring(kms=kms, db=db),
+        keyring=keyring_for(settings, db),
         mailer=Mailer(provider=provider, sender=settings.email_from),
         http=httpx.AsyncClient(),
         storage=build_storage(

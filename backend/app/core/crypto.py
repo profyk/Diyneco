@@ -14,7 +14,9 @@ import hmac
 import os
 import re
 import secrets
+from typing import Any, Protocol
 
+import boto3
 from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerificationError, VerifyMismatchError
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
@@ -153,6 +155,48 @@ class LocalKms:
         if wrapped[:1] != _FORMAT_V1:
             raise ValueError("unknown wrapped key format")
         return self._master.decrypt(wrapped[1:13], wrapped[13:], scope.encode())
+
+
+_FORMAT_AWS = b"\x02"
+
+
+class AwsKms:
+    """Wraps data keys with a symmetric AWS KMS key (Encrypt/Decrypt, the scope bound as
+    encryption context). The master key never leaves KMS. Credentials come from the standard
+    AWS environment variables of an IAM identity allowed only kms:Encrypt and kms:Decrypt on
+    this key (infra/deployment/README.md)."""
+
+    def __init__(self, key_id: str, region: str, client: Any = None) -> None:
+        self.key_id = key_id
+        self._client = client or boto3.client("kms", region_name=region)
+
+    def wrap(self, data_key: bytes, scope: str) -> bytes:
+        out = self._client.encrypt(KeyId=self.key_id, Plaintext=data_key, EncryptionContext={"scope": scope})
+        return _FORMAT_AWS + bytes(out["CiphertextBlob"])
+
+    def unwrap(self, wrapped: bytes, scope: str) -> bytes:
+        if wrapped[:1] != _FORMAT_AWS:
+            raise ValueError("unknown wrapped key format")
+        out = self._client.decrypt(
+            KeyId=self.key_id, CiphertextBlob=wrapped[1:], EncryptionContext={"scope": scope}
+        )
+        return bytes(out["Plaintext"])
+
+
+class Kms(Protocol):
+    key_id: str
+
+    def wrap(self, data_key: bytes, scope: str) -> bytes: ...
+
+    def unwrap(self, wrapped: bytes, scope: str) -> bytes: ...
+
+
+def build_kms(provider: str, key_id: str, local_master_key: str | None, aws_region: str | None) -> Kms:
+    if provider == "local":
+        return LocalKms(local_master_key or "", key_id)
+    if provider == "aws":
+        return AwsKms(key_id, aws_region or "")
+    raise RuntimeError(f"unknown KMS provider {provider!r}")
 
 
 def new_data_key() -> bytes:
