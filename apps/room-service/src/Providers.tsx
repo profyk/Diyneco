@@ -1,9 +1,10 @@
 "use client";
 
-import { ToastProvider } from "@diyneco/shared-ui";
+import { ApiGate, ToastProvider } from "@diyneco/shared-ui";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 
+import { API_CHOICE_NEEDED, apiReady } from "./config";
 import { App } from "./RoomService";
 import { SessionProvider } from "./session";
 
@@ -14,9 +15,11 @@ export function Providers() {
   return (
     <QueryClientProvider client={client}>
       <ToastProvider>
-        <SessionProvider>
-          <App />
-        </SessionProvider>
+        <ApiGate ready={apiReady} needed={API_CHOICE_NEEDED}>
+          <SessionProvider>
+            <App />
+          </SessionProvider>
+        </ApiGate>
       </ToastProvider>
     </QueryClientProvider>
   );

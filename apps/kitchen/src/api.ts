@@ -1,11 +1,11 @@
 import { createApi } from "@diyneco/api-client";
 
-import { API_URL } from "./config";
+import { apiUrl } from "./config";
 import { cookSession, currentDeviceToken, getDeviceToken } from "./device";
 
 /** Reads the board as the display (device token). */
 export const deviceApi = createApi({
-  baseUrl: API_URL,
+  baseUrl: apiUrl,
   getToken: currentDeviceToken,
   refresh: () => getDeviceToken(true),
 });
@@ -17,7 +17,7 @@ export function whenCookSessionEnds(fn: () => void): void {
 
 /** Acts as the signed-in cook (kitchen session from their PIN). */
 export const cookApi = createApi({
-  baseUrl: API_URL,
+  baseUrl: apiUrl,
   getToken: () => cookSession.get()?.token ?? null,
   onSignedOut: () => {
     cookSession.clear();

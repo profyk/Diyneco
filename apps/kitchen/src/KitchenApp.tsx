@@ -1,13 +1,13 @@
 "use client";
 
 import { connectRealtime, ok, type RealtimeStatus } from "@diyneco/api-client";
-import { Badge, Button, ErrorNotice, Spinner, ToastProvider } from "@diyneco/shared-ui";
+import { ApiGate, Badge, Button, ErrorNotice, Spinner, ToastProvider } from "@diyneco/shared-ui";
 import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { cookApi, deviceApi, whenCookSessionEnds } from "./api";
 import { Board } from "./Board";
-import { API_URL } from "./config";
+import { API_CHOICE_NEEDED, API_URL, apiReady } from "./config";
 import { appVersion, cookSession, credential, DeviceRevoked, getDeviceToken } from "./device";
 import { PairScreen } from "./PairScreen";
 import { SignInPanel } from "./SignInPanel";
@@ -16,6 +16,14 @@ import { SoldOutPanel } from "./SoldOut";
 type Mode = "loading" | "unpaired" | "board" | "locked" | "disabled" | "suspended";
 
 export function KitchenApp() {
+  return (
+    <ApiGate ready={apiReady} needed={API_CHOICE_NEEDED}>
+      <KitchenAppMain />
+    </ApiGate>
+  );
+}
+
+function KitchenAppMain() {
   const [client] = useState(
     () =>
       new QueryClient({

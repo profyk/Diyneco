@@ -1,9 +1,10 @@
 "use client";
 
-import { ToastProvider } from "@diyneco/shared-ui";
+import { ApiGate, ToastProvider } from "@diyneco/shared-ui";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { type ReactNode, useState } from "react";
 
+import { API_CHOICE_NEEDED, apiReady } from "./config";
 import { SessionProvider } from "./session";
 import { Gate } from "./Shell";
 
@@ -20,9 +21,11 @@ export function Providers({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={client}>
       <ToastProvider>
-        <SessionProvider>
-          <Gate>{children}</Gate>
-        </SessionProvider>
+        <ApiGate ready={apiReady} needed={API_CHOICE_NEEDED}>
+          <SessionProvider>
+            <Gate>{children}</Gate>
+          </SessionProvider>
+        </ApiGate>
       </ToastProvider>
     </QueryClientProvider>
   );

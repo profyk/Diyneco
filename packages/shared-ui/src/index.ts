@@ -18,4 +18,5 @@ export {
   Th,
 } from "./primitives";
 export type { ButtonProps } from "./primitives";
+export { ApiGate } from "./api-gate";
 export { Dialog, ErrorNotice, StepUpProvider, ToastProvider, useStepUp, useToast } from "./overlays";

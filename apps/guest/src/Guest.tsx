@@ -11,11 +11,11 @@ import {
   ok,
   setDisplayLocale,
 } from "@diyneco/api-client";
-import { Badge, Button, cn, Dialog, ErrorNotice, Field, Input, Spinner, Textarea } from "@diyneco/shared-ui";
+import { ApiGate, Badge, Button, cn, Dialog, ErrorNotice, Field, Input, Spinner, Textarea } from "@diyneco/shared-ui";
 import { QueryClient, QueryClientProvider, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { API_URL, APP_VERSION } from "./config";
+import { API_CHOICE_NEEDED, API_URL, APP_VERSION, apiReady, apiUrl } from "./config";
 import { credential, currentDeviceToken, DeviceRevoked, getDeviceToken } from "./device";
 
 type MenuItem = components["schemas"]["GuestMenuItem"];
@@ -26,9 +26,17 @@ type Tab = "menu" | "orders" | "bill" | "info";
 
 const IDLE_MS = 3 * 60_000;
 
-const api = createApi({ baseUrl: API_URL, getToken: currentDeviceToken, refresh: () => getDeviceToken(true) });
+const api = createApi({ baseUrl: apiUrl, getToken: currentDeviceToken, refresh: () => getDeviceToken(true) });
 
 export function GuestApp() {
+  return (
+    <ApiGate ready={apiReady} needed={API_CHOICE_NEEDED}>
+      <GuestAppMain />
+    </ApiGate>
+  );
+}
+
+function GuestAppMain() {
   const [client] = useState(
     () => new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 10_000, refetchOnWindowFocus: false } } }),
   );

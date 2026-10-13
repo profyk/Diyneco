@@ -34,6 +34,7 @@ jobs:
     env:
       API_URL: ${{ vars.PUBLIC_API_URL || 'https://api.example.invalid' }}
       STORAGE_URL: ${{ vars.PUBLIC_STORAGE_URL || '' }}
+      API_FALLBACK_URL: ${{ vars.PUBLIC_API_FALLBACK_URL || '' }}
     steps:
       - uses: actions/checkout@v5
       - uses: docker/setup-buildx-action@v4
@@ -46,6 +47,7 @@ jobs:
             --build-arg APP=${{ matrix.app }} \
             --build-arg NEXT_PUBLIC_API_URL="$API_URL" \
             --build-arg NEXT_PUBLIC_STORAGE_URL="$STORAGE_URL" \
+            --build-arg NEXT_PUBLIC_API_FALLBACK_URL="$API_FALLBACK_URL" \
             -t "diyneco-${{ matrix.app }}:${{ github.sha }}" . 2>&1 | tee /tmp/build.log || {
               grep -iE "error|failed|cannot|not found|ERR_" /tmp/build.log | tail -25 \
                 | while IFS= read -r line; do echo "::error title=Image build::${line:0:900}"; done

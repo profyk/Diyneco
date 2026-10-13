@@ -47,8 +47,9 @@ export class NetworkError extends Error {
 }
 
 export interface ClientOptions {
-  /** API origin, for example "https://api.diyneco.com" (no trailing /api/v1). */
-  baseUrl: string;
+  /** API origin, for example "https://api.diyneco.com" (no trailing /api/v1). A function is read
+   * on every request, for clients created before the address was chosen (chooseApiUrl). */
+  baseUrl: string | (() => string);
   /** Current access token, or null when signed out. */
   getToken: () => string | null;
   /** Gets a new access token after a 401; null means the session is over. */
@@ -96,6 +97,8 @@ export function createApi(options: ClientOptions) {
   const baseFetch = options.fetch ?? globalThis.fetch.bind(globalThis);
   const retries = options.retries ?? 2;
   let refreshing: Promise<string | null> | null = null;
+  const base = () => (typeof options.baseUrl === "function" ? options.baseUrl() : options.baseUrl).replace(/\/$/, "");
+  const createdBase = base();
 
   async function send(request: Request, attempt = 0): Promise<Response> {
     try {
@@ -118,6 +121,10 @@ export function createApi(options: ClientOptions) {
 
   async function authedFetch(input: Request): Promise<Response> {
     let request = input;
+    const current = base();
+    if (current !== createdBase && request.url.startsWith(createdBase)) {
+      request = new Request(current + request.url.slice(createdBase.length), request);
+    }
     const extra: Record<string, string> = { ...(options.headers?.() ?? {}) };
     const token = options.getToken();
     if (token) extra.Authorization = `Bearer ${token}`;
@@ -151,7 +158,7 @@ export function createApi(options: ClientOptions) {
   }
 
   const client = createFetchClient<paths>({
-    baseUrl: options.baseUrl.replace(/\/$/, ""),
+    baseUrl: createdBase,
     credentials: options.credentials ?? "omit",
     fetch: authedFetch,
   });

@@ -1,5 +1,6 @@
 export { ApiError, NetworkError, createApi, newIdempotencyKey, ok, wasReplayed } from "./client";
 export type { Api, ClientOptions, ErrorBody } from "./client";
+export { chooseApiUrl } from "./endpoint";
 export {
   currencyDecimals,
   currencySymbol,

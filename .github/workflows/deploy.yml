@@ -11,6 +11,7 @@ name: Deploy
 #             RAILWAY_TOKEN            a Railway project token for that environment
 #             VERCEL_TOKEN
 #   variables PUBLIC_API_URL           e.g. https://api.diyneco.com
+#             PUBLIC_API_FALLBACK_URL  optional, e.g. https://diyneco-production.up.railway.app (D81)
 #             PUBLIC_STORAGE_URL       optional; defaults to Supabase projects
 #             VERCEL_ORG_ID, VERCEL_PROJECT_ID_ADMIN, _MERCHANT, _KITCHEN, _GUEST, _ROOM_SERVICE
 #             WEB_URL_ADMIN, _MERCHANT, _KITCHEN, _GUEST, _ROOM_SERVICE  the apps' public addresses
@@ -144,6 +145,7 @@ jobs:
       # Compiled into the pages and their Content-Security-Policy; public addresses only.
       NEXT_PUBLIC_API_URL: ${{ vars.PUBLIC_API_URL }}
       NEXT_PUBLIC_STORAGE_URL: ${{ vars.PUBLIC_STORAGE_URL }}
+      NEXT_PUBLIC_API_FALLBACK_URL: ${{ vars.PUBLIC_API_FALLBACK_URL }}
       TARGET: ${{ inputs.environment == 'production' && '--prod' || '' }}
       VERCEL_ENV_NAME: ${{ inputs.environment == 'production' && 'production' || 'preview' }}
       WEB_URL: ${{ vars[matrix.web] }}

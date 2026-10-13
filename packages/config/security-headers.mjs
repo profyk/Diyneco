@@ -6,6 +6,7 @@
 // development adds 'unsafe-eval' for React's dev tooling.
 //
 // NEXT_PUBLIC_API_URL      the API origin (default http://localhost:8000)
+// NEXT_PUBLIC_API_FALLBACK_URL  optional second API origin, used if the first does not answer (D81)
 // NEXT_PUBLIC_STORAGE_URL  where signed uploads and downloads go; defaults to Supabase
 //                          projects (https://*.supabase.co). Local storage is served by the API.
 
@@ -24,15 +25,17 @@ function origin(url) {
  */
 export function securityHeaders({ dev = process.env.NODE_ENV !== "production" } = {}) {
   const api = origin(process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000");
-  const ws = api.replace(/^http/, "ws");
+  const fallback = origin(process.env.NEXT_PUBLIC_API_FALLBACK_URL ?? "");
+  const apis = [api, fallback].filter(Boolean).join(" ");
+  const ws = [api, fallback].filter(Boolean).map((o) => o.replace(/^http/, "ws")).join(" ");
   const storage = process.env.NEXT_PUBLIC_STORAGE_URL ? origin(process.env.NEXT_PUBLIC_STORAGE_URL) : "https://*.supabase.co";
   const csp = [
     "default-src 'self'",
     `script-src 'self' 'unsafe-inline'${dev ? " 'unsafe-eval'" : ""}`,
     "style-src 'self' 'unsafe-inline'",
-    `img-src 'self' data: blob: ${api} ${storage}`,
+    `img-src 'self' data: blob: ${apis} ${storage}`,
     "font-src 'self'",
-    `connect-src 'self' ${api} ${ws} ${storage}${dev ? " ws://localhost:*" : ""}`,
+    `connect-src 'self' ${apis} ${ws} ${storage}${dev ? " ws://localhost:*" : ""}`,
     "manifest-src 'self'",
     "worker-src 'self'",
     "object-src 'none'",
