@@ -21,10 +21,11 @@ import {
   Th,
 } from "@diyneco/shared-ui";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { label, useAction } from "../common";
 import { useSession } from "../session";
+import { Plan } from "./Subscription";
 
 type Tab = "hotel" | "billing" | "tablet" | "integrations" | "plan" | "support" | "audit";
 
@@ -41,6 +42,11 @@ export function Settings() {
   ];
   const visible = tabs.filter((t) => t.show);
   const [tab, setTab] = useState<Tab>(visible[0]?.key ?? "hotel");
+  // Billing emails link to /settings?tab=plan.
+  useEffect(() => {
+    const wanted = new URLSearchParams(window.location.search).get("tab");
+    if (wanted && visible.some((t) => t.key === wanted)) setTab(wanted as Tab);
+  }, []);
   return (
     <>
       <PageHeader title="Settings" />
@@ -542,133 +548,6 @@ function IntegrationDialog({
       </fieldset>
       {save.error ? <ErrorNotice error={save.error} className="mt-4" /> : null}
     </Dialog>
-  );
-}
-
-function Plan() {
-  const { api, can } = useSession();
-  const sub = useQuery({ queryKey: ["subscription"], queryFn: () => ok(api.GET("/api/v1/subscription")) });
-  // Plans and prices come from the server (published plans only); nothing here names a plan.
-  const catalogue = useQuery({ queryKey: ["public-plans"], queryFn: () => ok(api.GET("/api/v1/plans")) });
-  const [plan, setPlan] = useState("");
-  const request = useAction(() => ok(api.POST("/api/v1/subscription/change-request", { body: { plan_code: plan } })), {
-    success: "Request sent. Diyneco will confirm the change.",
-  });
-  if (!sub.data) return <Skeleton className="h-40" />;
-  const s = sub.data;
-  const current = (s.plan as { code?: string; name?: string } | null) ?? null;
-  const offered = (catalogue.data?.data ?? []).filter((p) => p.code !== current?.code);
-  const intervalName: Record<string, string> = { month: "a month", quarter: "a quarter", year: "a year" };
-  return (
-    <Card className="max-w-2xl p-5">
-      <p className="font-display text-xl font-semibold">
-        {current?.name ?? (s.status === "trial" ? "Free trial" : "No plan")}{" "}
-        {s.status ? <Badge tone={s.status === "past_due" || s.status === "suspended" ? "crit" : "good"}>{label(s.status)}</Badge> : null}
-      </p>
-      {s.trial_ends_on ? <p className="mt-1 text-sm text-muted">Trial ends {formatDate(s.trial_ends_on)}</p> : null}
-      {s.price ? (
-        <p className="mt-1 text-sm text-muted">
-          {formatMoney(s.price)} {s.interval === "year" ? "a year" : s.interval === "quarter" ? "a quarter" : "a month"}
-        </p>
-      ) : null}
-      {s.renews_on ? (
-        <p className="mt-1 text-sm text-muted">
-          {s.cancel_at_period_end ? "Ends" : "Renews"} {formatDate(s.renews_on)}
-        </p>
-      ) : null}
-      <Table className="mt-4">
-        <tbody>
-          {Object.entries(s.usage).map(([k, u]) => (
-            <tr key={k}>
-              <Td>{label(k)}</Td>
-              <Td className="text-right tabular-nums">
-                {u.used} of {u.limit ?? "unlimited"}
-              </Td>
-            </tr>
-          ))}
-        </tbody>
-      </Table>
-      {can("subscription.manage") ? (
-        offered.length ? (
-          <div className="mt-5 flex flex-wrap items-end gap-3">
-            <Field label="Change plan to">
-              {(p) => (
-                <Select {...p} value={plan} onChange={(e) => setPlan(e.target.value)}>
-                  <option value="">Choose a plan</option>
-                  {offered.map((o) => (
-                    <option key={o.code} value={o.code}>
-                      {o.name} ·{" "}
-                      {o.prices.map((pr) => `${formatMoney(pr.amount)} ${intervalName[pr.interval] ?? pr.interval}`).join(" or ")}
-                    </option>
-                  ))}
-                </Select>
-              )}
-            </Field>
-            <Button loading={request.isPending} disabled={!plan} onClick={() => request.mutate(undefined)}>
-              Request change
-            </Button>
-          </div>
-        ) : (
-          <p className="mt-5 text-sm text-muted">No other plans are offered right now.</p>
-        )
-      ) : null}
-      {request.error ? <ErrorNotice error={request.error} className="mt-3" /> : null}
-      <SubscriptionInvoices />
-    </Card>
-  );
-}
-
-/** Invoices and credit notes from Diyneco; PDFs open through a short-lived signed link. */
-function SubscriptionInvoices() {
-  const { api } = useSession();
-  const list = useQuery({ queryKey: ["subscription-invoices"], queryFn: () => ok(api.GET("/api/v1/subscription/invoices")) });
-  const [error, setError] = useState<unknown>(null);
-  const open = async (id: string) => {
-    setError(null);
-    try {
-      const { url } = await ok(api.GET("/api/v1/subscription/invoices/{invoice_id}/pdf", { params: { path: { invoice_id: id } } }));
-      window.open(url, "_blank", "noopener");
-    } catch (err) {
-      setError(err);
-    }
-  };
-  const rows = list.data?.data ?? [];
-  return (
-    <div className="mt-6">
-      <h3 className="mb-2 font-display text-sm font-semibold">Invoices from Diyneco</h3>
-      {rows.length ? (
-        <Table>
-          <tbody>
-            {rows.map((i) => (
-              <tr key={i.id}>
-                <Td>
-                  <p className="font-medium">{i.number}</p>
-                  <p className="text-xs text-muted">
-                    {i.kind === "credit_note" ? "Credit note" : i.is_tax_invoice ? "Tax invoice" : "Invoice"} ·{" "}
-                    {formatDate(i.issued_at)}
-                    {i.due_on && i.kind === "invoice" ? ` · due ${formatDate(i.due_on)}` : ""}
-                  </p>
-                </Td>
-                <Td className="text-right tabular-nums">{formatMoney(i.total)}</Td>
-                <Td>
-                  <Badge tone={i.status === "paid" || i.status === "credited" ? "good" : i.status === "overdue" ? "crit" : "neutral"}>
-                    {label(i.status)}
-                  </Badge>
-                </Td>
-                <Td className="text-right">
-                  <Button size="sm" variant="secondary" disabled={!i.has_pdf} onClick={() => void open(i.id)}>
-                    PDF
-                  </Button>
-                </Td>
-              </tr>
-            ))}
-          </tbody>
-        </Table>
-      ) : (
-        <p className="text-sm text-muted">No invoices yet.</p>
-      )}
-      {error ? <ErrorNotice error={error} className="mt-3" /> : null}
-    </div>
   );
 }
 
