@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import time
+import uuid
 from datetime import date, timedelta
 
 import pytest
@@ -579,7 +580,8 @@ async def test_stitch_webhooks_are_signed_verified_and_processed_once(
     monkeypatch.setattr(s, "stitch_client_secret", "test-secret")
     monkeypatch.setattr(s, "stitch_webhook_secret", secret)
     monkeypatch.setattr(s, "merchant_app_url", "https://merchant.example")
-    ref = f"pr_{time.time_ns()}"
+    # Not a long digit run: the card-number guard would (rightly) refuse one that passes Luhn.
+    ref = f"pr_{uuid.uuid4()}"
     calls: list[str] = []
 
     async def create_checkout(self, **kw):
