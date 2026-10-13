@@ -48,6 +48,10 @@
   (read-only except billing) and reactivates; billing emails; Admin > Billing & Invoices
   (collected vs invoiced vs outstanding vs MRR, filters, CSV, reconciliation, collections
   policy) and per-hotel billing on the hotel page; browser test of the whole journey.
+- Deployment on Railway, Vercel, Supabase and AWS KMS (D80): AWS KMS provider for envelope
+  encryption; manual Deploy workflow (check the commit, migrate, roll the API and worker,
+  deploy the web apps, smoke checks; production behind required reviewers); setup guide with
+  every variable in `infra/deployment/README.md`.
 - Fixed (D77): confirmed actions with an Idempotency-Key failed after the PIN or password
   prompt because the refusal was replayed to the retry.
 - Deployment: container images for all five web apps (`infra/docker/web.Dockerfile`, Next.js
@@ -56,6 +60,8 @@
 
 ### Next
 
+- First deployment (owner): domain, Railway project, Vercel projects, Supabase project, AWS
+  KMS key, GitHub environments, then Deploy to staging (infra/deployment/README.md).
 - Interface translations (message catalogues per language, English first).
 - Stitch: run the adapter against a Stitch test client (credentials from the owner), then
   register `https://<api>/api/v1/billing/webhooks/stitch` for PAYMENT events.
@@ -135,7 +141,8 @@
 
 ### Open before production
 
-- Hosting provider and Supabase region; production KMS; email domain and SMTP provider.
+- Hosting chosen (D80: Railway, Vercel, Supabase, AWS KMS); accounts, domain, email domain and
+  SMTP provider still to set up.
 - Legal (POPIA) and tax (VAT, invoicing) reviews; final plan prices.
 - External penetration test and a staging load test.
 

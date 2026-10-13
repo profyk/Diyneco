@@ -1,0 +1,190 @@
+name: Deploy
+
+# Promotes one tested commit to staging or production (DECISIONS D80): the API and worker on
+# Railway, the five web apps on Vercel, the database on Supabase. Run it from the Actions tab
+# with the commit to release; production should be protected by required reviewers on its
+# GitHub environment. Order: check CI on the commit, migrate, roll the backend, deploy the web
+# apps, smoke-check. Setup and every variable: infra/deployment/README.md.
+#
+# Each GitHub environment (staging, production) holds:
+#   secrets   MIGRATIONS_DATABASE_URL  diyneco_owner, used only here, never by the running API
+#             RAILWAY_TOKEN            a Railway project token for that environment
+#             VERCEL_TOKEN
+#   variables PUBLIC_API_URL           e.g. https://api.diyneco.com
+#             PUBLIC_STORAGE_URL       optional; defaults to Supabase projects
+#             VERCEL_ORG_ID, VERCEL_PROJECT_ID_ADMIN, _MERCHANT, _KITCHEN, _GUEST, _ROOM_SERVICE
+#             WEB_URL_ADMIN, _MERCHANT, _KITCHEN, _GUEST, _ROOM_SERVICE  the apps' public addresses
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Where to deploy
+        type: choice
+        options: [staging, production]
+        required: true
+      sha:
+        description: Full commit hash to release (must be on main with CI green)
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-${{ inputs.environment }}
+  cancel-in-progress: false
+
+env:
+  SHA: ${{ inputs.sha }}
+
+jobs:
+  check:
+    name: Commit is releasable
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      packages: read
+    outputs:
+      image: ${{ steps.image.outputs.image }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: The commit is on main
+        run: |
+          [[ "$SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::sha must be a full 40-character commit hash"; exit 1; }
+          git merge-base --is-ancestor "$SHA" origin/main || { echo "::error::$SHA is not on main"; exit 1; }
+      - name: Every workflow on the commit passed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # The latest run of each push workflow on this commit (deploys excluded) must be green.
+          runs="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$SHA&event=push&per_page=100" --jq '[.workflow_runs[] | select(.name != "Deploy")] | group_by(.name) | map(max_by(.run_number))')"
+          names="$(jq -r '.[].name' <<<"$runs")"
+          bad="$(jq -r '.[] | select(.conclusion != "success") | "\(.name): \(.status)/\(.conclusion)"' <<<"$runs")"
+          grep -qx CI <<<"$names" && grep -qx "Backend image" <<<"$names" || { echo "::error::CI and Backend image must have run on $SHA"; echo "$names"; exit 1; }
+          [ -z "$bad" ] || { echo "::error::workflows not green on $SHA"; echo "$bad"; exit 1; }
+          echo "$names" | sed 's/^/green: /'
+      - name: The backend image exists
+        id: image
+        env:
+          TOKEN: ${{ github.token }}
+        run: |
+          repo="$(echo "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')"
+          image="ghcr.io/$repo/backend:$SHA"
+          echo "$TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker manifest inspect "$image" >/dev/null || { echo "::error::$image was not built (Backend image workflow)"; exit 1; }
+          echo "image=$image" >> "$GITHUB_OUTPUT"
+
+  backend:
+    name: Migrate and roll out the API and worker
+    needs: check
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGE: ${{ needs.check.outputs.image }}
+      CHANNEL: ${{ inputs.environment }}
+    steps:
+      - name: Pull the image
+        env:
+          TOKEN: ${{ github.token }}
+        run: |
+          echo "$TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker pull "$IMAGE"
+      - name: Migrate the database (additive first; see the release process)
+        env:
+          MIGRATIONS_DATABASE_URL: ${{ secrets.MIGRATIONS_DATABASE_URL }}
+        run: |
+          [ -n "$MIGRATIONS_DATABASE_URL" ] || { echo "::error::MIGRATIONS_DATABASE_URL is not set"; exit 1; }
+          current="$(docker run --rm -e MIGRATIONS_DATABASE_URL "$IMAGE" alembic current 2>&1)" || true
+          if grep -q "Can't locate revision" <<<"$current"; then
+            # A rollback: the database already has migrations newer than this build.
+            echo "::notice::The database is ahead of this build (rollback); migrations skipped."
+          else
+            docker run --rm -e MIGRATIONS_DATABASE_URL "$IMAGE" alembic upgrade head
+          fi
+          docker run --rm -e MIGRATIONS_DATABASE_URL "$IMAGE" python scripts/check_migrations.py
+      - name: Point the environment's tag at this build
+        # Railway's api and worker services run ghcr.io/<repo>/backend:<environment>.
+        run: |
+          docker tag "$IMAGE" "${IMAGE%:*}:$CHANNEL"
+          docker push "${IMAGE%:*}:$CHANNEL"
+      - name: Redeploy the API and worker on Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          npm install -g @railway/cli@4
+          railway redeploy --service api --yes
+          railway redeploy --service worker --yes
+
+  web:
+    name: Web app (${{ matrix.app }})
+    needs: backend
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { app: admin, project: VERCEL_PROJECT_ID_ADMIN, web: WEB_URL_ADMIN }
+          - { app: merchant, project: VERCEL_PROJECT_ID_MERCHANT, web: WEB_URL_MERCHANT }
+          - { app: kitchen, project: VERCEL_PROJECT_ID_KITCHEN, web: WEB_URL_KITCHEN }
+          - { app: guest, project: VERCEL_PROJECT_ID_GUEST, web: WEB_URL_GUEST }
+          - { app: room-service, project: VERCEL_PROJECT_ID_ROOM_SERVICE, web: WEB_URL_ROOM_SERVICE }
+    env:
+      VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ vars[matrix.project] }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      # Compiled into the pages and their Content-Security-Policy; public addresses only.
+      NEXT_PUBLIC_API_URL: ${{ vars.PUBLIC_API_URL }}
+      NEXT_PUBLIC_STORAGE_URL: ${{ vars.PUBLIC_STORAGE_URL }}
+      TARGET: ${{ inputs.environment == 'production' && '--prod' || '' }}
+      VERCEL_ENV_NAME: ${{ inputs.environment == 'production' && 'production' || 'preview' }}
+      WEB_URL: ${{ vars[matrix.web] }}
+      # Vercel installs with the pnpm version pinned in package.json (packageManager).
+      ENABLE_EXPERIMENTAL_COREPACK: "1"
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.sha }}
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Build and deploy with Vercel
+        run: |
+          [ -n "$VERCEL_PROJECT_ID" ] && [ -n "$NEXT_PUBLIC_API_URL" ] || { echo "::error::Vercel project id or PUBLIC_API_URL missing"; exit 1; }
+          npm install -g vercel@latest
+          vercel pull --yes --environment="$VERCEL_ENV_NAME" --token="$VERCEL_TOKEN"
+          vercel build $TARGET --token="$VERCEL_TOKEN"
+          url="$(vercel deploy --prebuilt $TARGET --token="$VERCEL_TOKEN")"
+          echo "${{ matrix.app }}: $url" >> "$GITHUB_STEP_SUMMARY"
+          # Staging is a preview deployment given the staging domain; production's domains
+          # follow the production deployment automatically.
+          if [ "${{ inputs.environment }}" = staging ] && [ -n "$WEB_URL" ]; then
+            vercel alias set "$url" "${WEB_URL#https://}" --token="$VERCEL_TOKEN"
+          fi
+
+  smoke:
+    name: Smoke checks
+    needs: [backend, web]
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    env:
+      API: ${{ vars.PUBLIC_API_URL }}
+      WEB_URLS: >-
+        ${{ vars.WEB_URL_ADMIN }} ${{ vars.WEB_URL_MERCHANT }} ${{ vars.WEB_URL_KITCHEN }}
+        ${{ vars.WEB_URL_GUEST }} ${{ vars.WEB_URL_ROOM_SERVICE }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.sha }}
+      - name: Check the API and web apps
+        run: bash infra/deployment/smoke.sh

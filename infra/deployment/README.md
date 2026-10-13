@@ -1,21 +1,110 @@
 # Deployment and launch
 
-This guide is provider-neutral. **Two decisions are still open and block production:** the
-hosting provider for the API and worker containers, and the Supabase project region (choose
-the region closest to South Africa that the chosen plan offers, and confirm point-in-time
-recovery is available on it). Everything below works the same on any container host.
+Hosting (D80): the API and worker on **Railway**, the five web apps on **Vercel**, Postgres and
+file storage on **Supabase**, the encryption master key in **AWS KMS**. One manual GitHub
+workflow, **Deploy**, releases a tested commit to staging and then the same commit to production.
+First-time setup: "Setting up Railway, Vercel, Supabase and AWS" below.
 
 ## What runs where
 
 | Component | How it runs | Notes |
 | --- | --- | --- |
-| API | `backend/Dockerfile`, command `uvicorn app.main:create_app --factory --host 0.0.0.0 --port 8000 --proxy-headers` | Stateless; run at least 2 instances behind TLS. WebSockets at `/api/v1/ws` must be allowed by the load balancer (idle timeout above 60 s). |
-| Worker | same image, command `python -m app.worker` | Exactly one instance per environment is enough; it is safe to run two (deliveries are claimed with `SKIP LOCKED`). |
+| API | Railway service `api`: image `ghcr.io/<repo>/backend:<environment>` (built from `backend/Dockerfile`), its default command (listens on `PORT`) | Stateless; 2 replicas in production. Railway's proxy terminates TLS and passes WebSockets (`/api/v1/ws`). |
+| Worker | Railway service `worker`: same image, start command `python -m app.worker` | One replica; two are safe (deliveries are claimed with `SKIP LOCKED`). No public domain. |
 | Database | Supabase Postgres 15+ | Run `infra/db/bootstrap.sql` once as the Supabase `postgres` role, then `alembic upgrade head` as `diyneco_owner`. Schema `app` must never be exposed through the Supabase REST API. |
 | Storage | Supabase Storage, private buckets `hotel-assets` and `invoices` | Second, separately keyed copy in another region (operations runbook, backups). |
-| Redis | any managed Redis 7 | Rate limits across instances; required outside development. |
-| Web apps | `infra/docker/web.Dockerfile`, one image per app (`--build-arg APP=admin\|merchant\|kitchen\|guest\|room-service`), listening on port 3000 as a non-root user | `NEXT_PUBLIC_API_URL` (and, when files are not on Supabase, `NEXT_PUBLIC_STORAGE_URL`) are build arguments compiled into the pages and their Content-Security-Policy, so build per environment; they are public addresses, never secrets. The `Web images` workflow builds, starts and scans all five on every change and pushes them to GHCR when the repository variable `PUBLIC_API_URL` is set. Set the API's `MERCHANT_APP_URL` and `ADMIN_APP_URL` to the Merchant app's and Admin panel's addresses so account emails link to them, and list every web app's origin in `CORS_ALLOWED_ORIGINS`. |
-| Mobile apps | Expo / EAS (Guest, Room service) | Build profiles `staging` and `production`, each with its API URL. |
+| Redis | Railway Redis in the same project and environment | Rate limits across instances; required outside development. |
+| Web apps | Vercel, one project per app (root directory `apps/<app>`), built by the Deploy workflow | `NEXT_PUBLIC_API_URL` (and, when files are not on Supabase, `NEXT_PUBLIC_STORAGE_URL`) are compiled into the pages and their Content-Security-Policy at build time; public addresses, never secrets. Guest and Room service are web apps too (D58). The container images (`infra/docker/web.Dockerfile`) are still built and scanned in CI for any other host. |
+
+## Setting up Railway, Vercel, Supabase and AWS
+
+Do this once for **staging**, then again for **production**; the two never share a database,
+keys, Redis, buckets or Railway environment.
+
+**Domains (required).** Staff sign-in keeps its refresh token in a `SameSite=Strict` cookie on
+the API, which browsers only send when the web app and the API are on the same site. Put
+everything on one domain, for example `api.diyneco.com`, `merchant.diyneco.com`,
+`admin.diyneco.com`, `kitchen.diyneco.com`, `guest.diyneco.com`, `rooms.diyneco.com` (staging:
+`api.staging.diyneco.com` and so on). The default `*.up.railway.app` and `*.vercel.app` addresses
+do not work for staff sign-in, and the smoke checks refuse them.
+
+**Supabase.** Choose the region next to the Railway region: Railway `europe-west4` (Amsterdam)
+with Supabase Frankfurt (`eu-central-1`) is the nearest pair to South Africa. Hosting outside
+South Africa is a cross-border transfer of personal information, which the POPIA review must
+cover. Turn on point-in-time recovery. Run `infra/db/bootstrap.sql` once in the SQL editor as
+`postgres` with strong role passwords, and create the private buckets `hotel-assets` and
+`invoices`. Railway connects over IPv4, so use Supabase's **session pooler** connection string
+(port 5432; the user becomes `diyneco_api.<project-ref>`), never the transaction pooler: the API
+relies on per-transaction settings and prepared statements.
+
+**AWS KMS** (envelope encryption of TOTP secrets, guest ID numbers and webhook secrets). Per
+environment, create a symmetric key (`SYMMETRIC_DEFAULT`, automatic yearly rotation on) in one
+AWS region, and an IAM user whose only policy is:
+
+```json
+{"Version": "2012-10-17", "Statement": [{"Effect": "Allow",
+  "Action": ["kms:Encrypt", "kms:Decrypt"], "Resource": "<the key's ARN>"}]}
+```
+
+Give its access key to the API and worker as `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`,
+with `KMS_PROVIDER=aws`, `KMS_MASTER_KEY_ID=<the key's ARN>` and `AWS_REGION`. Never schedule the
+key for deletion: every secret encrypted under it would become unreadable.
+
+**Railway.** One project with environments `staging` and `production`. In each: a Redis
+database, and two services from the Docker image `ghcr.io/<owner>/<repo>/backend:<environment>`
+(add GitHub Container Registry credentials, a token with only `read:packages`, in each
+service's image settings):
+
+- `api`: the image's default command, healthcheck path `/api/v1/health`, region
+  `europe-west4`, 2 replicas in production, the API's custom domain;
+- `worker`: start command `python -m app.worker`, 1 replica, no domain.
+
+Variables on both services (Railway's sealed variables, never the repository):
+
+| Variable | Value |
+| --- | --- |
+| `APP_ENV` | `staging` or `production` |
+| `API_BASE_URL` | the API's public address |
+| `CORS_ALLOWED_ORIGINS` | every web app's address, comma-separated |
+| `MERCHANT_APP_URL`, `ADMIN_APP_URL` | the Merchant app's and Admin panel's addresses |
+| `DATABASE_URL`, `WORKER_DATABASE_URL` | session pooler, `postgresql+asyncpg://diyneco_api.<ref>:...` and `diyneco_worker.<ref>` |
+| `REDIS_URL` | `${{Redis.REDIS_URL}}` |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | from the Supabase project |
+| `JWT_SIGNING_KEYS_JSON`, `JWT_ACTIVE_KID`, `PAIRING_CODE_PEPPER` | new per environment (`uv run python scripts/gen_dev_keys.py` prints a fresh set; use only these three lines) |
+| `KMS_PROVIDER`, `KMS_MASTER_KEY_ID`, `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | AWS KMS, above |
+| `EMAIL_PROVIDER=smtp`, `EMAIL_SMTP_URL`, `EMAIL_PROVIDER_KEY`, `EMAIL_FROM` | the email provider |
+| `STITCH_*` | once Stitch is ready (checklist below) |
+| `SENTRY_DSN`, `SENTRY_TRACES_SAMPLE_RATE=0.05` | monitoring |
+| `FORWARDED_ALLOW_IPS` | `*`: on Railway the containers are reachable only through Railway's proxy, which sets `X-Forwarded-For` |
+| `RELEASE` | `${{RAILWAY_DEPLOYMENT_ID}}` |
+
+`MIGRATIONS_DATABASE_URL` (`diyneco_owner`) is **not** given to Railway. Migrations run from the
+Deploy workflow, so the running API never holds the schema owner's password.
+
+**Vercel.** Five projects (`admin`, `merchant`, `kitchen`, `guest`, `room-service`), each with
+root directory `apps/<app>` and framework Next.js, **Git deployments switched off** (the Deploy
+workflow builds exactly the released commit), and its production domain attached. Staging is
+a preview deployment given the staging domain.
+
+**GitHub.** Environments `staging` and `production` (production with required reviewers),
+each holding the secrets and variables listed at the top of `.github/workflows/deploy.yml`.
+
+**Releasing.** Actions > Deploy > Run workflow, environment `staging`, a commit hash from
+main. The workflow checks that every workflow on the commit is green and its backend image
+exists, runs `alembic upgrade head` and the migration check as the owner role, points
+`backend:staging` at that build and redeploys `api` and `worker` on Railway, builds and deploys
+the five web apps on Vercel, then runs `infra/deployment/smoke.sh`. Once staging is checked,
+run it again with `production` and the same commit.
+
+**First Super Admin** (once per environment, from a trusted machine, never in CI logs, since
+the script prints a one-time link to choose a password):
+
+```
+docker run --rm --env-file prod.env ghcr.io/<owner>/<repo>/backend:production \
+    python scripts/create_platform_admin.py --email ... --name ...
+```
+
+where `prod.env` holds the API's variables, kept out of the repository and deleted afterwards.
 
 ## Environments
 
@@ -25,25 +114,33 @@ domain. Configuration is in `backend/.env.example`; the settings refuse to start
 `staging`/`production` without Redis, Supabase, a real email provider and a non-local KMS in
 production.
 
-Secrets come from the host's secret manager, never from the image: `DATABASE_URL`,
-`WORKER_DATABASE_URL`, `MIGRATIONS_DATABASE_URL`, `JWT_SIGNING_KEYS_JSON`, `PAIRING_CODE_PEPPER`,
-`SUPABASE_SERVICE_ROLE_KEY`, `EMAIL_PROVIDER_KEY`, `REDIS_URL`, `SENTRY_DSN`, the KMS settings.
-Set `RELEASE` to the git commit so errors are tied to a release.
+Secrets come from Railway's sealed variables, never from the image: `DATABASE_URL`,
+`WORKER_DATABASE_URL`, `JWT_SIGNING_KEYS_JSON`, `PAIRING_CODE_PEPPER`,
+`SUPABASE_SERVICE_ROLE_KEY`, `EMAIL_PROVIDER_KEY`, `REDIS_URL`, `SENTRY_DSN`, the AWS and
+Stitch credentials. `MIGRATIONS_DATABASE_URL` lives only in the GitHub environment used by the
+Deploy workflow.
 
 ## Release process (staging, then production)
 
 1. CI is green on `main`: lint, strict types, migrations (including a full downgrade and
    upgrade), route tenancy check, the full test suite (cross-tenant, section 71 security
    tests, the spec's test case 70, report reconciliation) and the restore drill.
-2. Build the image once; deploy the **same image** to staging.
-3. On staging: `alembic upgrade head`, deploy API and worker, run the smoke checks below and,
-   for releases that touch hot paths, the load test (`infra/loadtest/locustfile.py`).
-4. Promote the same image to production in a quiet window (not 06:00–09:00 or 17:00–21:00
+2. CI builds the backend image once per commit on main. Deploy to staging releases that **same
+   image** (migrations, API, worker, web apps, smoke checks).
+3. Check staging; for releases that touch hot paths run the load test
+   (`infra/loadtest/locustfile.py`) there.
+4. Deploy the same commit to production in a quiet window (not 06:00–09:00 or 17:00–21:00
    hotel time). Migrations are additive first; destructive changes ship in a later release.
-5. Watch error rate, p95 latency and outbox lag for 30 minutes. Roll back by redeploying the
-   previous image; downgrade migrations only if the release notes say it is safe.
+5. Watch error rate, p95 latency and outbox lag for 30 minutes. Roll back by running Deploy
+   with the previous release's commit (its migrations are already applied, so this only rolls
+   the code back); downgrade migrations only if the release notes say it is safe.
 
 ## Smoke checks after a deploy
+
+The Deploy workflow runs `infra/deployment/smoke.sh`: the API answers healthily over HTTPS with
+its hardening headers and the standard error envelope, refuses anonymous admin access, and
+each web app loads with its security headers, a Content-Security-Policy built for this API and
+a domain on the same site as the API. Then by hand:
 
 - `GET /api/v1/health` returns 200; `GET /api/v1/admin/health` (platform token) shows the
   database, queue (oldest pending event under 60 s), realtime and email as `ok`.
@@ -77,8 +174,9 @@ uv run python scripts/restore_drill.py --source-url "$RESTORED_FROM" --target-ur
 
 ## Before the first hotel goes live
 
-- [ ] Hosting provider and Supabase region chosen; DNS and TLS for the API and web apps.
-- [ ] Production KMS configured (`KMS_PROVIDER` other than `local`).
+- [ ] Railway, Vercel, Supabase and AWS set up per environment as above, on one domain for the
+      API and web apps (DNS records from Railway and Vercel; both issue TLS certificates).
+- [ ] AWS KMS key and least-privilege IAM user per environment (`KMS_PROVIDER=aws`).
 - [ ] Email domain with SPF, DKIM and DMARC; `EMAIL_PROVIDER=smtp` and `EMAIL_SMTP_URL` set.
 - [ ] An SA attorney has reviewed the POPIA sections and a registered tax practitioner the
       VAT and invoicing rules (security spec).

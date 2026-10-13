@@ -10,7 +10,7 @@ RUN uv sync --frozen --no-dev --no-install-project
 COPY app ./app
 COPY alembic ./alembic
 COPY alembic.ini ./
-COPY scripts/check_migrations.py ./scripts/check_migrations.py
+COPY scripts/check_migrations.py scripts/create_platform_admin.py ./scripts/
 
 FROM python:3.12-slim
 RUN useradd --system --uid 10001 --home /app diyneco
@@ -20,9 +20,9 @@ ENV PATH="/app/.venv/bin:$PATH" PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
 USER diyneco
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s \
-  CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health', timeout=2).status == 200 else 1)"
+  CMD python -c "import os,urllib.request,sys; sys.exit(0 if urllib.request.urlopen(f'http://127.0.0.1:{os.environ.get(\"PORT\", \"8000\")}/api/v1/health', timeout=2).status == 200 else 1)"
 # Client IPs (rate limits, audit) come from X-Forwarded-For only when the request arrives from a
 # trusted proxy: set FORWARDED_ALLOW_IPS to the load balancer's address range per environment.
-# Never "*" on a container that is reachable directly.
-ENV FORWARDED_ALLOW_IPS=127.0.0.1
-CMD ["uvicorn", "app.main:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]
+# Never "*" on a container that is reachable directly. PORT is set by hosts such as Railway.
+ENV FORWARDED_ALLOW_IPS=127.0.0.1 PORT=8000
+CMD ["sh", "-c", "exec uvicorn app.main:create_app --factory --host 0.0.0.0 --port \"$PORT\" --proxy-headers"]

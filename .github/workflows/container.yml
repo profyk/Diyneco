@@ -1,13 +1,12 @@
 name: Backend image
 
-# Builds the API/worker image and scans it on every backend change; on main it is also pushed
-# to GitHub Container Registry, tagged with the commit hash. The deploy step to AWS or Railway
-# is added once the hosting provider is final (docs/DECISIONS.md).
+# Builds the API/worker image and scans it on every backend change; on main it is built and
+# pushed to GitHub Container Registry for every commit, tagged with the commit hash, so any
+# commit on main can be released by the Deploy workflow (DECISIONS D80).
 
 on:
   push:
     branches: [main]
-    paths: ["backend/**", ".github/workflows/container.yml"]
   pull_request:
     paths: ["backend/**", ".github/workflows/container.yml"]
 
