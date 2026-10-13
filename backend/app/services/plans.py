@@ -36,7 +36,7 @@ async def current_limits(uow: UnitOfWork, ctx: TenantContext) -> dict[str, Any] 
     if current is None:
         return None
     sub, plan = current
-    if plan is not None:
+    if plan is not None and sub.status != "pending_payment":  # a plan's limits once it is paid for
         base = plan.limits
     else:
         base = (await uow.session.execute(select(BillingSettings.trial_limits))).scalar_one()

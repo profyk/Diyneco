@@ -91,6 +91,14 @@ class BillingSettings(Base):
     price_change_notice_days: Mapped[int] = mapped_column(Integer)
     trial_days: Mapped[int] = mapped_column(Integer)
     trial_limits: Mapped[dict[str, Any]] = mapped_column(JSONB)
+    reminder_offsets: Mapped[list[int]] = mapped_column(ARRAY(Integer))
+    grace_days: Mapped[int] = mapped_column(Integer)
+    renewal_lead_days: Mapped[int] = mapped_column(Integer)
+    suspend_after_grace: Mapped[bool]
+    read_only_when_suspended: Mapped[bool]
+    proration_enabled: Mapped[bool]
+    card_provider: Mapped[str]
+    eft_enabled: Mapped[bool]
     version: Mapped[int] = mapped_column(Integer, server_default=text("1"))
     updated_at: Mapped[datetime] = _updated()
     updated_by: Mapped[uuid.UUID | None]
@@ -168,6 +176,11 @@ class Subscription(Base):
     trial_ends_on: Mapped[date | None]
     cancel_reason: Mapped[str | None]
     ended_on: Mapped[date | None]
+    pending_plan_id: Mapped[uuid.UUID | None]
+    pending_plan_price_id: Mapped[uuid.UUID | None]
+    pending_interval: Mapped[str | None]
+    past_due_since: Mapped[date | None]
+    suspended_at: Mapped[datetime | None]
     version: Mapped[int] = mapped_column(Integer, server_default=text("1"))
     created_at: Mapped[datetime] = _created()
     updated_at: Mapped[datetime] = _updated()
@@ -465,6 +478,8 @@ class SubscriptionInvoice(Base):
     payment_instructions: Mapped[str | None]
     notes: Mapped[str | None]
     pdf_path: Mapped[str | None]
+    purpose: Mapped[str] = mapped_column(server_default=text("'manual'"))
+    plan_id: Mapped[uuid.UUID | None]
     created_by: Mapped[uuid.UUID | None]
     created_at: Mapped[datetime] = _created()
     updated_at: Mapped[datetime] = _updated()
@@ -507,3 +522,101 @@ class SubscriptionInvoiceSequence(Base):
     prefix: Mapped[str] = mapped_column(primary_key=True)
     year: Mapped[int] = mapped_column(Integer, primary_key=True)
     next_number: Mapped[int] = mapped_column(BigInteger)
+
+
+class SubscriptionPaymentAttempt(Base):
+    """A checkout with a payment provider for an invoice (D79): pending until its status is
+    verified on the server, then final."""
+
+    __tablename__ = "subscription_payment_attempts"
+    id: Mapped[uuid.UUID] = _pk()
+    hotel_id: Mapped[uuid.UUID]
+    invoice_id: Mapped[uuid.UUID]
+    provider: Mapped[str]
+    test_mode: Mapped[bool]
+    amount_minor: Mapped[int] = mapped_column(BigInteger)
+    currency: Mapped[str] = mapped_column(CHAR(3))
+    provider_ref: Mapped[str | None]
+    checkout_url: Mapped[str | None]
+    status: Mapped[str] = mapped_column(server_default=text("'pending'"))
+    failure_reason: Mapped[str | None]
+    created_by: Mapped[uuid.UUID | None]
+    created_at: Mapped[datetime] = _created()
+    updated_at: Mapped[datetime] = _updated()
+    completed_at: Mapped[datetime | None]
+
+
+class SubscriptionPayment(Base):
+    """Money received for a subscription invoice (D79). Only reconciliation changes."""
+
+    __tablename__ = "subscription_payments"
+    id: Mapped[uuid.UUID] = _pk()
+    hotel_id: Mapped[uuid.UUID]
+    invoice_id: Mapped[uuid.UUID]
+    attempt_id: Mapped[uuid.UUID | None]
+    method: Mapped[str]
+    provider: Mapped[str]
+    test_mode: Mapped[bool] = mapped_column(server_default=text("false"))
+    amount_minor: Mapped[int] = mapped_column(BigInteger)
+    currency: Mapped[str] = mapped_column(CHAR(3))
+    reference: Mapped[str | None]
+    provider_payment_id: Mapped[str | None]
+    received_on: Mapped[date]
+    notes: Mapped[str | None]
+    reconciliation_status: Mapped[str] = mapped_column(server_default=text("'unreconciled'"))
+    reconciled_at: Mapped[datetime | None]
+    reconciled_by: Mapped[uuid.UUID | None]
+    reconciliation_note: Mapped[str | None]
+    recorded_by: Mapped[uuid.UUID | None]
+    created_at: Mapped[datetime] = _created()
+    updated_at: Mapped[datetime] = _updated()
+
+
+class SubscriptionRefund(Base):
+    """Money given back against a credit note (append-only, D79)."""
+
+    __tablename__ = "subscription_refunds"
+    id: Mapped[uuid.UUID] = _pk()
+    hotel_id: Mapped[uuid.UUID]
+    payment_id: Mapped[uuid.UUID]
+    credit_note_id: Mapped[uuid.UUID]
+    amount_minor: Mapped[int] = mapped_column(BigInteger)
+    currency: Mapped[str] = mapped_column(CHAR(3))
+    method: Mapped[str]
+    provider_refund_id: Mapped[str | None]
+    reference: Mapped[str | None]
+    test_mode: Mapped[bool] = mapped_column(server_default=text("false"))
+    reason: Mapped[str]
+    created_by: Mapped[uuid.UUID | None]
+    created_at: Mapped[datetime] = _created()
+
+
+class SubscriptionBillingEvent(Base):
+    """A billing lifecycle step (renewal, reminder, suspension, ...); the dedupe key makes
+    each one happen once (append-only, D79)."""
+
+    __tablename__ = "subscription_billing_events"
+    id: Mapped[uuid.UUID] = _pk()
+    hotel_id: Mapped[uuid.UUID]
+    subscription_id: Mapped[uuid.UUID | None]
+    invoice_id: Mapped[uuid.UUID | None]
+    kind: Mapped[str]
+    dedupe_key: Mapped[str | None]
+    detail: Mapped[dict[str, Any]] = mapped_column(JSONB, server_default=text("'{}'"))
+    created_at: Mapped[datetime] = _created()
+
+
+class BillingWebhookEvent(Base):
+    """A payment provider's webhook, stored once per provider and event id (control plane,
+    written only through app.billing_webhook_record and app.billing_webhook_done)."""
+
+    __tablename__ = "billing_webhook_events"
+    id: Mapped[uuid.UUID] = _pk()
+    provider: Mapped[str]
+    event_id: Mapped[str]
+    event_type: Mapped[str | None]
+    payload: Mapped[dict[str, Any]] = mapped_column(JSONB)
+    received_at: Mapped[datetime] = _created()
+    processed_at: Mapped[datetime | None]
+    outcome: Mapped[str | None]
+    error: Mapped[str | None]

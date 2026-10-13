@@ -8,7 +8,8 @@ from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, Request, Response
 
-from app.api.deps import IdemUser, Principal, StepUp, Uow, require_permission
+from app.api.deps import IdemUser, Principal, StepUp, Uow, require_permission, state_of
+from app.core.errors import AppError
 from app.schemas.plans import (
     BillingSettingsOut,
     BillingSettingsPut,
@@ -154,4 +155,9 @@ async def get_billing_settings(uow: Uow, principal: BillingManage) -> dict[str, 
 async def put_billing_settings(
     body: BillingSettingsPut, request: Request, uow: Uow, principal: BillingManage, _s: StepUp
 ) -> dict[str, Any]:
+    settings = state_of(request).settings
+    if body.card_provider == "stitch" and not settings.stitch_configured:
+        raise AppError("INVALID_TRANSITION", "Stitch is not configured on this server (STITCH_* variables).")
+    if body.card_provider == "sandbox" and settings.app_env == "production":
+        raise AppError("INVALID_TRANSITION", "The sandbox cannot take payments in production.")
     return await svc.put_billing_settings(uow, principal.platform_actor(request), body.model_dump())

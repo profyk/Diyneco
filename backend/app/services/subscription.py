@@ -1,9 +1,6 @@
-"""The hotel's own view of its subscription (DECISIONS D76): status, trial, agreed price and
-period, usage against limits, a server-side quote for a published plan, the billing contact,
-cancellation, and plan change requests (the platform applies them through /admin).
-
-Subscribing to a plan (pending payment, invoice, payment) arrives with invoicing and payments;
-until then a quote is informational and a change is requested from Diyneco.
+"""The hotel's own view of its subscription (DECISIONS D76, D79): status, trial, agreed price
+and period, usage against limits, a server-side quote for a published plan, the billing
+contact and cancellation. Subscribing and changing plan are in app.services.billing_engine.
 """
 
 from __future__ import annotations
@@ -14,14 +11,16 @@ from typing import Any
 from sqlalchemy import select, text
 
 from app.audit.writer import write_audit
+from app.billing import notices
+from app.billing.notices import BillingDeps
 from app.billing.quote import quote as compute_quote
 from app.core.countries import tax_id_ok
 from app.core.errors import AppError
 from app.db.session import TenantContext, UnitOfWork
-from app.models.tenancy import Plan, Subscription, SubscriptionBillingContact
+from app.models.tenancy import Plan, PlanPrice, Subscription, SubscriptionBillingContact, SubscriptionInvoice
 from app.realtime.outbox import emit
 from app.repositories.hotels import CURRENT_STATUSES, HotelRepository
-from app.services import catalogue, company
+from app.services import catalogue, company, sub_invoices
 from app.services.plans import _COUNT_SQL, current_limits
 from app.services.pricing import money
 
@@ -46,12 +45,31 @@ async def view(uow: UnitOfWork, ctx: TenantContext) -> dict[str, Any]:
         "price": None,
         "current_period_start": None,
         "cancel_at_period_end": False,
+        "pending_change": None,
+        "past_due_since": None,
+        "suspended_at": None,
+        "outstanding": [],
         "limits": limits,
         "usage": usage,
     }
     if current is None:
         return empty
     sub, plan = current
+    pending = None
+    if sub.pending_plan_id is not None:
+        target = (await uow.session.execute(select(Plan).where(Plan.id == sub.pending_plan_id))).scalar_one()
+        amount = (
+            await uow.session.execute(
+                select(PlanPrice.amount_minor).where(PlanPrice.id == sub.pending_plan_price_id)
+            )
+        ).scalar_one()
+        pending = {
+            "plan_code": target.code,
+            "plan_name": target.name,
+            "interval": sub.pending_interval,
+            "price": money(amount, sub.currency or target.currency),
+            "effective_on": sub.renews_on,
+        }
     return {
         **empty,
         "plan": await catalogue.plan_out(uow, plan) if plan is not None else None,
@@ -65,7 +83,44 @@ async def view(uow: UnitOfWork, ctx: TenantContext) -> dict[str, Any]:
         else None,
         "current_period_start": sub.current_period_start,
         "cancel_at_period_end": sub.status == "cancellation_scheduled",
+        "pending_change": pending,
+        "past_due_since": sub.past_due_since,
+        "suspended_at": sub.suspended_at,
+        "outstanding": await _outstanding(uow, ctx),
     }
+
+
+async def _outstanding(uow: UnitOfWork, ctx: TenantContext) -> list[dict[str, Any]]:
+    """Open invoices with something still to pay, oldest due first."""
+    rows = (
+        (
+            await uow.session.execute(
+                select(SubscriptionInvoice)
+                .where(
+                    SubscriptionInvoice.hotel_id == ctx.hotel_id,
+                    SubscriptionInvoice.kind == "invoice",
+                    SubscriptionInvoice.status.in_(sub_invoices.OPEN),
+                )
+                .order_by(SubscriptionInvoice.due_on)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    out = []
+    for inv in rows:
+        balance = (await sub_invoices.amounts(uow, inv))["balance"]
+        if balance > 0:
+            out.append(
+                {
+                    "invoice_id": inv.id,
+                    "number": inv.number,
+                    "status": inv.status,
+                    "due_on": inv.due_on,
+                    "balance": money(balance, inv.currency),
+                }
+            )
+    return out
 
 
 async def _published(uow: UnitOfWork, code: str) -> Plan:
@@ -117,32 +172,6 @@ async def quote(uow: UnitOfWork, ctx: TenantContext, plan_code: str, interval: s
     }
 
 
-async def request_change(uow: UnitOfWork, ctx: TenantContext, body: dict[str, Any]) -> dict[str, Any]:
-    plan = await _published(uow, body["plan_code"])
-    current = await HotelRepository(uow.session, ctx).current_subscription()
-    current_plan = current[1] if current else None
-    if current_plan is not None and current_plan.id == plan.id:
-        raise AppError("INVALID_TRANSITION", "You are already on that plan.")
-    await write_audit(
-        uow.session,
-        ctx,
-        "subscription.change_request",
-        "plan",
-        plan.id,
-        old_value={"plan": current_plan.code if current_plan else None},
-        new_value={"plan": plan.code},
-        reason=body.get("note"),
-    )
-    await emit(
-        uow.session,
-        ctx,
-        "SUBSCRIPTION_CHANGE_REQUESTED",
-        ["platform"],
-        {"hotel_id": str(ctx.hotel_id), "plan": plan.code},
-    )
-    return {"requested_plan": plan.code, "status": "received"}
-
-
 async def _current_locked(uow: UnitOfWork, ctx: TenantContext) -> Subscription:
     sub = (
         await uow.session.execute(
@@ -156,14 +185,50 @@ async def _current_locked(uow: UnitOfWork, ctx: TenantContext) -> Subscription:
     return sub
 
 
-async def cancel(uow: UnitOfWork, ctx: TenantContext, reason: str) -> dict[str, Any]:
-    """A trial ends at once; a paid subscription runs to the end of the period it was paid for
-    and then ends (nothing is refunded or deleted, and invoices stay). Hotel data is never
-    deleted for a cancellation."""
+async def cancel_pending(
+    deps: BillingDeps, uow: UnitOfWork, ctx: TenantContext, sub: Subscription, reason: str
+) -> None:
+    """Ends a subscription that never started and cancels its unpaid first invoice."""
+    inv = (
+        await uow.session.execute(
+            select(SubscriptionInvoice)
+            .where(
+                SubscriptionInvoice.subscription_id == sub.id,
+                SubscriptionInvoice.purpose == "initial",
+                SubscriptionInvoice.status.in_(sub_invoices.OPEN),
+            )
+            .with_for_update()
+        )
+    ).scalar_one_or_none()
+    if inv is not None:
+        if await sub_invoices.paid_total(uow, inv.id):
+            raise AppError(
+                "INVALID_TRANSITION",
+                "Part of the first invoice is paid. Contact Diyneco to cancel and settle it.",
+            )
+        if inv.is_tax_invoice:
+            await sub_invoices.credit(deps, uow, ctx, inv.id, reason, None)
+        else:
+            await sub_invoices.void(uow, ctx, inv.id, reason)
+    sub.status = "cancelled"
+    sub.ended_on = company.today_in((await company.company_row(uow)).timezone)
+    sub.cancelled_at = datetime.now(UTC)
+    sub.cancel_reason = reason
+    sub.version += 1
+    await uow.session.flush()
+
+
+async def cancel(deps: BillingDeps, uow: UnitOfWork, ctx: TenantContext, reason: str) -> dict[str, Any]:
+    """A trial ends at once; a subscription waiting for its first payment ends at once and its
+    unpaid first invoice is voided (or credited when it is a tax invoice); a paid subscription
+    runs to the end of the period it was paid for and then ends (nothing is refunded or
+    deleted, and invoices stay). Hotel data is never deleted for a cancellation."""
     sub = await _current_locked(uow, ctx)
     before = sub.status
     today = company.today_in((await company.company_row(uow)).timezone)
-    if sub.status == "trial":
+    if sub.status == "pending_payment":
+        await cancel_pending(deps, uow, ctx, sub, reason)
+    elif sub.status == "trial":
         sub.status, sub.ended_on, sub.cancelled_at = "cancelled", today, datetime.now(UTC)
     elif sub.status in ("active", "past_due"):
         sub.status, sub.cancelled_at = "cancellation_scheduled", datetime.now(UTC)
@@ -184,6 +249,15 @@ async def cancel(uow: UnitOfWork, ctx: TenantContext, reason: str) -> dict[str, 
         reason=reason,
     )
     await emit(uow.session, ctx, "SUBSCRIPTION_CANCELLED", ["platform"], {"hotel_id": str(ctx.hotel_id)})
+    if before != "trial":
+        await notices.notify(
+            deps,
+            uow,
+            ctx,
+            "subscription_cancelled",
+            {"ends_on": (sub.ended_on or sub.renews_on or today).isoformat(), "reason": reason},
+            subscription_id=sub.id,
+        )
     await uow.session.flush()
     return await view(uow, ctx)
 

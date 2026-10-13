@@ -1,5 +1,6 @@
 """Background worker: drains the event outbox to the in-process bus and queues webhook
 deliveries, delivers due webhooks, emails each hotel's daily close after 06:00 local time,
+runs subscription billing (renewals, reminders, overdue and suspension; DECISIONS D79),
 keeps monthly partitions ahead, and deletes expired idempotency keys and old published events.
 
     uv run python -m app.worker
@@ -24,7 +25,7 @@ import httpx
 from sqlalchemy import CursorResult, delete, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.core.config import get_settings
+from app.core.config import Settings, get_settings
 from app.core.crypto import LocalKms
 from app.core.jwt import JwtKeys
 from app.core.logging import configure_logging
@@ -35,7 +36,7 @@ from app.integrations.storage import Storage, build_storage
 from app.models.events import IdempotencyKey
 from app.notifications.email import Mailer, build_email_provider
 from app.realtime.bus import Event, EventBus
-from app.services import daily_close_job, images, integrations, privacy, webhook_delivery
+from app.services import billing_engine, daily_close_job, images, integrations, privacy, webhook_delivery
 from app.services.admin import OWNER_EMAILS_SQL
 from app.services.health_monitor import HealthMonitor
 
@@ -90,6 +91,13 @@ async def maintenance(sessionmaker: async_sessionmaker[AsyncSession]) -> dict[st
     return result
 
 
+@dataclass(frozen=True)
+class BillingDeps:
+    settings: Settings
+    storage: Storage
+    mailer: Mailer
+
+
 @dataclass
 class Worker:
     db: Database
@@ -99,6 +107,7 @@ class Worker:
     http: httpx.AsyncClient | None = None
     storage: Storage | None = None
     assets_bucket: str = "hotel-assets"
+    settings: Settings | None = None
     health: HealthMonitor = field(default_factory=HealthMonitor)
     _stop: asyncio.Event = field(default_factory=asyncio.Event)
 
@@ -144,6 +153,10 @@ class Worker:
                 if self.mailer is not None and time.monotonic() - last_jobs > JOBS_EVERY_S:
                     await daily_close_job.send_daily_closes(self.db.sessionmaker, self.mailer)
                     await privacy.run_retention(self.db.sessionmaker)
+                    if self.settings is not None and self.storage is not None:
+                        await billing_engine.run(
+                            BillingDeps(self.settings, self.storage, self.mailer), self.db.sessionmaker
+                        )
                     last_jobs = time.monotonic()
                 if time.monotonic() - last_images > IMAGES_EVERY_S:
                     await self.health.check(self.db.sessionmaker)
@@ -189,6 +202,7 @@ async def _main() -> None:
             ),
         ),
         assets_bucket=settings.storage_bucket_assets,
+        settings=settings,
     )
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGINT, signal.SIGTERM):

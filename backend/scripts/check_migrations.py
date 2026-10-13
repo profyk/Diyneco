@@ -31,6 +31,8 @@ FINANCIAL_TABLES = (
     "order_status_history",
     "subscription_invoice_lines",
     "subscription_invoice_events",
+    "subscription_refunds",
+    "subscription_billing_events",
 )
 APP_ROLES = ("diyneco_api", "diyneco_worker")
 

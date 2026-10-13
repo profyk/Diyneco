@@ -478,12 +478,28 @@ async def set_status(
 # --- Billing settings ----------------------------------------------------------------------
 
 
-SETTINGS_FIELDS = ("price_change_notice_days", "trial_days", "trial_limits")
+SETTINGS_FIELDS = (
+    "price_change_notice_days",
+    "trial_days",
+    "trial_limits",
+    "reminder_offsets",
+    "grace_days",
+    "renewal_lead_days",
+    "suspend_after_grace",
+    "read_only_when_suspended",
+    "proration_enabled",
+    "card_provider",
+    "eft_enabled",
+)
 
 
 async def billing_settings(uow: UnitOfWork) -> dict[str, Any]:
     s = (await uow.session.execute(select(BillingSettings))).scalar_one()
-    return {**{f: getattr(s, f) for f in SETTINGS_FIELDS}, "version": s.version, "updated_at": s.updated_at}
+    return {
+        **{f: list(v) if isinstance(v := getattr(s, f), list) else v for f in SETTINGS_FIELDS},
+        "version": s.version,
+        "updated_at": s.updated_at,
+    }
 
 
 async def put_billing_settings(
@@ -494,7 +510,9 @@ async def put_billing_settings(
     if body["version"] != s.version:
         raise AppError("PRECONDITION_FAILED")
     before = {f: getattr(s, f) for f in SETTINGS_FIELDS}
-    changed = {f: body[f] for f in SETTINGS_FIELDS if before[f] != body[f]}
+    if body.get("reminder_offsets") is not None:
+        body["reminder_offsets"] = sorted(set(body["reminder_offsets"]))
+    changed = {f: body[f] for f in SETTINGS_FIELDS if body.get(f) is not None and before[f] != body[f]}
     if not changed:
         raise AppError("VALIDATION_FAILED", "Nothing changed.")
     for f, v in changed.items():

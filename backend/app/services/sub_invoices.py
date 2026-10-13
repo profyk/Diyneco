@@ -22,10 +22,10 @@ from sqlalchemy import func, insert, select, text
 
 from app.audit.writer import write_audit
 from app.billing import subscription_pdf
+from app.billing.notices import BillingDeps
 from app.billing.vat import gross_and_vat, vat_included
 from app.core.currencies import format_minor, is_supported
 from app.core.errors import AppError
-from app.core.state import AppState
 from app.db.session import TenantContext, UnitOfWork
 from app.integrations.storage import hotel_key
 from app.models.tenancy import (
@@ -34,6 +34,8 @@ from app.models.tenancy import (
     SubscriptionInvoice,
     SubscriptionInvoiceEvent,
     SubscriptionInvoiceLine,
+    SubscriptionPayment,
+    SubscriptionRefund,
 )
 from app.services import company
 from app.services.admin import OWNER_EMAILS_SQL
@@ -80,6 +82,34 @@ async def _credited(uow: UnitOfWork, invoice_id: uuid.UUID) -> int:
     )
 
 
+async def paid_total(uow: UnitOfWork, invoice_id: uuid.UUID) -> int:
+    """Money received for the invoice less money refunded from those payments."""
+    received = (
+        await uow.session.execute(
+            select(func.coalesce(func.sum(SubscriptionPayment.amount_minor), 0)).where(
+                SubscriptionPayment.invoice_id == invoice_id
+            )
+        )
+    ).scalar_one()
+    refunded = (
+        await uow.session.execute(
+            select(func.coalesce(func.sum(SubscriptionRefund.amount_minor), 0))
+            .join(SubscriptionPayment, SubscriptionPayment.id == SubscriptionRefund.payment_id)
+            .where(SubscriptionPayment.invoice_id == invoice_id)
+        )
+    ).scalar_one()
+    return int(received) - int(refunded)
+
+
+async def amounts(uow: UnitOfWork, inv: SubscriptionInvoice) -> dict[str, int]:
+    """Paid, credited and the balance still due (never negative; credit notes owe nothing)."""
+    if inv.kind != "invoice":
+        return {"paid": 0, "credited": 0, "balance": 0}
+    paid = await paid_total(uow, inv.id)
+    credited = await _credited(uow, inv.id)
+    return {"paid": paid, "credited": credited, "balance": max(0, inv.total_minor - paid - credited)}
+
+
 def _line_out(line: SubscriptionInvoiceLine) -> dict[str, Any]:
     return {
         c: getattr(line, c)
@@ -104,8 +134,7 @@ async def payload(uow: UnitOfWork, inv: SubscriptionInvoice, *, with_lines: bool
                 select(SubscriptionInvoice.number).where(SubscriptionInvoice.id == inv.credits_invoice_id)
             )
         ).scalar_one_or_none()
-    credited = await _credited(uow, inv.id) if inv.kind == "invoice" else 0
-    paid = 0  # payments arrive with the payments slice (D73)
+    figures = await amounts(uow, inv)
     return {
         "id": inv.id,
         "hotel_id": inv.hotel_id,
@@ -117,11 +146,10 @@ async def payload(uow: UnitOfWork, inv: SubscriptionInvoice, *, with_lines: bool
         "subtotal": money(inv.subtotal_minor, inv.currency),
         "tax": money(inv.tax_minor, inv.currency),
         "total": money(inv.total_minor, inv.currency),
-        "paid": money(paid, inv.currency),
-        "credited": money(credited, inv.currency),
-        "balance": money(
-            max(0, inv.total_minor - paid - credited) if inv.kind == "invoice" else 0, inv.currency
-        ),
+        "paid": money(figures["paid"], inv.currency),
+        "credited": money(figures["credited"], inv.currency),
+        "balance": money(figures["balance"], inv.currency),
+        "purpose": inv.purpose,
         "tax_name": inv.tax_name,
         "tax_rate_bp": inv.tax_rate_bp,
         "period_start": inv.period_start,
@@ -164,7 +192,7 @@ async def get(
     return inv
 
 
-async def pdf_url(st: AppState, inv: SubscriptionInvoice) -> str:
+async def pdf_url(st: BillingDeps, inv: SubscriptionInvoice) -> str:
     """A signed address valid for 5 minutes, minted only after the tenant check."""
     if inv.pdf_path is None:
         raise AppError("NOT_FOUND", "This invoice has no PDF yet.")
@@ -186,6 +214,8 @@ async def create_draft(
     notes: str | None = None,
     subscription_id: uuid.UUID | None = None,
     reason: str | None = None,
+    purpose: str = "manual",
+    plan_id: uuid.UUID | None = None,
 ) -> SubscriptionInvoice:
     if not is_supported(currency):
         raise _field("currency", "That currency is not supported.")
@@ -214,6 +244,8 @@ async def create_draft(
             .values(
                 hotel_id=ctx.hotel_id,
                 subscription_id=subscription_id,
+                purpose=purpose,
+                plan_id=plan_id,
                 kind="invoice",
                 currency=currency,
                 subtotal_minor=total - tax_total,
@@ -346,7 +378,7 @@ async def _number(uow: UnitOfWork, kind: str, settings: Any, on: date) -> str:
 
 
 async def _render_and_store(
-    st: AppState, uow: UnitOfWork, ctx: TenantContext, inv: SubscriptionInvoice
+    st: BillingDeps, uow: UnitOfWork, ctx: TenantContext, inv: SubscriptionInvoice
 ) -> bytes:
     data = await payload(uow, inv)
     settings = await company.company_row(uow)
@@ -381,7 +413,7 @@ async def _recipients(uow: UnitOfWork, ctx: TenantContext, buyer: dict[str, Any]
 
 
 async def send(
-    st: AppState, uow: UnitOfWork, ctx: TenantContext, inv: SubscriptionInvoice, pdf: bytes | None = None
+    st: BillingDeps, uow: UnitOfWork, ctx: TenantContext, inv: SubscriptionInvoice, pdf: bytes | None = None
 ) -> int:
     """Emails the PDF to the billing contact (or the owners). The email links to the signed-in
     Merchant app, never to a public copy of the invoice."""
@@ -420,8 +452,15 @@ async def send(
 
 
 async def issue(
-    st: AppState, uow: UnitOfWork, ctx: TenantContext, invoice_id: uuid.UUID
+    st: BillingDeps,
+    uow: UnitOfWork,
+    ctx: TenantContext,
+    invoice_id: uuid.UUID,
+    *,
+    due_on: date | None = None,
 ) -> SubscriptionInvoice:
+    """Numbers, freezes, renders and emails a draft. Due after the payment terms, or on
+    `due_on` (a renewal is due when its period starts)."""
     inv = await _locked(uow, ctx, invoice_id)
     if inv.status != "draft":
         raise AppError("INVALID_TRANSITION", "Only a draft can be issued.")
@@ -438,12 +477,18 @@ async def issue(
             "INVALID_TRANSITION",
             "Diyneco's VAT position changed since this draft was made. Discard it and draft it again.",
         )
-    inv.number = await _number(uow, inv.kind, settings, today)
+    # Everything that queries comes first: an autoflushing session must never write a half-issued
+    # invoice (the freeze trigger would then refuse the rest).
+    number = await _number(uow, inv.kind, settings, today)
+    buyer = await _buyer(uow, ctx)
+    inv.number = number
     inv.status = "issued"
     inv.issued_at = datetime.now(UTC)
-    inv.due_on = today + timedelta(days=settings.payment_terms_days) if inv.kind == "invoice" else None
+    inv.due_on = (
+        (due_on or today + timedelta(days=settings.payment_terms_days)) if inv.kind == "invoice" else None
+    )
     inv.seller = _seller(settings)
-    inv.buyer = await _buyer(uow, ctx)
+    inv.buyer = buyer
     inv.payment_instructions = settings.payment_instructions if inv.kind == "invoice" else None
     await uow.session.flush()
     pdf = await _render_and_store(st, uow, ctx, inv)
@@ -475,6 +520,8 @@ async def void(
         raise AppError("INVALID_TRANSITION", "A tax invoice is corrected with a credit note, never voided.")
     elif await _credited(uow, inv.id):
         raise AppError("INVALID_TRANSITION", "This invoice has credit notes; credit the rest instead.")
+    elif await paid_total(uow, inv.id):
+        raise AppError("INVALID_TRANSITION", "Money was received for this invoice; credit it instead.")
     before = inv.status
     inv.status = "void"
     await uow.session.flush()
@@ -493,7 +540,7 @@ async def void(
 
 
 async def credit(
-    st: AppState,
+    st: BillingDeps,
     uow: UnitOfWork,
     ctx: TenantContext,
     invoice_id: uuid.UUID,
@@ -517,6 +564,8 @@ async def credit(
             .values(
                 hotel_id=ctx.hotel_id,
                 subscription_id=original.subscription_id,
+                purpose="credit",
+                plan_id=original.plan_id,
                 kind="credit_note",
                 credits_invoice_id=original.id,
                 currency=original.currency,
@@ -573,3 +622,22 @@ async def credit(
     )
     await send(st, uow, ctx, note, pdf)
     return note
+
+
+async def settle(uow: UnitOfWork, ctx: TenantContext, inv: SubscriptionInvoice, reason: str) -> str:
+    """Moves an invoice to paid or partially paid after money arrived; returns its status."""
+    figures = await amounts(uow, inv)
+    before = inv.status
+    if before not in OPEN:
+        return before
+    if figures["balance"] == 0 and figures["paid"] > 0:
+        target = "paid"
+    elif figures["paid"] > 0 and before in ("issued", "overdue"):
+        target = "partially_paid"
+    else:
+        return before
+    if target != before:
+        inv.status = target
+        await uow.session.flush()
+        await _event(uow, ctx, inv.id, before, target, reason)
+    return target

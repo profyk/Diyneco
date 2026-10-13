@@ -756,6 +756,326 @@
         "title": "AdminHotelList",
         "type": "object"
       },
+      "AdminInvoiceList": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/AdminInvoiceRow"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "data",
+          "total"
+        ],
+        "title": "AdminInvoiceList",
+        "type": "object"
+      },
+      "AdminInvoiceRow": {
+        "properties": {
+          "balance": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "credited": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "due_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due On"
+          },
+          "hotel_id": {
+            "format": "uuid",
+            "title": "Hotel Id",
+            "type": "string"
+          },
+          "hotel_name": {
+            "title": "Hotel Name",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "is_tax_invoice": {
+            "title": "Is Tax Invoice",
+            "type": "boolean"
+          },
+          "issued_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Issued At"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Number"
+          },
+          "paid": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "period_end": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period End"
+          },
+          "period_start": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Start"
+          },
+          "plan_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plan Code"
+          },
+          "purpose": {
+            "title": "Purpose",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "tax": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "total": {
+            "$ref": "#/components/schemas/SignedMoney"
+          }
+        },
+        "required": [
+          "id",
+          "hotel_id",
+          "hotel_name",
+          "kind",
+          "purpose",
+          "number",
+          "status",
+          "currency",
+          "total",
+          "tax",
+          "paid",
+          "credited",
+          "balance",
+          "issued_at",
+          "due_on",
+          "period_start",
+          "period_end",
+          "plan_code",
+          "is_tax_invoice"
+        ],
+        "title": "AdminInvoiceRow",
+        "type": "object"
+      },
+      "AdminPaymentList": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/AdminPaymentRow"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "data",
+          "total"
+        ],
+        "title": "AdminPaymentList",
+        "type": "object"
+      },
+      "AdminPaymentRow": {
+        "properties": {
+          "amount": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "hotel_id": {
+            "format": "uuid",
+            "title": "Hotel Id",
+            "type": "string"
+          },
+          "hotel_name": {
+            "title": "Hotel Name",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "invoice_id": {
+            "format": "uuid",
+            "title": "Invoice Id",
+            "type": "string"
+          },
+          "invoice_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoice Number"
+          },
+          "method": {
+            "title": "Method",
+            "type": "string"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
+          "provider_payment_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Payment Id"
+          },
+          "received_on": {
+            "format": "date",
+            "title": "Received On",
+            "type": "string"
+          },
+          "reconciled_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reconciled At"
+          },
+          "reconciliation_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reconciliation Note"
+          },
+          "reconciliation_status": {
+            "title": "Reconciliation Status",
+            "type": "string"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference"
+          },
+          "refunded": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "test_mode": {
+            "title": "Test Mode",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "hotel_id",
+          "hotel_name",
+          "invoice_id",
+          "invoice_number",
+          "method",
+          "provider",
+          "test_mode",
+          "amount",
+          "refunded",
+          "reference",
+          "provider_payment_id",
+          "received_on",
+          "reconciliation_status",
+          "reconciliation_note",
+          "reconciled_at",
+          "created_at"
+        ],
+        "title": "AdminPaymentRow",
+        "type": "object"
+      },
       "Analytics": {
         "properties": {
           "days": {
@@ -1086,6 +1406,104 @@
           "user_id"
         ],
         "title": "AssignRequest",
+        "type": "object"
+      },
+      "AttemptList": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/AttemptOut"
+            },
+            "title": "Data",
+            "type": "array"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "AttemptList",
+        "type": "object"
+      },
+      "AttemptOut": {
+        "properties": {
+          "amount": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "failure_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Reason"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "invoice_id": {
+            "format": "uuid",
+            "title": "Invoice Id",
+            "type": "string"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
+          "provider_label": {
+            "title": "Provider Label",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "succeeded",
+              "failed",
+              "cancelled",
+              "expired"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "test_mode": {
+            "title": "Test Mode",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "invoice_id",
+          "provider",
+          "provider_label",
+          "test_mode",
+          "amount",
+          "status",
+          "failure_reason",
+          "created_at",
+          "completed_at"
+        ],
+        "title": "AttemptOut",
         "type": "object"
       },
       "AuditEntry": {
@@ -1710,9 +2128,49 @@
       },
       "BillingSettingsOut": {
         "properties": {
+          "card_provider": {
+            "enum": [
+              "none",
+              "sandbox",
+              "stitch"
+            ],
+            "title": "Card Provider",
+            "type": "string"
+          },
+          "eft_enabled": {
+            "title": "Eft Enabled",
+            "type": "boolean"
+          },
+          "grace_days": {
+            "title": "Grace Days",
+            "type": "integer"
+          },
           "price_change_notice_days": {
             "title": "Price Change Notice Days",
             "type": "integer"
+          },
+          "proration_enabled": {
+            "title": "Proration Enabled",
+            "type": "boolean"
+          },
+          "read_only_when_suspended": {
+            "title": "Read Only When Suspended",
+            "type": "boolean"
+          },
+          "reminder_offsets": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Reminder Offsets",
+            "type": "array"
+          },
+          "renewal_lead_days": {
+            "title": "Renewal Lead Days",
+            "type": "integer"
+          },
+          "suspend_after_grace": {
+            "title": "Suspend After Grace",
+            "type": "boolean"
           },
           "trial_days": {
             "title": "Trial Days",
@@ -1739,6 +2197,14 @@
           "price_change_notice_days",
           "trial_days",
           "trial_limits",
+          "reminder_offsets",
+          "grace_days",
+          "renewal_lead_days",
+          "suspend_after_grace",
+          "read_only_when_suspended",
+          "proration_enabled",
+          "card_provider",
+          "eft_enabled",
           "version",
           "updated_at"
         ],
@@ -1748,17 +2214,120 @@
       "BillingSettingsPut": {
         "additionalProperties": false,
         "properties": {
+          "card_provider": {
+            "anyOf": [
+              {
+                "enum": [
+                  "none",
+                  "sandbox",
+                  "stitch"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Card Provider"
+          },
+          "eft_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Eft Enabled"
+          },
+          "grace_days": {
+            "anyOf": [
+              {
+                "maximum": 90.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grace Days"
+          },
           "price_change_notice_days": {
             "maximum": 365.0,
             "minimum": 0.0,
             "title": "Price Change Notice Days",
             "type": "integer"
           },
+          "proration_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Proration Enabled"
+          },
+          "read_only_when_suspended": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Read Only When Suspended"
+          },
           "reason": {
             "maxLength": 500,
             "minLength": 3,
             "title": "Reason",
             "type": "string"
+          },
+          "reminder_offsets": {
+            "anyOf": [
+              {
+                "items": {
+                  "maximum": 60.0,
+                  "minimum": -60.0,
+                  "type": "integer"
+                },
+                "maxItems": 10,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reminder Offsets"
+          },
+          "renewal_lead_days": {
+            "anyOf": [
+              {
+                "maximum": 60.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Renewal Lead Days"
+          },
+          "suspend_after_grace": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suspend After Grace"
           },
           "trial_days": {
             "maximum": 365.0,
@@ -1795,6 +2364,77 @@
           "trial_limits"
         ],
         "title": "BillingSettingsPut",
+        "type": "object"
+      },
+      "BillingSummary": {
+        "properties": {
+          "active_subscriptions": {
+            "title": "Active Subscriptions",
+            "type": "integer"
+          },
+          "by_plan": {
+            "items": {
+              "$ref": "#/components/schemas/PlanRevenue"
+            },
+            "title": "By Plan",
+            "type": "array"
+          },
+          "cancelled_subscriptions": {
+            "title": "Cancelled Subscriptions",
+            "type": "integer"
+          },
+          "currencies": {
+            "items": {
+              "$ref": "#/components/schemas/SummaryCurrency"
+            },
+            "title": "Currencies",
+            "type": "array"
+          },
+          "failed_payments": {
+            "title": "Failed Payments",
+            "type": "integer"
+          },
+          "from": {
+            "format": "date",
+            "title": "From",
+            "type": "string"
+          },
+          "new_subscriptions": {
+            "title": "New Subscriptions",
+            "type": "integer"
+          },
+          "past_due": {
+            "title": "Past Due",
+            "type": "integer"
+          },
+          "suspended": {
+            "title": "Suspended",
+            "type": "integer"
+          },
+          "to": {
+            "format": "date",
+            "title": "To",
+            "type": "string"
+          },
+          "trials": {
+            "title": "Trials",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "active_subscriptions",
+          "trials",
+          "past_due",
+          "suspended",
+          "new_subscriptions",
+          "cancelled_subscriptions",
+          "failed_payments",
+          "currencies",
+          "by_plan"
+        ],
+        "title": "BillingSummary",
         "type": "object"
       },
       "BulkResult": {
@@ -2170,52 +2810,6 @@
         "title": "CategoryRouted",
         "type": "object"
       },
-      "ChangeRequest": {
-        "additionalProperties": false,
-        "properties": {
-          "note": {
-            "anyOf": [
-              {
-                "maxLength": 1000,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Note"
-          },
-          "plan_code": {
-            "pattern": "^[a-z][a-z0-9_]{1,40}$",
-            "title": "Plan Code",
-            "type": "string"
-          }
-        },
-        "required": [
-          "plan_code"
-        ],
-        "title": "ChangeRequest",
-        "type": "object"
-      },
-      "ChangeRequestOut": {
-        "properties": {
-          "requested_plan": {
-            "title": "Requested Plan",
-            "type": "string"
-          },
-          "status": {
-            "const": "received",
-            "title": "Status",
-            "type": "string"
-          }
-        },
-        "required": [
-          "requested_plan",
-          "status"
-        ],
-        "title": "ChangeRequestOut",
-        "type": "object"
-      },
       "ChargeCategoryList": {
         "properties": {
           "data": {
@@ -2315,49 +2909,6 @@
           "amount"
         ],
         "title": "ChargeRequest",
-        "type": "object"
-      },
-      "CheckoutOut": {
-        "properties": {
-          "emailed_to": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Emailed To",
-            "type": "array"
-          },
-          "invoice": {
-            "$ref": "#/components/schemas/InvoiceOut"
-          },
-          "override_reason": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Override Reason"
-          },
-          "status": {
-            "title": "Status",
-            "type": "string"
-          },
-          "stay_id": {
-            "format": "uuid",
-            "title": "Stay Id",
-            "type": "string"
-          }
-        },
-        "required": [
-          "stay_id",
-          "status",
-          "override_reason",
-          "invoice",
-          "emailed_to"
-        ],
-        "title": "CheckoutOut",
         "type": "object"
       },
       "CheckoutRequest": {
@@ -5530,6 +6081,35 @@
             "title": "Limits",
             "type": "object"
           },
+          "outstanding": {
+            "items": {
+              "$ref": "#/components/schemas/OutstandingInvoice"
+            },
+            "title": "Outstanding",
+            "type": "array"
+          },
+          "past_due_since": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Past Due Since"
+          },
+          "pending_change": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PendingChange"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "plan": {
             "anyOf": [
               {
@@ -5595,6 +6175,18 @@
             ],
             "title": "Status"
           },
+          "suspended_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suspended At"
+          },
           "trial_ends_on": {
             "anyOf": [
               {
@@ -5625,6 +6217,10 @@
           "price",
           "current_period_start",
           "cancel_at_period_end",
+          "pending_change",
+          "past_due_since",
+          "suspended_at",
+          "outstanding",
           "limits",
           "usage"
         ],
@@ -7652,6 +8248,63 @@
         "title": "LogoUploadRequest",
         "type": "object"
       },
+      "ManualPayment": {
+        "additionalProperties": false,
+        "description": "A payment seen on Diyneco's bank statement, recorded after checking it.",
+        "properties": {
+          "amount_minor": {
+            "maximum": 1000000000000.0,
+            "minimum": 1.0,
+            "title": "Amount Minor",
+            "type": "integer"
+          },
+          "invoice_id": {
+            "format": "uuid",
+            "title": "Invoice Id",
+            "type": "string"
+          },
+          "method": {
+            "default": "eft",
+            "enum": [
+              "eft",
+              "other"
+            ],
+            "title": "Method",
+            "type": "string"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "received_on": {
+            "format": "date",
+            "title": "Received On",
+            "type": "string"
+          },
+          "reference": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Reference",
+            "type": "string"
+          }
+        },
+        "required": [
+          "invoice_id",
+          "amount_minor",
+          "reference",
+          "received_on"
+        ],
+        "title": "ManualPayment",
+        "type": "object"
+      },
       "MeHotel": {
         "properties": {
           "currency": {
@@ -8949,6 +9602,54 @@
         "title": "OrdersReport",
         "type": "object"
       },
+      "OutstandingInvoice": {
+        "properties": {
+          "balance": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "due_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due On"
+          },
+          "invoice_id": {
+            "format": "uuid",
+            "title": "Invoice Id",
+            "type": "string"
+          },
+          "number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Number"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "invoice_id",
+          "number",
+          "status",
+          "due_on",
+          "balance"
+        ],
+        "title": "OutstandingInvoice",
+        "type": "object"
+      },
       "PairRequest": {
         "additionalProperties": false,
         "properties": {
@@ -9216,135 +9917,24 @@
         "title": "PaymentLine",
         "type": "object"
       },
-      "PaymentList": {
+      "PaymentOptions": {
         "properties": {
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/PaymentOut"
-            },
-            "title": "Data",
-            "type": "array"
+          "eft": {
+            "additionalProperties": true,
+            "title": "Eft",
+            "type": "object"
           },
-          "next_cursor": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Next Cursor"
+          "online": {
+            "additionalProperties": true,
+            "title": "Online",
+            "type": "object"
           }
         },
         "required": [
-          "data"
+          "online",
+          "eft"
         ],
-        "title": "PaymentList",
-        "type": "object"
-      },
-      "PaymentOut": {
-        "properties": {
-          "amount_due": {
-            "$ref": "#/components/schemas/Money"
-          },
-          "amount_received": {
-            "$ref": "#/components/schemas/Money"
-          },
-          "created_at": {
-            "format": "date-time",
-            "title": "Created At",
-            "type": "string"
-          },
-          "id": {
-            "format": "uuid",
-            "title": "Id",
-            "type": "string"
-          },
-          "late_reason": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Late Reason"
-          },
-          "method": {
-            "title": "Method",
-            "type": "string"
-          },
-          "occurred_at": {
-            "format": "date-time",
-            "title": "Occurred At",
-            "type": "string"
-          },
-          "order_id": {
-            "anyOf": [
-              {
-                "format": "uuid",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Order Id"
-          },
-          "recorded_by": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Recorded By"
-          },
-          "status": {
-            "title": "Status",
-            "type": "string"
-          },
-          "stay_id": {
-            "format": "uuid",
-            "title": "Stay Id",
-            "type": "string"
-          },
-          "terminal_reference": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Terminal Reference"
-          },
-          "tip": {
-            "$ref": "#/components/schemas/Money"
-          }
-        },
-        "required": [
-          "id",
-          "order_id",
-          "stay_id",
-          "method",
-          "status",
-          "amount_due",
-          "amount_received",
-          "tip",
-          "terminal_reference",
-          "recorded_by",
-          "occurred_at",
-          "late_reason",
-          "created_at"
-        ],
-        "title": "PaymentOut",
+        "title": "PaymentOptions",
         "type": "object"
       },
       "PaymentPreview": {
@@ -9563,6 +10153,58 @@
         "title": "PdfLink",
         "type": "object"
       },
+      "PendingChange": {
+        "properties": {
+          "effective_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective On"
+          },
+          "interval": {
+            "anyOf": [
+              {
+                "enum": [
+                  "month",
+                  "quarter",
+                  "year"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interval"
+          },
+          "plan_code": {
+            "title": "Plan Code",
+            "type": "string"
+          },
+          "plan_name": {
+            "title": "Plan Name",
+            "type": "string"
+          },
+          "price": {
+            "$ref": "#/components/schemas/SignedMoney"
+          }
+        },
+        "required": [
+          "plan_code",
+          "plan_name",
+          "interval",
+          "price",
+          "effective_on"
+        ],
+        "title": "PendingChange",
+        "type": "object"
+      },
       "PermissionList": {
         "properties": {
           "data": {
@@ -9652,6 +10294,64 @@
           "quoted_total"
         ],
         "title": "PlaceOrder",
+        "type": "object"
+      },
+      "PlanChangeOut": {
+        "properties": {
+          "effective": {
+            "enum": [
+              "now",
+              "renewal",
+              "withdrawn"
+            ],
+            "title": "Effective",
+            "type": "string"
+          },
+          "invoice": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SubscriptionInvoiceOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "subscription": {
+            "$ref": "#/components/schemas/HotelSubscription"
+          }
+        },
+        "required": [
+          "subscription",
+          "invoice",
+          "effective"
+        ],
+        "title": "PlanChangeOut",
+        "type": "object"
+      },
+      "PlanChangeRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "interval": {
+            "enum": [
+              "month",
+              "quarter",
+              "year"
+            ],
+            "title": "Interval",
+            "type": "string"
+          },
+          "plan_code": {
+            "pattern": "^[a-z][a-z0-9_]{1,40}$",
+            "title": "Plan Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "plan_code",
+          "interval"
+        ],
+        "title": "PlanChangeRequest",
         "type": "object"
       },
       "PlanCreate": {
@@ -10193,6 +10893,37 @@
         "title": "PlanPatch",
         "type": "object"
       },
+      "PlanRevenue": {
+        "properties": {
+          "collected": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "mrr": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "plan_code": {
+            "title": "Plan Code",
+            "type": "string"
+          },
+          "plan_name": {
+            "title": "Plan Name",
+            "type": "string"
+          },
+          "subscriptions": {
+            "title": "Subscriptions",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "plan_code",
+          "plan_name",
+          "subscriptions",
+          "mrr",
+          "collected"
+        ],
+        "title": "PlanRevenue",
+        "type": "object"
+      },
       "PlanStatusChange": {
         "additionalProperties": false,
         "properties": {
@@ -10644,6 +11375,50 @@
           "in_force"
         ],
         "title": "PriceOut",
+        "type": "object"
+      },
+      "ProviderStatusOut": {
+        "properties": {
+          "bank_details_set": {
+            "title": "Bank Details Set",
+            "type": "boolean"
+          },
+          "eft_enabled": {
+            "title": "Eft Enabled",
+            "type": "boolean"
+          },
+          "environment": {
+            "title": "Environment",
+            "type": "string"
+          },
+          "sandbox_allowed": {
+            "title": "Sandbox Allowed",
+            "type": "boolean"
+          },
+          "selected": {
+            "enum": [
+              "none",
+              "sandbox",
+              "stitch"
+            ],
+            "title": "Selected",
+            "type": "string"
+          },
+          "stitch": {
+            "additionalProperties": true,
+            "title": "Stitch",
+            "type": "object"
+          }
+        },
+        "required": [
+          "selected",
+          "environment",
+          "sandbox_allowed",
+          "stitch",
+          "eft_enabled",
+          "bank_details_set"
+        ],
+        "title": "ProviderStatusOut",
         "type": "object"
       },
       "PublicPlan": {
@@ -11107,6 +11882,37 @@
         "title": "ReassignRequest",
         "type": "object"
       },
+      "ReconcileRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "status": {
+            "enum": [
+              "unreconciled",
+              "matched",
+              "disputed"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "ReconcileRequest",
+        "type": "object"
+      },
       "Ref": {
         "properties": {
           "id": {
@@ -11154,6 +11960,110 @@
           }
         },
         "title": "RefreshRequest",
+        "type": "object"
+      },
+      "RefundOut": {
+        "properties": {
+          "amount": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "credit_note_id": {
+            "format": "uuid",
+            "title": "Credit Note Id",
+            "type": "string"
+          },
+          "credit_note_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credit Note Number"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "method": {
+            "enum": [
+              "provider",
+              "manual"
+            ],
+            "title": "Method",
+            "type": "string"
+          },
+          "payment_id": {
+            "format": "uuid",
+            "title": "Payment Id",
+            "type": "string"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference"
+          },
+          "test_mode": {
+            "title": "Test Mode",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "payment_id",
+          "amount",
+          "credit_note_id",
+          "credit_note_number",
+          "method",
+          "reference",
+          "test_mode"
+        ],
+        "title": "RefundOut",
+        "type": "object"
+      },
+      "RefundRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "amount_minor": {
+            "maximum": 1000000000000.0,
+            "minimum": 1.0,
+            "title": "Amount Minor",
+            "type": "integer"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 3,
+            "title": "Reason",
+            "type": "string"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference"
+          }
+        },
+        "required": [
+          "amount_minor",
+          "reason"
+        ],
+        "title": "RefundRequest",
         "type": "object"
       },
       "RejectRequest": {
@@ -12059,6 +12969,24 @@
           "name"
         ],
         "title": "RoomTypeRef",
+        "type": "object"
+      },
+      "SandboxOutcome": {
+        "additionalProperties": false,
+        "properties": {
+          "outcome": {
+            "enum": [
+              "succeeded",
+              "failed"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          }
+        },
+        "required": [
+          "outcome"
+        ],
+        "title": "SandboxOutcome",
         "type": "object"
       },
       "ScheduleCreate": {
@@ -13729,6 +14657,54 @@
         "title": "StepUpResponse",
         "type": "object"
       },
+      "SubscribeOut": {
+        "properties": {
+          "invoice": {
+            "$ref": "#/components/schemas/SubscriptionInvoiceOut"
+          },
+          "subscription": {
+            "$ref": "#/components/schemas/HotelSubscription"
+          }
+        },
+        "required": [
+          "subscription",
+          "invoice"
+        ],
+        "title": "SubscribeOut",
+        "type": "object"
+      },
+      "SubscribeRequest": {
+        "additionalProperties": false,
+        "description": "Prices are computed on the server; the hotel only chooses and accepts the terms.",
+        "properties": {
+          "accept_terms": {
+            "const": true,
+            "title": "Accept Terms",
+            "type": "boolean"
+          },
+          "interval": {
+            "enum": [
+              "month",
+              "quarter",
+              "year"
+            ],
+            "title": "Interval",
+            "type": "string"
+          },
+          "plan_code": {
+            "pattern": "^[a-z][a-z0-9_]{1,40}$",
+            "title": "Plan Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "plan_code",
+          "interval",
+          "accept_terms"
+        ],
+        "title": "SubscribeRequest",
+        "type": "object"
+      },
       "SubscriptionInvoiceList": {
         "properties": {
           "data": {
@@ -13891,6 +14867,17 @@
             ],
             "title": "Period Start"
           },
+          "purpose": {
+            "enum": [
+              "manual",
+              "initial",
+              "renewal",
+              "proration",
+              "credit"
+            ],
+            "title": "Purpose",
+            "type": "string"
+          },
           "seller": {
             "additionalProperties": true,
             "title": "Seller",
@@ -13945,6 +14932,7 @@
           "id",
           "hotel_id",
           "kind",
+          "purpose",
           "number",
           "status",
           "is_tax_invoice",
@@ -14130,6 +15118,64 @@
           "starts_on"
         ],
         "title": "SubscriptionPut",
+        "type": "object"
+      },
+      "SummaryCurrency": {
+        "properties": {
+          "arr": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "collected": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "credited": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "invoiced": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "mrr": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "net_collected": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "outstanding": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "overdue": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "overdue_invoices": {
+            "title": "Overdue Invoices",
+            "type": "integer"
+          },
+          "refunded": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "test_collected": {
+            "$ref": "#/components/schemas/SignedMoney"
+          }
+        },
+        "required": [
+          "currency",
+          "mrr",
+          "arr",
+          "invoiced",
+          "credited",
+          "collected",
+          "refunded",
+          "net_collected",
+          "test_collected",
+          "outstanding",
+          "overdue",
+          "overdue_invoices"
+        ],
+        "title": "SummaryCurrency",
         "type": "object"
       },
       "SupportAccessOut": {
@@ -14758,6 +15804,19 @@
         "title": "WalkIn",
         "type": "object"
       },
+      "WebhookAck": {
+        "properties": {
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "WebhookAck",
+        "type": "object"
+      },
       "WebhookCreate": {
         "additionalProperties": false,
         "properties": {
@@ -14830,6 +15889,101 @@
           "signing_secret"
         ],
         "title": "WebhookCreated",
+        "type": "object"
+      },
+      "WebhookEventList": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/WebhookEventRow"
+            },
+            "title": "Data",
+            "type": "array"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "WebhookEventList",
+        "type": "object"
+      },
+      "WebhookEventRow": {
+        "properties": {
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "event_id": {
+            "title": "Event Id",
+            "type": "string"
+          },
+          "event_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Type"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "outcome": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outcome"
+          },
+          "processed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Processed At"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
+          "received_at": {
+            "format": "date-time",
+            "title": "Received At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "provider",
+          "event_id",
+          "event_type",
+          "received_at",
+          "processed_at",
+          "outcome",
+          "error"
+        ],
+        "title": "WebhookEventRow",
         "type": "object"
       },
       "WebhookList": {
@@ -14975,6 +16129,49 @@
           "to"
         ],
         "title": "Window",
+        "type": "object"
+      },
+      "app__schemas__billing__CheckoutOut": {
+        "properties": {
+          "emailed_to": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Emailed To",
+            "type": "array"
+          },
+          "invoice": {
+            "$ref": "#/components/schemas/InvoiceOut"
+          },
+          "override_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Override Reason"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "stay_id": {
+            "format": "uuid",
+            "title": "Stay Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "stay_id",
+          "status",
+          "override_reason",
+          "invoice",
+          "emailed_to"
+        ],
+        "title": "CheckoutOut",
         "type": "object"
       },
       "app__schemas__company__Address": {
@@ -15778,6 +16975,380 @@
         ],
         "title": "DeliveryOut",
         "type": "object"
+      },
+      "app__schemas__room_service__PaymentList": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/app__schemas__room_service__PaymentOut"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "PaymentList",
+        "type": "object"
+      },
+      "app__schemas__room_service__PaymentOut": {
+        "properties": {
+          "amount_due": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "amount_received": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "late_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Late Reason"
+          },
+          "method": {
+            "title": "Method",
+            "type": "string"
+          },
+          "occurred_at": {
+            "format": "date-time",
+            "title": "Occurred At",
+            "type": "string"
+          },
+          "order_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Id"
+          },
+          "recorded_by": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recorded By"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "stay_id": {
+            "format": "uuid",
+            "title": "Stay Id",
+            "type": "string"
+          },
+          "terminal_reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Terminal Reference"
+          },
+          "tip": {
+            "$ref": "#/components/schemas/Money"
+          }
+        },
+        "required": [
+          "id",
+          "order_id",
+          "stay_id",
+          "method",
+          "status",
+          "amount_due",
+          "amount_received",
+          "tip",
+          "terminal_reference",
+          "recorded_by",
+          "occurred_at",
+          "late_reason",
+          "created_at"
+        ],
+        "title": "PaymentOut",
+        "type": "object"
+      },
+      "app__schemas__sub_payments__CheckoutOut": {
+        "properties": {
+          "amount": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "checkout_url": {
+            "title": "Checkout Url",
+            "type": "string"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "failure_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Reason"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "invoice_id": {
+            "format": "uuid",
+            "title": "Invoice Id",
+            "type": "string"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
+          "provider_label": {
+            "title": "Provider Label",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "succeeded",
+              "failed",
+              "cancelled",
+              "expired"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "test_mode": {
+            "title": "Test Mode",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "invoice_id",
+          "provider",
+          "provider_label",
+          "test_mode",
+          "amount",
+          "status",
+          "failure_reason",
+          "created_at",
+          "completed_at",
+          "checkout_url"
+        ],
+        "title": "CheckoutOut",
+        "type": "object"
+      },
+      "app__schemas__sub_payments__PaymentList": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/app__schemas__sub_payments__PaymentOut"
+            },
+            "title": "Data",
+            "type": "array"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "PaymentList",
+        "type": "object"
+      },
+      "app__schemas__sub_payments__PaymentOut": {
+        "properties": {
+          "amount": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "invoice_id": {
+            "format": "uuid",
+            "title": "Invoice Id",
+            "type": "string"
+          },
+          "invoice_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoice Number"
+          },
+          "method": {
+            "title": "Method",
+            "type": "string"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
+          "provider_payment_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Payment Id"
+          },
+          "received_on": {
+            "format": "date",
+            "title": "Received On",
+            "type": "string"
+          },
+          "reconciled_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reconciled At"
+          },
+          "reconciliation_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reconciliation Note"
+          },
+          "reconciliation_status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "unreconciled",
+                  "matched",
+                  "disputed"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reconciliation Status"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference"
+          },
+          "refunded": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "test_mode": {
+            "title": "Test Mode",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "invoice_id",
+          "invoice_number",
+          "method",
+          "provider",
+          "test_mode",
+          "amount",
+          "refunded",
+          "reference",
+          "received_on",
+          "created_at"
+        ],
+        "title": "PaymentOut",
+        "type": "object"
       }
     }
   },
@@ -16121,6 +17692,468 @@
           }
         },
         "summary": "Put Billing Settings",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/billing/invoices": {
+      "get": {
+        "description": "Invoices and credit notes across hotels; `format=csv` exports up to 5,000 rows.",
+        "operationId": "billing_invoices_api_v1_admin_billing_invoices_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "issued",
+                    "partially_paid",
+                    "paid",
+                    "overdue",
+                    "void",
+                    "credited"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "To"
+            }
+          },
+          {
+            "in": "query",
+            "name": "plan",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^[a-z][a-z0-9_]{1,40}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Plan"
+            }
+          },
+          {
+            "in": "query",
+            "name": "payment",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "paid",
+                    "unpaid",
+                    "partial",
+                    "overdue"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Payment"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "format",
+            "required": false,
+            "schema": {
+              "default": "json",
+              "enum": [
+                "json",
+                "csv"
+              ],
+              "title": "Format",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminInvoiceList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Billing Invoices",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/billing/payments": {
+      "get": {
+        "description": "Payments across hotels for reconciliation; `format=csv` exports up to 5,000 rows.",
+        "operationId": "billing_payments_api_v1_admin_billing_payments_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "reconciliation",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "unreconciled",
+                    "matched",
+                    "disputed"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Reconciliation"
+            }
+          },
+          {
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "To"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "format",
+            "required": false,
+            "schema": {
+              "default": "json",
+              "enum": [
+                "json",
+                "csv"
+              ],
+              "title": "Format",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminPaymentList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Billing Payments",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/billing/provider": {
+      "get": {
+        "description": "Which payment provider is selected and whether it is ready here; never a secret.",
+        "operationId": "billing_provider_api_v1_admin_billing_provider_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderStatusOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Billing Provider",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/billing/summary": {
+      "get": {
+        "operationId": "billing_summary_api_v1_admin_billing_summary_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "To"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingSummary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Billing Summary",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/billing/webhooks": {
+      "get": {
+        "operationId": "billing_webhooks_api_v1_admin_billing_webhooks_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 500,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookEventList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Billing Webhooks",
         "tags": [
           "admin"
         ]
@@ -16795,6 +18828,228 @@
           }
         },
         "summary": "Void",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/hotels/{hotel_id}/payments": {
+      "get": {
+        "operationId": "hotel_payments_api_v1_admin_hotels__hotel_id__payments_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "hotel_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Hotel Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/app__schemas__sub_payments__PaymentList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Hotel Payments",
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "description": "Records a verified offline payment (EFT) with its bank reference.",
+        "operationId": "record_payment_api_v1_admin_hotels__hotel_id__payments_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "hotel_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Hotel Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ManualPayment"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/app__schemas__sub_payments__PaymentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Record Payment",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/hotels/{hotel_id}/payments/{payment_id}/reconcile": {
+      "post": {
+        "operationId": "reconcile_payment_api_v1_admin_hotels__hotel_id__payments__payment_id__reconcile_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "hotel_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Hotel Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "payment_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Payment Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReconcileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/app__schemas__sub_payments__PaymentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reconcile Payment",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/hotels/{hotel_id}/payments/{payment_id}/refund": {
+      "post": {
+        "description": "Refunds part or all of a payment, with a credit note for the same amount.",
+        "operationId": "refund_payment_api_v1_admin_hotels__hotel_id__payments__payment_id__refund_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "hotel_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Hotel Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "payment_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Payment Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefundRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefundOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Refund Payment",
         "tags": [
           "admin"
         ]
@@ -18961,6 +21216,28 @@
         "summary": "Create Profile",
         "tags": [
           "stays"
+        ]
+      }
+    },
+    "/api/v1/billing/webhooks/stitch": {
+      "post": {
+        "description": "Stitch payment events, signed with Svix. A repeated event is acknowledged and not\nprocessed again; the payment's status is always fetched from Stitch.",
+        "operationId": "stitch_webhook_api_v1_billing_webhooks_stitch_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookAck"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Stitch Webhook",
+        "tags": [
+          "billing"
         ]
       }
     },
@@ -23352,7 +25629,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PaymentList"
+                  "$ref": "#/components/schemas/app__schemas__room_service__PaymentList"
                 }
               }
             },
@@ -23391,7 +25668,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PaymentOut"
+                  "$ref": "#/components/schemas/app__schemas__room_service__PaymentOut"
                 }
               }
             },
@@ -25527,7 +27804,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CheckoutOut"
+                  "$ref": "#/components/schemas/app__schemas__billing__CheckoutOut"
                 }
               }
             },
@@ -25856,25 +28133,26 @@
         ]
       }
     },
-    "/api/v1/subscription/change-request": {
+    "/api/v1/subscription/change": {
       "post": {
-        "operationId": "change_request_api_v1_subscription_change_request_post",
+        "description": "Upgrades apply at once with a prorated invoice when proration is on; other changes\nwait for the next renewal. Choosing the current plan withdraws a scheduled change.",
+        "operationId": "change_plan_api_v1_subscription_change_post",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ChangeRequest"
+                "$ref": "#/components/schemas/PlanChangeRequest"
               }
             }
           },
           "required": true
         },
         "responses": {
-          "202": {
+          "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ChangeRequestOut"
+                  "$ref": "#/components/schemas/PlanChangeOut"
                 }
               }
             },
@@ -25891,9 +28169,9 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Change Request",
+        "summary": "Change Plan",
         "tags": [
-          "reports"
+          "subscription"
         ]
       }
     },
@@ -25961,6 +28239,50 @@
         ]
       }
     },
+    "/api/v1/subscription/invoices/{invoice_id}/pay": {
+      "post": {
+        "description": "Opens a checkout for the invoice's balance with the configured provider; send the\nbrowser to `checkout_url`. Nothing is paid until the provider confirms it.",
+        "operationId": "pay_invoice_api_v1_subscription_invoices__invoice_id__pay_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "invoice_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Invoice Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/app__schemas__sub_payments__CheckoutOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Pay Invoice",
+        "tags": [
+          "subscription"
+        ]
+      }
+    },
     "/api/v1/subscription/invoices/{invoice_id}/pdf": {
       "get": {
         "description": "A signed address valid for 5 minutes; invoices are never at a public address.",
@@ -26000,6 +28322,167 @@
           }
         },
         "summary": "My Invoice Pdf",
+        "tags": [
+          "subscription"
+        ]
+      }
+    },
+    "/api/v1/subscription/payment-attempts": {
+      "get": {
+        "operationId": "my_attempts_api_v1_subscription_payment_attempts_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttemptList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "My Attempts",
+        "tags": [
+          "subscription"
+        ]
+      }
+    },
+    "/api/v1/subscription/payment-attempts/{attempt_id}": {
+      "get": {
+        "description": "The attempt's status as the provider reports it now (asked on the server).",
+        "operationId": "check_attempt_api_v1_subscription_payment_attempts__attempt_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "attempt_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Attempt Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttemptOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Check Attempt",
+        "tags": [
+          "subscription"
+        ]
+      }
+    },
+    "/api/v1/subscription/payment-attempts/{attempt_id}/sandbox": {
+      "post": {
+        "description": "Test mode only (never in production): finishes a sandbox checkout. No money moves and\nthe payment is recorded as a test payment.",
+        "operationId": "sandbox_outcome_api_v1_subscription_payment_attempts__attempt_id__sandbox_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "attempt_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Attempt Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SandboxOutcome"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttemptOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Sandbox Outcome",
+        "tags": [
+          "subscription"
+        ]
+      }
+    },
+    "/api/v1/subscription/payment-options": {
+      "get": {
+        "operationId": "payment_options_api_v1_subscription_payment_options_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentOptions"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Payment Options",
+        "tags": [
+          "subscription"
+        ]
+      }
+    },
+    "/api/v1/subscription/payments": {
+      "get": {
+        "operationId": "my_payments_api_v1_subscription_payments_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/app__schemas__sub_payments__PaymentList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "My Payments",
         "tags": [
           "subscription"
         ]
@@ -26065,6 +28548,48 @@
         "summary": "Resume Subscription",
         "tags": [
           "reports"
+        ]
+      }
+    },
+    "/api/v1/subscription/subscribe": {
+      "post": {
+        "description": "Subscribes to a published plan at the price the server computes, and issues the first\ninvoice; the subscription is pending payment until that invoice is paid.",
+        "operationId": "subscribe_api_v1_subscription_subscribe_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscribeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscribeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Subscribe",
+        "tags": [
+          "subscription"
         ]
       }
     },

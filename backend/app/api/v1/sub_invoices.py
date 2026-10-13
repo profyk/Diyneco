@@ -22,6 +22,7 @@ from app.schemas.sub_invoices import (
     SubscriptionInvoiceOut,
     VoidRequest,
 )
+from app.services import billing_engine
 from app.services import sub_invoices as svc
 from app.services.admin import _enter
 
@@ -124,6 +125,8 @@ async def credit(
     ctx = principal.for_hotel(request, hotel_id)
     await _enter(uow, ctx)
     note = await svc.credit(state_of(request), uow, ctx, invoice_id, body.reason, body.amount_minor)
+    if note.subscription_id is not None:  # a credit may settle what kept a subscription past due
+        await billing_engine.review(state_of(request), uow, ctx, note.subscription_id)
     return await idem.complete(uow, 201, _out(await svc.payload(uow, note)))
 
 

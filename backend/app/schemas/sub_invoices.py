@@ -29,6 +29,7 @@ class SubscriptionInvoiceOut(BaseModel):
     id: uuid.UUID
     hotel_id: uuid.UUID
     kind: Literal["invoice", "credit_note"]
+    purpose: Literal["manual", "initial", "renewal", "proration", "credit"]
     number: str | None
     status: Literal["draft", "issued", "partially_paid", "paid", "overdue", "void", "credited"]
     is_tax_invoice: bool

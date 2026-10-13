@@ -65,6 +65,16 @@ class Settings(BaseSettings):
     # EMAIL_PROVIDER_KEY so the secret stays in one variable (DECISIONS D52).
     email_smtp_url: str | None = None
 
+    # Stitch (subscription payments, DECISIONS D79). Secrets live only here, never in a web app.
+    # Test and live clients are separate Stitch clients: each environment gets its own values.
+    # STITCH_TEST_MODE stays true for a test client; payments through it are marked test.
+    stitch_client_id: str | None = None
+    stitch_client_secret: str | None = None
+    stitch_webhook_secret: str | None = None  # Svix signing secret ("whsec_...")
+    stitch_test_mode: bool = True
+    stitch_token_url: str = "https://secure.stitch.money/connect/token"
+    stitch_api_url: str = "https://api.stitch.money/graphql"
+
     # Monitoring
     sentry_dsn: str | None = None
     sentry_traces_sample_rate: float = 0.0
@@ -74,6 +84,10 @@ class Settings(BaseSettings):
         """The start of an email sentence: a link that fills in `token` when the app URL is set,
         followed by "Or use" (the code still follows), else just "Use"."""
         return _link(self.merchant_app_url, path, token)
+
+    @property
+    def stitch_configured(self) -> bool:
+        return bool(self.stitch_client_id and self.stitch_client_secret and self.stitch_webhook_secret)
 
     def admin_link(self, path: str, token: str) -> str:
         """As merchant_link, for a page of the Admin panel."""
@@ -115,6 +129,15 @@ class Settings(BaseSettings):
                 required["EMAIL_PROVIDER_KEY"] = self.email_provider_key
         if self.email_provider == "smtp":
             required["EMAIL_SMTP_URL"] = self.email_smtp_url
+        if self.stitch_client_id or self.stitch_client_secret or self.stitch_webhook_secret:
+            # Half a Stitch configuration is a mistake, not a choice.
+            required.update(
+                {
+                    "STITCH_CLIENT_ID": self.stitch_client_id,
+                    "STITCH_CLIENT_SECRET": self.stitch_client_secret,
+                    "STITCH_WEBHOOK_SECRET": self.stitch_webhook_secret,
+                }
+            )
         for name, value in required.items():
             if not value or PLACEHOLDER in value:
                 missing.append(name)

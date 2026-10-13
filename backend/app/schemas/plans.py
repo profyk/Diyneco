@@ -124,6 +124,14 @@ class BillingSettingsOut(BaseModel):
     price_change_notice_days: int
     trial_days: int
     trial_limits: dict[str, int]
+    reminder_offsets: list[int]
+    grace_days: int
+    renewal_lead_days: int
+    suspend_after_grace: bool
+    read_only_when_suspended: bool
+    proration_enabled: bool
+    card_provider: Literal["none", "sandbox", "stitch"]
+    eft_enabled: bool
     version: int
     updated_at: datetime
 
@@ -135,6 +143,18 @@ class BillingSettingsPut(StrictModel):
     # The free trial a new hotel starts with (D73, D76): its length and its limits.
     trial_days: Annotated[int, Field(ge=0, le=365)]
     trial_limits: dict[LimitKey, Annotated[int, Field(ge=0)]]
+    # Collections (D79). Left out: unchanged.
+    # Reminder days relative to an invoice's due date (-3: three days before, 0: on the day).
+    reminder_offsets: Annotated[list[Annotated[int, Field(ge=-60, le=60)]], Field(max_length=10)] | None = (
+        None
+    )
+    grace_days: Annotated[int, Field(ge=0, le=90)] | None = None
+    renewal_lead_days: Annotated[int, Field(ge=0, le=60)] | None = None
+    suspend_after_grace: bool | None = None
+    read_only_when_suspended: bool | None = None
+    proration_enabled: bool | None = None
+    card_provider: Literal["none", "sandbox", "stitch"] | None = None
+    eft_enabled: bool | None = None
 
 
 class PublicPrice(BaseModel):

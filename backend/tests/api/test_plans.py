@@ -331,11 +331,11 @@ async def test_hotels_can_only_ask_for_published_plans(client, factory):
     owner = await factory.auth(hotel, "hotel_owner")
     draft = await draft_plan(client, admin)
     refused = await client.post(
-        "/subscription/change-request", json={"plan_code": draft["code"]}, headers={**owner, **idem()}
+        "/subscription/quote", json={"plan_code": draft["code"], "interval": "month"}, headers=owner
     )
     assert refused.json()["error"]["code"] == "NOT_FOUND"
     live = await published_plan(client, factory, admin)
     ok = await client.post(
-        "/subscription/change-request", json={"plan_code": live["code"]}, headers={**owner, **idem()}
+        "/subscription/quote", json={"plan_code": live["code"], "interval": "month"}, headers=owner
     )
-    assert ok.status_code in (200, 201, 202), ok.text
+    assert ok.status_code == 200, ok.text

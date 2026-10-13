@@ -105,6 +105,100 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/billing/invoices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Billing Invoices
+         * @description Invoices and credit notes across hotels; `format=csv` exports up to 5,000 rows.
+         */
+        get: operations["billing_invoices_api_v1_admin_billing_invoices_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/billing/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Billing Payments
+         * @description Payments across hotels for reconciliation; `format=csv` exports up to 5,000 rows.
+         */
+        get: operations["billing_payments_api_v1_admin_billing_payments_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/billing/provider": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Billing Provider
+         * @description Which payment provider is selected and whether it is ready here; never a secret.
+         */
+        get: operations["billing_provider_api_v1_admin_billing_provider_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/billing/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Billing Summary */
+        get: operations["billing_summary_api_v1_admin_billing_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/billing/webhooks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Billing Webhooks */
+        get: operations["billing_webhooks_api_v1_admin_billing_webhooks_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/company": {
         parameters: {
             query?: never;
@@ -341,6 +435,64 @@ export interface paths {
         put?: never;
         /** Void */
         post: operations["void_api_v1_admin_hotels__hotel_id__invoices__invoice_id__void_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/hotels/{hotel_id}/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Hotel Payments */
+        get: operations["hotel_payments_api_v1_admin_hotels__hotel_id__payments_get"];
+        put?: never;
+        /**
+         * Record Payment
+         * @description Records a verified offline payment (EFT) with its bank reference.
+         */
+        post: operations["record_payment_api_v1_admin_hotels__hotel_id__payments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/hotels/{hotel_id}/payments/{payment_id}/reconcile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reconcile Payment */
+        post: operations["reconcile_payment_api_v1_admin_hotels__hotel_id__payments__payment_id__reconcile_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/hotels/{hotel_id}/payments/{payment_id}/refund": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refund Payment
+         * @description Refunds part or all of a payment, with a credit note for the same amount.
+         */
+        post: operations["refund_payment_api_v1_admin_hotels__hotel_id__payments__payment_id__refund_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1140,6 +1292,27 @@ export interface paths {
         put?: never;
         /** Create Profile */
         post: operations["create_profile_api_v1_billing_profiles_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/billing/webhooks/stitch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Stitch Webhook
+         * @description Stitch payment events, signed with Svix. A repeated event is acknowledged and not
+         *     processed again; the payment's status is always fetched from Stitch.
+         */
+        post: operations["stitch_webhook_api_v1_billing_webhooks_stitch_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3417,7 +3590,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/subscription/change-request": {
+    "/api/v1/subscription/change": {
         parameters: {
             query?: never;
             header?: never;
@@ -3426,8 +3599,12 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Change Request */
-        post: operations["change_request_api_v1_subscription_change_request_post"];
+        /**
+         * Change Plan
+         * @description Upgrades apply at once with a prorated invoice when proration is on; other changes
+         *     wait for the next renewal. Choosing the current plan withdraws a scheduled change.
+         */
+        post: operations["change_plan_api_v1_subscription_change_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3468,6 +3645,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/subscription/invoices/{invoice_id}/pay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pay Invoice
+         * @description Opens a checkout for the invoice's balance with the configured provider; send the
+         *     browser to `checkout_url`. Nothing is paid until the provider confirms it.
+         */
+        post: operations["pay_invoice_api_v1_subscription_invoices__invoice_id__pay_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/subscription/invoices/{invoice_id}/pdf": {
         parameters: {
             query?: never;
@@ -3480,6 +3678,98 @@ export interface paths {
          * @description A signed address valid for 5 minutes; invoices are never at a public address.
          */
         get: operations["my_invoice_pdf_api_v1_subscription_invoices__invoice_id__pdf_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/subscription/payment-attempts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My Attempts */
+        get: operations["my_attempts_api_v1_subscription_payment_attempts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/subscription/payment-attempts/{attempt_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Check Attempt
+         * @description The attempt's status as the provider reports it now (asked on the server).
+         */
+        get: operations["check_attempt_api_v1_subscription_payment_attempts__attempt_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/subscription/payment-attempts/{attempt_id}/sandbox": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sandbox Outcome
+         * @description Test mode only (never in production): finishes a sandbox checkout. No money moves and
+         *     the payment is recorded as a test payment.
+         */
+        post: operations["sandbox_outcome_api_v1_subscription_payment_attempts__attempt_id__sandbox_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/subscription/payment-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Payment Options */
+        get: operations["payment_options_api_v1_subscription_payment_options_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/subscription/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My Payments */
+        get: operations["my_payments_api_v1_subscription_payments_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3519,6 +3809,27 @@ export interface paths {
         put?: never;
         /** Resume Subscription */
         post: operations["resume_subscription_api_v1_subscription_resume_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/subscription/subscribe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Subscribe
+         * @description Subscribes to a published plan at the price the server computes, and issues the first
+         *     invoice; the subscription is pending payment until that invoice is paid.
+         */
+        post: operations["subscribe_api_v1_subscription_subscribe_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3858,6 +4169,112 @@ export interface components {
             /** Next Cursor */
             next_cursor?: string | null;
         };
+        /** AdminInvoiceList */
+        AdminInvoiceList: {
+            /** Data */
+            data: components["schemas"]["AdminInvoiceRow"][];
+            /** Total */
+            total: number;
+        };
+        /** AdminInvoiceRow */
+        AdminInvoiceRow: {
+            balance: components["schemas"]["SignedMoney"];
+            credited: components["schemas"]["SignedMoney"];
+            /** Currency */
+            currency: string;
+            /** Due On */
+            due_on: string | null;
+            /**
+             * Hotel Id
+             * Format: uuid
+             */
+            hotel_id: string;
+            /** Hotel Name */
+            hotel_name: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Is Tax Invoice */
+            is_tax_invoice: boolean;
+            /** Issued At */
+            issued_at: string | null;
+            /** Kind */
+            kind: string;
+            /** Number */
+            number: string | null;
+            paid: components["schemas"]["SignedMoney"];
+            /** Period End */
+            period_end: string | null;
+            /** Period Start */
+            period_start: string | null;
+            /** Plan Code */
+            plan_code: string | null;
+            /** Purpose */
+            purpose: string;
+            /** Status */
+            status: string;
+            tax: components["schemas"]["SignedMoney"];
+            total: components["schemas"]["SignedMoney"];
+        };
+        /** AdminPaymentList */
+        AdminPaymentList: {
+            /** Data */
+            data: components["schemas"]["AdminPaymentRow"][];
+            /** Total */
+            total: number;
+        };
+        /** AdminPaymentRow */
+        AdminPaymentRow: {
+            amount: components["schemas"]["SignedMoney"];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Hotel Id
+             * Format: uuid
+             */
+            hotel_id: string;
+            /** Hotel Name */
+            hotel_name: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Invoice Id
+             * Format: uuid
+             */
+            invoice_id: string;
+            /** Invoice Number */
+            invoice_number: string | null;
+            /** Method */
+            method: string;
+            /** Provider */
+            provider: string;
+            /** Provider Payment Id */
+            provider_payment_id: string | null;
+            /**
+             * Received On
+             * Format: date
+             */
+            received_on: string;
+            /** Reconciled At */
+            reconciled_at: string | null;
+            /** Reconciliation Note */
+            reconciliation_note: string | null;
+            /** Reconciliation Status */
+            reconciliation_status: string;
+            /** Reference */
+            reference: string | null;
+            refunded: components["schemas"]["SignedMoney"];
+            /** Test Mode */
+            test_mode: boolean;
+        };
         /** Analytics */
         Analytics: {
             /** Days */
@@ -3988,6 +4405,45 @@ export interface components {
              * Format: uuid
              */
             user_id: string;
+        };
+        /** AttemptList */
+        AttemptList: {
+            /** Data */
+            data: components["schemas"]["AttemptOut"][];
+        };
+        /** AttemptOut */
+        AttemptOut: {
+            amount: components["schemas"]["SignedMoney"];
+            /** Completed At */
+            completed_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Failure Reason */
+            failure_reason: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Invoice Id
+             * Format: uuid
+             */
+            invoice_id: string;
+            /** Provider */
+            provider: string;
+            /** Provider Label */
+            provider_label: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "succeeded" | "failed" | "cancelled" | "expired";
+            /** Test Mode */
+            test_mode: boolean;
         };
         /** AuditEntry */
         AuditEntry: {
@@ -4146,8 +4602,27 @@ export interface components {
         };
         /** BillingSettingsOut */
         BillingSettingsOut: {
+            /**
+             * Card Provider
+             * @enum {string}
+             */
+            card_provider: "none" | "sandbox" | "stitch";
+            /** Eft Enabled */
+            eft_enabled: boolean;
+            /** Grace Days */
+            grace_days: number;
             /** Price Change Notice Days */
             price_change_notice_days: number;
+            /** Proration Enabled */
+            proration_enabled: boolean;
+            /** Read Only When Suspended */
+            read_only_when_suspended: boolean;
+            /** Reminder Offsets */
+            reminder_offsets: number[];
+            /** Renewal Lead Days */
+            renewal_lead_days: number;
+            /** Suspend After Grace */
+            suspend_after_grace: boolean;
             /** Trial Days */
             trial_days: number;
             /** Trial Limits */
@@ -4164,10 +4639,26 @@ export interface components {
         };
         /** BillingSettingsPut */
         BillingSettingsPut: {
+            /** Card Provider */
+            card_provider?: ("none" | "sandbox" | "stitch") | null;
+            /** Eft Enabled */
+            eft_enabled?: boolean | null;
+            /** Grace Days */
+            grace_days?: number | null;
             /** Price Change Notice Days */
             price_change_notice_days: number;
+            /** Proration Enabled */
+            proration_enabled?: boolean | null;
+            /** Read Only When Suspended */
+            read_only_when_suspended?: boolean | null;
             /** Reason */
             reason: string;
+            /** Reminder Offsets */
+            reminder_offsets?: number[] | null;
+            /** Renewal Lead Days */
+            renewal_lead_days?: number | null;
+            /** Suspend After Grace */
+            suspend_after_grace?: boolean | null;
             /** Trial Days */
             trial_days: number;
             /** Trial Limits */
@@ -4176,6 +4667,37 @@ export interface components {
             };
             /** Version */
             version: number;
+        };
+        /** BillingSummary */
+        BillingSummary: {
+            /** Active Subscriptions */
+            active_subscriptions: number;
+            /** By Plan */
+            by_plan: components["schemas"]["PlanRevenue"][];
+            /** Cancelled Subscriptions */
+            cancelled_subscriptions: number;
+            /** Currencies */
+            currencies: components["schemas"]["SummaryCurrency"][];
+            /** Failed Payments */
+            failed_payments: number;
+            /**
+             * From
+             * Format: date
+             */
+            from: string;
+            /** New Subscriptions */
+            new_subscriptions: number;
+            /** Past Due */
+            past_due: number;
+            /** Suspended */
+            suspended: number;
+            /**
+             * To
+             * Format: date
+             */
+            to: string;
+            /** Trials */
+            trials: number;
         };
         /** BulkResult */
         BulkResult: {
@@ -4295,23 +4817,6 @@ export interface components {
             /** Sort Order */
             sort_order: number;
         };
-        /** ChangeRequest */
-        ChangeRequest: {
-            /** Note */
-            note?: string | null;
-            /** Plan Code */
-            plan_code: string;
-        };
-        /** ChangeRequestOut */
-        ChangeRequestOut: {
-            /** Requested Plan */
-            requested_plan: string;
-            /**
-             * Status
-             * @constant
-             */
-            status: "received";
-        };
         /** ChargeCategoryList */
         ChargeCategoryList: {
             /** Data */
@@ -4350,21 +4855,6 @@ export interface components {
              * @default 1
              */
             quantity: number;
-        };
-        /** CheckoutOut */
-        CheckoutOut: {
-            /** Emailed To */
-            emailed_to: string[];
-            invoice: components["schemas"]["InvoiceOut"];
-            /** Override Reason */
-            override_reason: string | null;
-            /** Status */
-            status: string;
-            /**
-             * Stay Id
-             * Format: uuid
-             */
-            stay_id: string;
         };
         /** CheckoutRequest */
         CheckoutRequest: {
@@ -5394,6 +5884,11 @@ export interface components {
             limits: {
                 [key: string]: unknown;
             };
+            /** Outstanding */
+            outstanding: components["schemas"]["OutstandingInvoice"][];
+            /** Past Due Since */
+            past_due_since: string | null;
+            pending_change: components["schemas"]["PendingChange"] | null;
             /** Plan */
             plan: {
                 [key: string]: unknown;
@@ -5405,6 +5900,8 @@ export interface components {
             starts_on: string | null;
             /** Status */
             status: ("trial" | "pending_payment" | "active" | "past_due" | "suspended" | "cancellation_scheduled") | null;
+            /** Suspended At */
+            suspended_at: string | null;
             /** Trial Ends On */
             trial_ends_on: string | null;
             /** Usage */
@@ -6081,6 +6578,34 @@ export interface components {
             /** Size Bytes */
             size_bytes: number;
         };
+        /**
+         * ManualPayment
+         * @description A payment seen on Diyneco's bank statement, recorded after checking it.
+         */
+        ManualPayment: {
+            /** Amount Minor */
+            amount_minor: number;
+            /**
+             * Invoice Id
+             * Format: uuid
+             */
+            invoice_id: string;
+            /**
+             * Method
+             * @default eft
+             * @enum {string}
+             */
+            method: "eft" | "other";
+            /** Notes */
+            notes?: string | null;
+            /**
+             * Received On
+             * Format: date
+             */
+            received_on: string;
+            /** Reference */
+            reference: string;
+        };
         /** MeHotel */
         MeHotel: {
             /** Currency */
@@ -6570,6 +7095,21 @@ export interface components {
             to: string;
             value: components["schemas"]["SignedMoney"];
         };
+        /** OutstandingInvoice */
+        OutstandingInvoice: {
+            balance: components["schemas"]["SignedMoney"];
+            /** Due On */
+            due_on: string | null;
+            /**
+             * Invoice Id
+             * Format: uuid
+             */
+            invoice_id: string;
+            /** Number */
+            number: string | null;
+            /** Status */
+            status: string;
+        };
         /** PairRequest */
         PairRequest: {
             /** Code */
@@ -6658,52 +7198,16 @@ export interface components {
             received: components["schemas"]["SignedMoney"];
             tips: components["schemas"]["SignedMoney"];
         };
-        /** PaymentList */
-        PaymentList: {
-            /** Data */
-            data: components["schemas"]["PaymentOut"][];
-            /** Next Cursor */
-            next_cursor?: string | null;
-        };
-        /** PaymentOut */
-        PaymentOut: {
-            amount_due: components["schemas"]["Money"];
-            amount_received: components["schemas"]["Money"];
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /** Late Reason */
-            late_reason: string | null;
-            /** Method */
-            method: string;
-            /**
-             * Occurred At
-             * Format: date-time
-             */
-            occurred_at: string;
-            /** Order Id */
-            order_id: string | null;
-            /** Recorded By */
-            recorded_by: {
+        /** PaymentOptions */
+        PaymentOptions: {
+            /** Eft */
+            eft: {
                 [key: string]: unknown;
-            } | null;
-            /** Status */
-            status: string;
-            /**
-             * Stay Id
-             * Format: uuid
-             */
-            stay_id: string;
-            /** Terminal Reference */
-            terminal_reference: string | null;
-            tip: components["schemas"]["Money"];
+            };
+            /** Online */
+            online: {
+                [key: string]: unknown;
+            };
         };
         /** PaymentPreview */
         PaymentPreview: {
@@ -6773,6 +7277,18 @@ export interface components {
             /** Url */
             url: string;
         };
+        /** PendingChange */
+        PendingChange: {
+            /** Effective On */
+            effective_on: string | null;
+            /** Interval */
+            interval: ("month" | "quarter" | "year") | null;
+            /** Plan Code */
+            plan_code: string;
+            /** Plan Name */
+            plan_name: string;
+            price: components["schemas"]["SignedMoney"];
+        };
         /** PermissionList */
         PermissionList: {
             /** Data */
@@ -6802,6 +7318,26 @@ export interface components {
             quoted_total: components["schemas"]["Money"];
             /** Special Instructions */
             special_instructions?: string | null;
+        };
+        /** PlanChangeOut */
+        PlanChangeOut: {
+            /**
+             * Effective
+             * @enum {string}
+             */
+            effective: "now" | "renewal" | "withdrawn";
+            invoice: components["schemas"]["SubscriptionInvoiceOut"] | null;
+            subscription: components["schemas"]["HotelSubscription"];
+        };
+        /** PlanChangeRequest */
+        PlanChangeRequest: {
+            /**
+             * Interval
+             * @enum {string}
+             */
+            interval: "month" | "quarter" | "year";
+            /** Plan Code */
+            plan_code: string;
         };
         /** PlanCreate */
         PlanCreate: {
@@ -6901,6 +7437,17 @@ export interface components {
             trial_days?: number | null;
             /** Version */
             version: number;
+        };
+        /** PlanRevenue */
+        PlanRevenue: {
+            collected: components["schemas"]["SignedMoney"];
+            mrr: components["schemas"]["SignedMoney"];
+            /** Plan Code */
+            plan_code: string;
+            /** Plan Name */
+            plan_name: string;
+            /** Subscriptions */
+            subscriptions: number;
         };
         /** PlanStatusChange */
         PlanStatusChange: {
@@ -7062,6 +7609,26 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /** ProviderStatusOut */
+        ProviderStatusOut: {
+            /** Bank Details Set */
+            bank_details_set: boolean;
+            /** Eft Enabled */
+            eft_enabled: boolean;
+            /** Environment */
+            environment: string;
+            /** Sandbox Allowed */
+            sandbox_allowed: boolean;
+            /**
+             * Selected
+             * @enum {string}
+             */
+            selected: "none" | "sandbox" | "stitch";
+            /** Stitch */
+            stitch: {
+                [key: string]: unknown;
+            };
+        };
         /** PublicPlan */
         PublicPlan: {
             /** Code */
@@ -7210,6 +7777,16 @@ export interface components {
              */
             room_id: string;
         };
+        /** ReconcileRequest */
+        ReconcileRequest: {
+            /** Note */
+            note?: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "unreconciled" | "matched" | "disputed";
+        };
         /** Ref */
         Ref: {
             /**
@@ -7226,6 +7803,45 @@ export interface components {
             hotel_id?: string | null;
             /** Refresh Token */
             refresh_token?: string | null;
+        };
+        /** RefundOut */
+        RefundOut: {
+            amount: components["schemas"]["SignedMoney"];
+            /**
+             * Credit Note Id
+             * Format: uuid
+             */
+            credit_note_id: string;
+            /** Credit Note Number */
+            credit_note_number: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Method
+             * @enum {string}
+             */
+            method: "provider" | "manual";
+            /**
+             * Payment Id
+             * Format: uuid
+             */
+            payment_id: string;
+            /** Reference */
+            reference: string | null;
+            /** Test Mode */
+            test_mode: boolean;
+        };
+        /** RefundRequest */
+        RefundRequest: {
+            /** Amount Minor */
+            amount_minor: number;
+            /** Reason */
+            reason: string;
+            /** Reference */
+            reference?: string | null;
         };
         /** RejectRequest */
         RejectRequest: {
@@ -7524,6 +8140,14 @@ export interface components {
             id: string;
             /** Name */
             name: string;
+        };
+        /** SandboxOutcome */
+        SandboxOutcome: {
+            /**
+             * Outcome
+             * @enum {string}
+             */
+            outcome: "succeeded" | "failed";
         };
         /** ScheduleCreate */
         ScheduleCreate: {
@@ -8028,6 +8652,29 @@ export interface components {
             /** Step Up Token */
             step_up_token: string;
         };
+        /** SubscribeOut */
+        SubscribeOut: {
+            invoice: components["schemas"]["SubscriptionInvoiceOut"];
+            subscription: components["schemas"]["HotelSubscription"];
+        };
+        /**
+         * SubscribeRequest
+         * @description Prices are computed on the server; the hotel only chooses and accepts the terms.
+         */
+        SubscribeRequest: {
+            /**
+             * Accept Terms
+             * @constant
+             */
+            accept_terms: true;
+            /**
+             * Interval
+             * @enum {string}
+             */
+            interval: "month" | "quarter" | "year";
+            /** Plan Code */
+            plan_code: string;
+        };
         /** SubscriptionInvoiceList */
         SubscriptionInvoiceList: {
             /** Data */
@@ -8081,6 +8728,11 @@ export interface components {
             period_end: string | null;
             /** Period Start */
             period_start: string | null;
+            /**
+             * Purpose
+             * @enum {string}
+             */
+            purpose: "manual" | "initial" | "renewal" | "proration" | "credit";
             /** Seller */
             seller: {
                 [key: string]: unknown;
@@ -8156,6 +8808,23 @@ export interface components {
              * @enum {string}
              */
             status: "trial" | "active" | "past_due" | "suspended" | "cancelled";
+        };
+        /** SummaryCurrency */
+        SummaryCurrency: {
+            arr: components["schemas"]["SignedMoney"];
+            collected: components["schemas"]["SignedMoney"];
+            credited: components["schemas"]["SignedMoney"];
+            /** Currency */
+            currency: string;
+            invoiced: components["schemas"]["SignedMoney"];
+            mrr: components["schemas"]["SignedMoney"];
+            net_collected: components["schemas"]["SignedMoney"];
+            outstanding: components["schemas"]["SignedMoney"];
+            overdue: components["schemas"]["SignedMoney"];
+            /** Overdue Invoices */
+            overdue_invoices: number;
+            refunded: components["schemas"]["SignedMoney"];
+            test_collected: components["schemas"]["SignedMoney"];
         };
         /** SupportAccessOut */
         SupportAccessOut: {
@@ -8391,6 +9060,11 @@ export interface components {
              */
             training: boolean;
         };
+        /** WebhookAck */
+        WebhookAck: {
+            /** Status */
+            status: string;
+        };
         /** WebhookCreate */
         WebhookCreate: {
             /** Events */
@@ -8420,6 +9094,36 @@ export interface components {
             status: string;
             /** Url */
             url: string;
+        };
+        /** WebhookEventList */
+        WebhookEventList: {
+            /** Data */
+            data: components["schemas"]["WebhookEventRow"][];
+        };
+        /** WebhookEventRow */
+        WebhookEventRow: {
+            /** Error */
+            error: string | null;
+            /** Event Id */
+            event_id: string;
+            /** Event Type */
+            event_type: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Outcome */
+            outcome: string | null;
+            /** Processed At */
+            processed_at: string | null;
+            /** Provider */
+            provider: string;
+            /**
+             * Received At
+             * Format: date-time
+             */
+            received_at: string;
         };
         /** WebhookList */
         WebhookList: {
@@ -8477,6 +9181,21 @@ export interface components {
             from: string;
             /** To */
             to: string;
+        };
+        /** CheckoutOut */
+        app__schemas__billing__CheckoutOut: {
+            /** Emailed To */
+            emailed_to: string[];
+            invoice: components["schemas"]["InvoiceOut"];
+            /** Override Reason */
+            override_reason: string | null;
+            /** Status */
+            status: string;
+            /**
+             * Stay Id
+             * Format: uuid
+             */
+            stay_id: string;
         };
         /** Address */
         app__schemas__company__Address: {
@@ -8712,6 +9431,139 @@ export interface components {
             special_instructions: string | null;
             /** Status */
             status: string;
+        };
+        /** PaymentList */
+        app__schemas__room_service__PaymentList: {
+            /** Data */
+            data: components["schemas"]["app__schemas__room_service__PaymentOut"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+        };
+        /** PaymentOut */
+        app__schemas__room_service__PaymentOut: {
+            amount_due: components["schemas"]["Money"];
+            amount_received: components["schemas"]["Money"];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Late Reason */
+            late_reason: string | null;
+            /** Method */
+            method: string;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            /** Order Id */
+            order_id: string | null;
+            /** Recorded By */
+            recorded_by: {
+                [key: string]: unknown;
+            } | null;
+            /** Status */
+            status: string;
+            /**
+             * Stay Id
+             * Format: uuid
+             */
+            stay_id: string;
+            /** Terminal Reference */
+            terminal_reference: string | null;
+            tip: components["schemas"]["Money"];
+        };
+        /** CheckoutOut */
+        app__schemas__sub_payments__CheckoutOut: {
+            amount: components["schemas"]["SignedMoney"];
+            /** Checkout Url */
+            checkout_url: string;
+            /** Completed At */
+            completed_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Failure Reason */
+            failure_reason: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Invoice Id
+             * Format: uuid
+             */
+            invoice_id: string;
+            /** Provider */
+            provider: string;
+            /** Provider Label */
+            provider_label: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "succeeded" | "failed" | "cancelled" | "expired";
+            /** Test Mode */
+            test_mode: boolean;
+        };
+        /** PaymentList */
+        app__schemas__sub_payments__PaymentList: {
+            /** Data */
+            data: components["schemas"]["app__schemas__sub_payments__PaymentOut"][];
+        };
+        /** PaymentOut */
+        app__schemas__sub_payments__PaymentOut: {
+            amount: components["schemas"]["SignedMoney"];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Invoice Id
+             * Format: uuid
+             */
+            invoice_id: string;
+            /** Invoice Number */
+            invoice_number: string | null;
+            /** Method */
+            method: string;
+            /** Notes */
+            notes?: string | null;
+            /** Provider */
+            provider: string;
+            /** Provider Payment Id */
+            provider_payment_id?: string | null;
+            /**
+             * Received On
+             * Format: date
+             */
+            received_on: string;
+            /** Reconciled At */
+            reconciled_at?: string | null;
+            /** Reconciliation Note */
+            reconciliation_note?: string | null;
+            /** Reconciliation Status */
+            reconciliation_status?: ("unreconciled" | "matched" | "disputed") | null;
+            /** Reference */
+            reference: string | null;
+            refunded: components["schemas"]["SignedMoney"];
+            /** Test Mode */
+            test_mode: boolean;
         };
     };
     responses: never;
@@ -8954,6 +9806,165 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BillingSettingsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    billing_invoices_api_v1_admin_billing_invoices_get: {
+        parameters: {
+            query?: {
+                q?: string | null;
+                status?: ("issued" | "partially_paid" | "paid" | "overdue" | "void" | "credited") | null;
+                from?: string | null;
+                to?: string | null;
+                plan?: string | null;
+                payment?: ("paid" | "unpaid" | "partial" | "overdue") | null;
+                limit?: number;
+                offset?: number;
+                format?: "json" | "csv";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminInvoiceList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    billing_payments_api_v1_admin_billing_payments_get: {
+        parameters: {
+            query?: {
+                q?: string | null;
+                reconciliation?: ("unreconciled" | "matched" | "disputed") | null;
+                from?: string | null;
+                to?: string | null;
+                limit?: number;
+                offset?: number;
+                format?: "json" | "csv";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminPaymentList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    billing_provider_api_v1_admin_billing_provider_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderStatusOut"];
+                };
+            };
+        };
+    };
+    billing_summary_api_v1_admin_billing_summary_get: {
+        parameters: {
+            query?: {
+                from?: string | null;
+                to?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    billing_webhooks_api_v1_admin_billing_webhooks_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookEventList"];
                 };
             };
             /** @description Validation Error */
@@ -9429,6 +10440,144 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SubscriptionInvoiceOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    hotel_payments_api_v1_admin_hotels__hotel_id__payments_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                hotel_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["app__schemas__sub_payments__PaymentList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    record_payment_api_v1_admin_hotels__hotel_id__payments_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                hotel_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManualPayment"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["app__schemas__sub_payments__PaymentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reconcile_payment_api_v1_admin_hotels__hotel_id__payments__payment_id__reconcile_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                hotel_id: string;
+                payment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReconcileRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["app__schemas__sub_payments__PaymentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    refund_payment_api_v1_admin_hotels__hotel_id__payments__payment_id__refund_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                hotel_id: string;
+                payment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefundRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RefundOut"];
                 };
             };
             /** @description Validation Error */
@@ -10999,6 +12148,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stitch_webhook_api_v1_billing_webhooks_stitch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookAck"];
                 };
             };
         };
@@ -13997,7 +15166,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PaymentList"];
+                    "application/json": components["schemas"]["app__schemas__room_service__PaymentList"];
                 };
             };
             /** @description Validation Error */
@@ -14030,7 +15199,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PaymentOut"];
+                    "application/json": components["schemas"]["app__schemas__room_service__PaymentOut"];
                 };
             };
             /** @description Validation Error */
@@ -15424,7 +16593,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CheckoutOut"];
+                    "application/json": components["schemas"]["app__schemas__billing__CheckoutOut"];
                 };
             };
             /** @description Validation Error */
@@ -15672,7 +16841,7 @@ export interface operations {
             };
         };
     };
-    change_request_api_v1_subscription_change_request_post: {
+    change_plan_api_v1_subscription_change_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -15681,17 +16850,17 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ChangeRequest"];
+                "application/json": components["schemas"]["PlanChangeRequest"];
             };
         };
         responses: {
             /** @description Successful Response */
-            202: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ChangeRequestOut"];
+                    "application/json": components["schemas"]["PlanChangeOut"];
                 };
             };
             /** @description Validation Error */
@@ -15756,6 +16925,37 @@ export interface operations {
             };
         };
     };
+    pay_invoice_api_v1_subscription_invoices__invoice_id__pay_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["app__schemas__sub_payments__CheckoutOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     my_invoice_pdf_api_v1_subscription_invoices__invoice_id__pdf_get: {
         parameters: {
             query?: never;
@@ -15783,6 +16983,132 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    my_attempts_api_v1_subscription_payment_attempts_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttemptList"];
+                };
+            };
+        };
+    };
+    check_attempt_api_v1_subscription_payment_attempts__attempt_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                attempt_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttemptOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sandbox_outcome_api_v1_subscription_payment_attempts__attempt_id__sandbox_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                attempt_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SandboxOutcome"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttemptOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    payment_options_api_v1_subscription_payment_options_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentOptions"];
+                };
+            };
+        };
+    };
+    my_payments_api_v1_subscription_payments_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["app__schemas__sub_payments__PaymentList"];
                 };
             };
         };
@@ -15836,6 +17162,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HotelSubscription"];
+                };
+            };
+        };
+    };
+    subscribe_api_v1_subscription_subscribe_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubscribeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscribeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

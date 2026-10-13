@@ -41,6 +41,13 @@
 - Subscription billing, slice 4 (D78): Diyneco's invoices and credit notes to hotels: drafts,
   safe gapless numbering, frozen issued invoices, PDFs, email, void and credit rules; hotels
   list and download theirs in the Merchant app (Settings > Plan).
+- Subscription billing, slices 5-8 (D79): hotels subscribe from Settings > Plan (compare
+  plans, server quote, terms, first invoice), pay online (Stitch Pay by Bank, or the labelled
+  sandbox until credentials are set) or by EFT recorded by Diyneco; refunds with credit notes;
+  signed, de-duplicated Stitch webhooks; the worker renews, reminds, marks overdue, suspends
+  (read-only except billing) and reactivates; billing emails; Admin > Billing & Invoices
+  (collected vs invoiced vs outstanding vs MRR, filters, CSV, reconciliation, collections
+  policy) and per-hotel billing on the hotel page; browser test of the whole journey.
 - Fixed (D77): confirmed actions with an Idempotency-Key failed after the PIN or password
   prompt because the refusal was replayed to the retry.
 - Deployment: container images for all five web apps (`infra/docker/web.Dockerfile`, Next.js
@@ -50,8 +57,9 @@
 ### Next
 
 - Interface translations (message catalogues per language, English first).
-- Subscription billing slices 5-8 (D73): payments (EFT, Stitch sandbox), renewals and reminders, billing dashboard, hotel
-  billing screens.
+- Stitch: run the adapter against a Stitch test client (credentials from the owner), then
+  register `https://<api>/api/v1/billing/webhooks/stitch` for PAYMENT events.
+- Propose `SUBSCRIPTION_SUSPENDED` (403) for the API spec's error catalogue (D79).
 
 ### Known gaps
 

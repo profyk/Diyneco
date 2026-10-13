@@ -271,6 +271,22 @@ class Usage(BaseModel):
     limit: int | None
 
 
+class PendingChange(BaseModel):
+    plan_code: str
+    plan_name: str
+    interval: Literal["month", "quarter", "year"] | None
+    price: SignedMoney
+    effective_on: Day | None
+
+
+class OutstandingInvoice(BaseModel):
+    invoice_id: uuid.UUID
+    number: str | None
+    status: str
+    due_on: Day | None
+    balance: SignedMoney
+
+
 class HotelSubscription(BaseModel):
     plan: dict[str, Any] | None  # empty during a trial without a plan (D76)
     status: (
@@ -285,6 +301,11 @@ class HotelSubscription(BaseModel):
     price: SignedMoney | None
     current_period_start: Day | None
     cancel_at_period_end: bool
+    # A plan change waiting for the next renewal (D79).
+    pending_change: PendingChange | None
+    past_due_since: Day | None
+    suspended_at: datetime | None
+    outstanding: list[OutstandingInvoice]
     limits: dict[str, Any]
     usage: dict[str, Usage]
 
@@ -354,16 +375,6 @@ class BillingContactOut(BaseModel):
     contact_name: str | None
     address: dict[str, Any]
     version: int
-
-
-class ChangeRequest(StrictModel):
-    plan_code: Annotated[str, StringConstraints(pattern=r"^[a-z][a-z0-9_]{1,40}$")]
-    note: Annotated[str, StringConstraints(max_length=1000)] | None = None
-
-
-class ChangeRequestOut(BaseModel):
-    requested_plan: str
-    status: Literal["received"]
 
 
 # --- API keys and webhooks ------------------------------------------------------------------

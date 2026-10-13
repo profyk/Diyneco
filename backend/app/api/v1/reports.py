@@ -21,8 +21,6 @@ from app.schemas.reports import (
     BillingContactOut,
     BillingContactPut,
     CancelRequest,
-    ChangeRequest,
-    ChangeRequestOut,
     DailyClosePut,
     DailyCloseReport,
     DeliveryList,
@@ -180,7 +178,7 @@ async def cancel_subscription(
     idem: IdemUser, body: CancelRequest, request: Request, uow: Uow, principal: SubscriptionManage, _s: StepUp
 ) -> Response:
     """A trial ends at once; a paid subscription ends at the end of its current period."""
-    result = await subscription.cancel(uow, principal.tenant(request), body.reason)
+    result = await subscription.cancel(state_of(request), uow, principal.tenant(request), body.reason)
     return await idem.complete(uow, 200, HotelSubscription.model_validate(result).model_dump(mode="json"))
 
 
@@ -203,14 +201,6 @@ async def put_billing_contact(
 ) -> dict[str, Any]:
     """Who Diyneco bills; `version` must match (0 the first time)."""
     return await subscription.put_billing_contact(uow, principal.tenant(request), body.model_dump())
-
-
-@router.post("/subscription/change-request", status_code=202, response_model=ChangeRequestOut)
-async def change_request(
-    idem: IdemUser, body: ChangeRequest, request: Request, uow: Uow, principal: SubscriptionManage
-) -> Response:
-    result = await subscription.request_change(uow, principal.tenant(request), body.model_dump())
-    return await idem.complete(uow, 202, ChangeRequestOut.model_validate(result).model_dump(mode="json"))
 
 
 # --- API keys -------------------------------------------------------------------------------

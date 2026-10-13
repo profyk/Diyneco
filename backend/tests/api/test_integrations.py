@@ -240,7 +240,7 @@ async def test_webhooks_never_reach_internal_addresses(url):
         await check_destination(url)
 
 
-async def test_subscription_view_and_change_request(client, factory, owner_engine):
+async def test_subscription_view_and_who_may_subscribe(client, factory, owner_engine):
     hotel = await factory.hotel(rooms=2)
     own = await factory.auth(hotel, "hotel_owner")
     sub = (await client.get("/subscription", headers=own)).json()
@@ -248,37 +248,23 @@ async def test_subscription_view_and_change_request(client, factory, owner_engin
     from tests.api.test_admin import platform
     from tests.api.test_plans import published_plan
 
+    async with owner_engine.begin() as conn:  # back to a plan-free trial, free to subscribe
+        await conn.execute(
+            text("UPDATE app.subscriptions SET plan_id = NULL, status = 'trial' WHERE hotel_id = :h"),
+            {"h": hotel.id},
+        )
+    body = {"plan_code": "professional", "interval": "month", "accept_terms": True}
     draft = await client.post(
-        "/subscription/change-request", json={"plan_code": "professional"}, headers={**own, **idem()}
+        "/subscription/subscribe",
+        json=body,
+        headers={**await factory.step_up(hotel, "hotel_owner", own), **idem()},
     )
     assert draft.json()["error"]["code"] == "NOT_FOUND"  # seeded plans are drafts until published (D74)
     target = await published_plan(client, factory, await platform(factory))
-    r = await client.post(
-        "/subscription/change-request", json={"plan_code": target["code"]}, headers={**own, **idem()}
-    )
-    assert r.status_code == 202 and r.json()["requested_plan"] == target["code"]
-    async with owner_engine.begin() as conn:
-        await conn.execute(
-            text("UPDATE app.subscriptions SET plan_id = :p WHERE hotel_id = :h"),
-            {"p": target["id"], "h": hotel.id},
-        )
-    same = await client.post(
-        "/subscription/change-request", json={"plan_code": target["code"]}, headers={**own, **idem()}
-    )
-    assert same.json()["error"]["code"] == "INVALID_TRANSITION"
     gm = await factory.auth(hotel, "general_manager")
     denied = await client.post(
-        "/subscription/change-request", json={"plan_code": target["code"]}, headers={**gm, **idem()}
+        "/subscription/subscribe",
+        json={**body, "plan_code": target["code"]},
+        headers={**await factory.step_up(hotel, "general_manager", gm), **idem()},
     )
     assert denied.json()["error"]["code"] == "PERMISSION_DENIED"
-    async with owner_engine.connect() as conn:
-        events = (
-            await conn.execute(
-                text(
-                    "SELECT type FROM app.event_outbox WHERE hotel_id = :h AND 'platform' = ANY(channels) "
-                    "AND type = 'SUBSCRIPTION_CHANGE_REQUESTED'"
-                ),
-                {"h": hotel.id},
-            )
-        ).all()
-    assert len(events) == 1

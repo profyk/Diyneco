@@ -274,6 +274,35 @@ def bearer_token(request: Request) -> str:
 _API_KEY = re.compile(r"^dyk_(live|test)_[0-9A-Za-z]{43}$")
 
 
+# Reachable while a subscription is suspended: paying and managing billing, and the account itself.
+_BILLING_OPEN = ("/subscription", "/auth/")
+_GATE_SQL = text(
+    "SELECT EXISTS (SELECT 1 FROM app.subscriptions WHERE hotel_id = :h AND status = 'suspended')"
+    " AND (SELECT read_only_when_suspended FROM app.billing_settings)"
+)
+
+
+async def _write_gate(s: Any, request: Request, hotel_id: uuid.UUID, hotel_status: str) -> None:
+    """Writes stop while Diyneco has suspended the hotel. A subscription suspended for
+    non-payment makes the hotel's staff and API keys read-only the same way, except for
+    billing, so the hotel can always pay and recover (DECISIONS D79). Nothing is deleted.
+    The billing settings can turn this off."""
+    if request.method in SAFE_METHODS:
+        return
+    if hotel_status in ("suspended", "closed"):
+        raise AppError("HOTEL_SUSPENDED", "This hotel's account is suspended. Data can still be viewed.")
+    path = request.url.path
+    rel = path.split("/api/v1", 1)[1] if "/api/v1" in path else path
+    if rel.startswith(_BILLING_OPEN):
+        return
+    if (await s.execute(_GATE_SQL, {"h": hotel_id})).scalar_one():
+        raise AppError(
+            "SUBSCRIPTION_SUSPENDED",
+            "Your subscription is suspended for an unpaid invoice. Data can still be viewed; "
+            "pay in Settings > Plan to carry on.",
+        )
+
+
 async def _api_key_principal(request: Request, uow: UnitOfWork) -> Principal:
     """A hotel integration (X-Api-Key): the key's scopes only, read-only for sandbox keys,
     under its hotel's context (DECISIONS D50)."""
@@ -291,8 +320,7 @@ async def _api_key_principal(request: Request, uow: UnitOfWork) -> Principal:
     await set_tenant(s, hotel_id)
     key = (await s.execute(select(ApiKey).where(ApiKey.id == key_id))).scalar_one()
     hotel_status = (await s.execute(select(Hotel.status).where(Hotel.id == hotel_id))).scalar_one()
-    if hotel_status in ("suspended", "closed") and request.method not in SAFE_METHODS:
-        raise AppError("HOTEL_SUSPENDED", "This hotel's account is suspended. Data can still be viewed.")
+    await _write_gate(s, request, hotel_id, hotel_status)
     if hotel_status == "pending_approval":
         raise AppError("PERMISSION_DENIED", "This hotel is not approved yet.")
     await _limit(request, "staff", f"api_key:{key_id}")
@@ -388,8 +416,7 @@ async def _token_principal(request: Request, uow: UnitOfWork, *, allow_mfa_pendi
         ).scalar_one_or_none()
         if hotel_status is None:
             raise AppError("UNAUTHENTICATED")
-        if hotel_status in ("suspended", "closed") and request.method not in SAFE_METHODS:
-            raise AppError("HOTEL_SUSPENDED", "This hotel's account is suspended. Data can still be viewed.")
+        await _write_gate(s, request, hotel_id, hotel_status)
         rows = (
             await s.execute(
                 select(Role.name, RolePermission.permission_code)

@@ -86,8 +86,13 @@ uv run python scripts/restore_drill.py --source-url "$RESTORED_FROM" --target-ur
       registered address, billing contacts, bank details); VAT switched on only once registered.
 - [ ] Plans reviewed in Admin > Plans & Pricing (the seeded R499, R999 and R1,999 monthly
       drafts, plus any quarterly or annual prices) and published.
-- [ ] Payment provider (Stitch) merchant account, sandbox then production credentials, and its
-      webhook address configured once the payments slice ships (D73).
+- [ ] Stitch (D79): a test client first, then a live one; set `STITCH_CLIENT_ID`,
+      `STITCH_CLIENT_SECRET`, `STITCH_WEBHOOK_SECRET` (Svix `whsec_...`) and `STITCH_TEST_MODE`
+      (false only for the live client) on the API, register the webhook
+      `https://<api>/api/v1/billing/webhooks/stitch` for payment events, set `MERCHANT_APP_URL`
+      (checkouts return there), then choose Stitch in Admin > Billing & Invoices > Payments &
+      collections. The sandbox is refused in production. Bank details in Company & tax for EFT.
+- [ ] Collections policy reviewed (reminder days, grace period, suspension, proration).
 - [ ] External penetration test of the staging environment, findings fixed.
 - [ ] Load test on staging meets the targets in `infra/loadtest/locustfile.py`.
 - [ ] Restore drill run against a real backup.

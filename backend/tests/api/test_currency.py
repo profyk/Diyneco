@@ -107,12 +107,18 @@ async def test_plans_bill_in_their_own_currency_and_mrr_is_per_currency(client, 
     assert fixed.json()["error"]["details"]["fields"][0]["field"] == "currency"
     plan = await published_plan(client, factory, admin, amount=8900, currency="EUR")
 
-    hotel = await factory.hotel(rooms=1)
-    async with owner_engine.begin() as conn:
-        await conn.execute(
-            text("UPDATE app.subscriptions SET plan_id = :p WHERE hotel_id = :h"),
-            {"p": plan["id"], "h": hotel.id},
-        )
+    # MRR sums the price each subscription agreed (D79), per currency.
+    for currency, amount, interval in (("EUR", 8900, "month"), ("ZAR", 120000, "year")):
+        hotel = await factory.hotel(rooms=1)
+        async with owner_engine.begin() as conn:
+            await conn.execute(
+                text(
+                    "UPDATE app.subscriptions SET plan_id = :p, interval = :i, amount_minor = :a, currency = :c, "
+                    "tax_treatment = 'exclusive', anchor_day = 1 WHERE hotel_id = :h"
+                ),
+                {"p": plan["id"], "h": hotel.id, "i": interval, "a": amount, "c": currency},
+            )
     mrr = (await client.get("/admin/metrics", headers=admin)).json()["mrr"]
     by = {m["currency"]: m["amount_minor"] for m in mrr}
-    assert by.get("EUR", 0) >= 8900 and "ZAR" in by  # never summed across currencies
+    assert by.get("EUR", 0) >= 8900 and by.get("ZAR", 0) >= 10000  # R1,200 a year is R100 a month
+    # never summed across currencies
