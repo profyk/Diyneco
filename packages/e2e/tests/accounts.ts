@@ -1,4 +1,6 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { type Locator, type Page } from "@playwright/test";
@@ -18,6 +20,25 @@ export const accounts = JSON.parse(readFileSync(fileURLToPath(new URL("../.accou
 
 export function totp(secret: string): string {
   return new TOTP({ secret, digits: 6, period: 30 }).generate();
+}
+
+// The API refuses a code whose 30-second step was already used (replay protection), and the
+// suite signs the same accounts in more than once: wait for a step not used yet.
+// Kept in a file: Playwright starts a new worker process after a failed test.
+const STEPS_FILE = join(tmpdir(), "diyneco-e2e-totp-steps.json");
+function usedSteps(): Record<string, number> {
+  try {
+    return JSON.parse(readFileSync(STEPS_FILE, "utf8")) as Record<string, number>;
+  } catch {
+    return {};
+  }
+}
+export async function freshTotp(secret: string): Promise<string> {
+  const step = () => Math.floor(Date.now() / 30_000);
+  const last = usedSteps()[secret] ?? -1;
+  while (step() <= last) await new Promise((r) => setTimeout(r, 500));
+  writeFileSync(STEPS_FILE, JSON.stringify({ ...usedSteps(), [secret]: step() }));
+  return totp(secret);
 }
 
 export async function signIn(page: Page, email: string, password: string): Promise<void> {
@@ -42,7 +63,7 @@ export async function signIn(page: Page, email: string, password: string): Promi
 export async function signInAdmin(page: Page): Promise<void> {
   await page.goto(ADMIN_URL);
   await signIn(page, accounts.admin.email, accounts.admin.password);
-  await page.getByLabel("Code").fill(totp(accounts.admin.totp_secret));
+  await page.getByLabel("Code").fill(await freshTotp(accounts.admin.totp_secret));
   await page.getByRole("button", { name: "Verify" }).click();
   await page.getByRole("link", { name: "Plans & Pricing" }).first().waitFor();
 }
@@ -50,7 +71,7 @@ export async function signInAdmin(page: Page): Promise<void> {
 export async function signInOwner(page: Page): Promise<void> {
   await page.goto(MERCHANT_URL);
   await signIn(page, accounts.owner.email, accounts.owner.password);
-  await page.getByLabel("Code").fill(totp(accounts.owner.totp_secret));
+  await page.getByLabel("Code").fill(await freshTotp(accounts.owner.totp_secret));
   await page.getByRole("button", { name: "Verify" }).click();
   await page.getByRole("button", { name: "Sign out" }).first().waitFor({ state: "attached" });
 }
