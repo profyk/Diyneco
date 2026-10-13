@@ -82,10 +82,26 @@ Variables on both services (Railway's sealed variables, never the repository):
 `MIGRATIONS_DATABASE_URL` (`diyneco_owner`) is **not** given to Railway. Migrations run from the
 Deploy workflow, so the running API never holds the schema owner's password.
 
-**Vercel.** Five projects (`admin`, `merchant`, `kitchen`, `guest`, `room-service`), each with
-root directory `apps/<app>` and framework Next.js, **Git deployments switched off** (the Deploy
-workflow builds exactly the released commit), and its production domain attached. Staging is
-a preview deployment given the staging domain.
+**Vercel.** Five projects (`admin`, `merchant`, `kitchen`, `guest`, `room-service`), each
+imported from this repository with **Root Directory** `apps/<app>` (keep "Include files outside
+the root directory" on: the apps use `packages/`). Each app's `vercel.json` sets the framework,
+installs with the pnpm version pinned in `package.json` (Corepack), builds, runs functions in
+Cape Town (`cpt1`), and skips a Git build when neither the app nor the shared packages changed;
+`package.json` pins Node 24. In each project's Environment Variables set, for Production and
+for Preview (staging) separately:
+
+- `NEXT_PUBLIC_API_URL`: the API address (`https://api.diyneco.com`; staging its own);
+- `NEXT_PUBLIC_API_FALLBACK_URL` (optional): the Railway address of the same API (D81);
+- `ENABLE_EXPERIMENTAL_COREPACK=1`.
+
+They are compiled in at build time: after changing one, redeploy. Then attach the app's
+domain. Choose one way to deploy the web apps:
+
+- **Vercel's Git integration** (simplest): every push to main deploys. Leave `VERCEL_ORG_ID`
+  unset in GitHub and the Deploy workflow only migrates, rolls the backend and smoke-checks.
+- **The Deploy workflow** (the same commit everywhere, after the backend): set
+  `VERCEL_ORG_ID`, the five `VERCEL_PROJECT_ID_*` and `VERCEL_TOKEN` in GitHub and turn off
+  Git deployments in each Vercel project (Settings > Git), or every push deploys twice.
 
 **GitHub.** Environments `staging` and `production` (production with required reviewers),
 each holding the secrets and variables listed at the top of `.github/workflows/deploy.yml`

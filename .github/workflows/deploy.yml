@@ -126,6 +126,8 @@ jobs:
   web:
     name: Web app (${{ matrix.app }})
     needs: backend
+    # Skipped when Vercel deploys the web apps from Git itself (no VERCEL_ORG_ID variable).
+    if: vars.VERCEL_ORG_ID != ''
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     timeout-minutes: 30
@@ -177,6 +179,7 @@ jobs:
   smoke:
     name: Smoke checks
     needs: [backend, web]
+    if: always() && needs.backend.result == 'success' && (needs.web.result == 'success' || needs.web.result == 'skipped')
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     env:

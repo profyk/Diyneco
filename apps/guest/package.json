@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "description": "Diyneco guest tablet: one room, its menu, orders and bill.",
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "dev": "next dev --port 3005",
     "build": "next build",
