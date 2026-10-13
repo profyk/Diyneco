@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { label, useAction } from "./common";
+import { HotelBilling } from "./HotelBilling";
 import { HotelDialog } from "./screens";
 import { planPriceLabel } from "./Plans";
 import { useSession } from "./session";
@@ -163,6 +164,9 @@ export function HotelDetail({ id }: { id: string }) {
           )}
         </Card>
       </div>
+      {can("platform.billing.manage") ? (
+        <HotelBilling hotelId={h.id} currency={(sub?.plan as { currency?: string } | null)?.currency ?? d.currency} />
+      ) : null}
       <Card className="mt-6">
         <CardHeader title="Platform actions" description="What Diyneco staff did on this account, newest first." />
         {d.platform_actions.length ? (
