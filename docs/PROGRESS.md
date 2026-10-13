@@ -48,6 +48,8 @@
   (read-only except billing) and reactivates; billing emails; Admin > Billing & Invoices
   (collected vs invoiced vs outstanding vs MRR, filters, CSV, reconciliation, collections
   policy) and per-hotel billing on the hotel page; browser test of the whole journey.
+- API address with fallback (api.diyneco.com, then the Railway address) and a Migrate workflow
+  for Supabase (prepare roles, status, upgrade) with a Supabase bootstrap script (D81).
 - Deployment on Railway, Vercel, Supabase and AWS KMS (D80): AWS KMS provider for envelope
   encryption; manual Deploy workflow (check the commit, migrate, roll the API and worker,
   deploy the web apps, smoke checks; production behind required reviewers); setup guide with

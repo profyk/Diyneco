@@ -1,0 +1,118 @@
+name: Migrate
+
+# Database migrations on Supabase (DECISIONS D81), run by hand from the Actions tab:
+#   status   shows the database's revision and the migrations a commit would apply (read-only)
+#   upgrade  applies them (alembic upgrade head), then the migration check
+#   prepare  once per Supabase project, before the first upgrade: creates Diyneco's database
+#            roles, extensions and grants (infra/db/supabase-bootstrap.sql)
+# The Deploy workflow also migrates as part of a release; use this one to prepare a project,
+# to look before a release, or to migrate on its own.
+#
+# Secrets in each GitHub environment (staging, production). Use Supabase's session pooler
+# address (port 5432, IPv4; GitHub's runners have no IPv6), never the transaction pooler:
+#   MIGRATIONS_DATABASE_URL   postgresql+psycopg://diyneco_owner.<ref>:<pw>@<pooler host>:5432/postgres
+#   SUPABASE_ADMIN_DATABASE_URL  postgresql://postgres.<ref>:<db password>@<pooler host>:5432/postgres
+#                                (prepare only)
+#   DB_OWNER_PASSWORD, DB_API_PASSWORD, DB_WORKER_PASSWORD  the three role passwords (prepare only)
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Database to migrate
+        type: choice
+        options: [staging, production]
+        required: true
+      action:
+        description: What to do
+        type: choice
+        options: [status, upgrade, prepare]
+        default: status
+        required: true
+      ref:
+        description: Commit or branch whose migrations to use (default main)
+        type: string
+        default: main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: migrate-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    name: ${{ inputs.action }} (${{ inputs.environment }})
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      MIGRATIONS_DATABASE_URL: ${{ secrets.MIGRATIONS_DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+      - name: Only commits on main
+        run: |
+          git merge-base --is-ancestor HEAD origin/main \
+            || { echo "::error::${{ inputs.ref }} is not on main; only reviewed migrations run here"; exit 1; }
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      - name: Install
+        run: uv sync --frozen --no-dev
+
+      - name: Prepare the Supabase project (roles, extensions, grants)
+        if: inputs.action == 'prepare'
+        env:
+          ADMIN_URL: ${{ secrets.SUPABASE_ADMIN_DATABASE_URL }}
+          OWNER_PW: ${{ secrets.DB_OWNER_PASSWORD }}
+          API_PW: ${{ secrets.DB_API_PASSWORD }}
+          WORKER_PW: ${{ secrets.DB_WORKER_PASSWORD }}
+        run: |
+          for v in ADMIN_URL OWNER_PW API_PW WORKER_PW; do
+            [ -n "${!v}" ] || { echo "::error::secret for $v is not set in the ${{ inputs.environment }} environment"; exit 1; }
+          done
+          sudo apt-get install -y -qq postgresql-client >/dev/null
+          psql "$ADMIN_URL" -X -q -f ../infra/db/supabase-bootstrap.sql \
+            -v owner_password="$OWNER_PW" -v api_password="$API_PW" -v worker_password="$WORKER_PW"
+          psql "$ADMIN_URL" -X -A -t -c "SELECT rolname, rolbypassrls, rolcanlogin FROM pg_roles WHERE rolname LIKE 'diyneco_%' ORDER BY 1"
+
+      - name: Check the connection
+        if: inputs.action != 'prepare'
+        run: |
+          [ -n "$MIGRATIONS_DATABASE_URL" ] || { echo "::error::MIGRATIONS_DATABASE_URL is not set in the ${{ inputs.environment }} environment"; exit 1; }
+          case "$MIGRATIONS_DATABASE_URL" in
+            *:6543/*) echo "::error::that is the transaction pooler (port 6543); use the session pooler (5432)"; exit 1 ;;
+          esac
+
+      - name: Status
+        if: inputs.action != 'prepare'
+        run: |
+          current="$(uv run alembic current 2>&1)" || true
+          echo "Database revision: ${current:-none (empty database)}"
+          echo "This commit's head: $(uv run alembic heads)"
+          if grep -q "Can't locate revision" <<<"$current"; then
+            echo "::warning::The database is ahead of this commit; nothing to apply."
+          else
+            range="current:head"
+            grep -qE '^[0-9]' <<<"$current" || range="base:head"  # empty database
+            pending="$(uv run alembic history -r "$range" --indicate-current | grep -v "(current)" || true)"
+            echo "Pending migrations:"
+            echo "${pending:-none, the database is up to date}"
+          fi
+
+      - name: Upgrade
+        if: inputs.action == 'upgrade'
+        run: |
+          uv run alembic upgrade head
+          echo "Now at: $(uv run alembic current)"
+
+      - name: Migration check (RLS, append-only protections, grants)
+        if: inputs.action == 'upgrade'
+        run: uv run python scripts/check_migrations.py

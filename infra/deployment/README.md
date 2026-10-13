@@ -31,9 +31,10 @@ do not work for staff sign-in, and the smoke checks refuse them.
 **Supabase.** Choose the region next to the Railway region: Railway `europe-west4` (Amsterdam)
 with Supabase Frankfurt (`eu-central-1`) is the nearest pair to South Africa. Hosting outside
 South Africa is a cross-border transfer of personal information, which the POPIA review must
-cover. Turn on point-in-time recovery. Run `infra/db/bootstrap.sql` once in the SQL editor as
-`postgres` with strong role passwords, and create the private buckets `hotel-assets` and
-`invoices`. Railway connects over IPv4, so use Supabase's **session pooler** connection string
+cover. Turn on point-in-time recovery and create the private buckets `hotel-assets` and `invoices`.
+Prepare the database with the **Migrate** workflow (below), not the SQL editor:
+`infra/db/supabase-bootstrap.sql` is the Supabase version of `infra/db/bootstrap.sql` (one
+`postgres` database, Supabase's own `extensions` schema, no superuser). Railway connects over IPv4, so use Supabase's **session pooler** connection string
 (port 5432; the user becomes `diyneco_api.<project-ref>`), never the transaction pooler: the API
 relies on per-transaction settings and prepared statements.
 
@@ -87,7 +88,26 @@ workflow builds exactly the released commit), and its production domain attached
 a preview deployment given the staging domain.
 
 **GitHub.** Environments `staging` and `production` (production with required reviewers),
-each holding the secrets and variables listed at the top of `.github/workflows/deploy.yml`.
+each holding the secrets and variables listed at the top of `.github/workflows/deploy.yml`
+and `.github/workflows/migrate.yml`.
+
+**Database migrations** (Actions > Migrate, D81). Once per Supabase project, run action
+`prepare`: it creates the roles `diyneco_owner`, `diyneco_api` and `diyneco_worker` with the
+passwords held in the GitHub environment, plus the extensions and grants. After that, `status`
+shows the database's revision and what a commit would apply, and `upgrade` applies it and runs
+the migration check (row-level security, append-only protections, grants). Only commits on main
+run. Deploy also migrates on every release. Migrations are additive first, and downgrades are
+never run against Supabase (the first migration's downgrade would drop shared extensions).
+
+**API address and fallback** (D81). The web apps are built with `PUBLIC_API_URL`
+(`https://api.diyneco.com`) and, optionally, `PUBLIC_API_FALLBACK_URL` (the Railway address,
+for example `https://diyneco-production.up.railway.app`). When an app starts it uses the first
+that answers `/api/v1/health` and keeps that choice for the browser tab. Add `api.diyneco.com`
+as a custom domain on the Railway `api` service (Settings > Networking, then the CNAME record
+it shows at your DNS provider), and set `API_BASE_URL=https://api.diyneco.com` either way. On
+the fallback, staff sign-in works but does not survive a page reload (the refresh cookie is
+SameSite=Strict and the Railway address is another site), so it is a stopgap while DNS is set
+up.
 
 **Releasing.** Actions > Deploy > Run workflow, environment `staging`, a commit hash from
 main. The workflow checks that every workflow on the commit is green and its backend image
