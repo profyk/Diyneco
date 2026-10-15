@@ -35,6 +35,8 @@
 | `deliveries.view`        | ●   | ●   | ●   | ●   | ●   |     |     |     | ●   | ●   |
 | `deliveries.update`      | ●   | ●   | ●   |     |     |     |     |     | ●   | ●   |
 | `deliveries.manage`      | ●   | ●   | ●   |     |     |     |     |     | ●   |     |
+| `requests.view`          | ●   | ●   | ●   | ●   | ●   |     |     |     | ●   | ●   |
+| `requests.update`        | ●   | ●   | ●   | ●   | ●   |     |     |     | ●   | ●   |
 | `folio.read`             | ●   | ●   | ●   | ●   | ●   | ●   |     |     |     |     |
 | `folio.charge`           | ●   | ●   | ●   | ●   | ●   |     |     |     |     |     |
 | `folio.discount` †       | ●   | ●   | ●   | ●   |     | ●   |     |     |     |     |

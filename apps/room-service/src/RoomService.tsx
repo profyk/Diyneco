@@ -34,10 +34,10 @@ function useLive(): RealtimeStatus {
     const rt = connectRealtime({
       baseUrl: API_URL,
       getToken: accessToken,
-      channels: (allowed) => allowed.filter((c) => c.endsWith(":room-service")),
+      channels: (allowed) => allowed.filter((c) => c.endsWith(":room-service") || c.endsWith(":requests")),
       onEvent: (e) => {
-        if (e.type === "ORDER_READY") navigator.vibrate?.([120, 60, 120]);
-        void qc.invalidateQueries({ queryKey: ["deliveries"] });
+        if (e.type === "ORDER_READY" || e.type === "REQUEST_CREATED") navigator.vibrate?.([120, 60, 120]);
+        void qc.invalidateQueries({ queryKey: e.type.startsWith("REQUEST_") ? ["requests"] : ["deliveries"] });
       },
       onStatus: setStatus,
     });
@@ -48,23 +48,37 @@ function useLive(): RealtimeStatus {
 
 function Deliveries() {
   const { api, state, signOut, can } = useSession();
-  const [tab, setTab] = useState<"ready" | "mine">("ready");
+  const deliveries = can("deliveries.view");
+  const requests = can("requests.view");
+  const [tab, setTab] = useState<"ready" | "mine" | "requests">(deliveries ? "ready" : "requests");
   const [paying, setPaying] = useState<Delivery | null>(null);
   const live = useLive();
   const list = useQuery({
     queryKey: ["deliveries", tab],
-    queryFn: () => ok(api.GET("/api/v1/deliveries", { params: { query: { scope: tab } } })),
+    queryFn: () => ok(api.GET("/api/v1/deliveries", { params: { query: { scope: tab === "mine" ? "mine" : "ready" } } })),
     refetchInterval: live === "live" ? 60_000 : 10_000,
+    enabled: deliveries && tab !== "requests",
+  });
+  const waiting = useQuery({
+    queryKey: ["requests", "open"],
+    queryFn: () => ok(api.GET("/api/v1/requests", { params: { query: { scope: "open" } } })),
+    refetchInterval: live === "live" ? 60_000 : 15_000,
+    enabled: requests,
   });
   if (state.status !== "signed-in") return null;
-  if (!can("deliveries.view")) {
+  if (!deliveries && !requests) {
     return (
       <main className="flex min-h-dvh flex-col items-center justify-center gap-4 p-6 text-center">
-        <p className="text-ink">Your role does not include room service.</p>
+        <p className="text-ink">Your role does not include room service or guest requests.</p>
         <Button onClick={() => void signOut()}>Sign out</Button>
       </main>
     );
   }
+  const tabs = [
+    ...(deliveries ? (["ready", "mine"] as const) : []),
+    ...(requests ? (["requests"] as const) : []),
+  ];
+  const newRequests = (waiting.data?.data ?? []).filter((r) => r.status === "open").length;
   return (
     <div className="mx-auto flex min-h-dvh max-w-xl flex-col">
       <header className="sticky top-0 z-10 border-b border-line bg-surface/95 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur">
@@ -80,26 +94,33 @@ function Deliveries() {
             </button>
           </div>
         </div>
-        <div role="tablist" className="mt-3 grid grid-cols-2 gap-2">
-          {(["ready", "mine"] as const).map((t) => (
+        <div role="tablist" className={cn("mt-3 grid gap-2", tabs.length === 3 ? "grid-cols-3" : tabs.length === 2 ? "grid-cols-2" : "grid-cols-1")}>
+          {tabs.map((t) => (
             <button
               key={t}
               role="tab"
               aria-selected={tab === t}
               onClick={() => setTab(t)}
               className={cn(
-                "h-12 rounded-xl text-base font-semibold",
+                "h-12 rounded-xl px-1 text-sm font-semibold sm:text-base",
                 tab === t ? "bg-brand text-on-brand" : "border border-line bg-surface text-ink",
               )}
             >
-              {t === "ready" ? "Ready to collect" : "My deliveries"}
+              {t === "ready" ? "Ready" : t === "mine" ? "My deliveries" : "Requests"}
+              {t === "requests" && newRequests ? (
+                <span className="ml-1.5 rounded-full bg-crit px-1.5 py-0.5 text-xs text-white">{newRequests}</span>
+              ) : null}
             </button>
           ))}
         </div>
       </header>
       <main className="flex flex-1 flex-col gap-3 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-        {list.error ? <ErrorNotice error={list.error} /> : null}
-        {list.isLoading ? (
+        {tab === "requests" ? (
+          <RequestList query={waiting} canUpdate={can("requests.update")} />
+        ) : list.error ? (
+          <ErrorNotice error={list.error} />
+        ) : null}
+        {tab === "requests" ? null : list.isLoading ? (
           <Spinner className="mx-auto mt-10 size-8 text-muted" />
         ) : list.data?.data.length ? (
           list.data.data.map((d) => <DeliveryCard key={d.order_id} d={d} mine={tab === "mine"} onPay={() => setPaying(d)} />)
@@ -109,6 +130,93 @@ function Deliveries() {
       </main>
       {paying ? <PayDialog d={paying} onClose={() => setPaying(null)} /> : null}
     </div>
+  );
+}
+
+type ServiceRequest = components["schemas"]["RequestOut"];
+
+const REQUEST_KINDS: Record<string, string> = {
+  towels: "Towels",
+  toiletries: "Toiletries",
+  pillows: "Pillows or blankets",
+  cleaning: "Room cleaning",
+  turndown: "Turndown",
+  maintenance: "Maintenance",
+  wake_up: "Wake-up call",
+  late_checkout: "Late checkout",
+  luggage: "Luggage",
+  other: "Other",
+};
+
+/** Guest requests (D93) waiting or under way, oldest first, with one-tap progress. */
+function RequestList({
+  query,
+  canUpdate,
+}: {
+  query: { data?: { data: ServiceRequest[] }; isLoading: boolean; error: unknown };
+  canUpdate: boolean;
+}) {
+  if (query.error) return <ErrorNotice error={query.error} />;
+  if (query.isLoading) return <Spinner className="mx-auto mt-10 size-8 text-muted" />;
+  const rows = query.data?.data ?? [];
+  if (!rows.length) return <EmptyState title="No guest requests waiting" body="New ones appear here and buzz your phone." />;
+  return (
+    <>
+      {rows.map((r) => (
+        <RequestCard key={r.id} r={r} canUpdate={canUpdate} />
+      ))}
+    </>
+  );
+}
+
+function RequestCard({ r, canUpdate }: { r: ServiceRequest; canUpdate: boolean }) {
+  const { api, state } = useSession();
+  const qc = useQueryClient();
+  const act = useMutation({
+    mutationFn: (to: "start" | "done") =>
+      ok(
+        to === "start"
+          ? api.POST("/api/v1/requests/{request_id}/start", { params: { path: { request_id: r.id } } })
+          : api.POST("/api/v1/requests/{request_id}/done", { params: { path: { request_id: r.id } } }),
+      ),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["requests"] }),
+  });
+  const me = state.status === "signed-in" ? state.me.user?.id : undefined;
+  const mine = r.assigned_to?.id === me;
+  const late = r.due_at ? new Date(r.due_at).getTime() < Date.now() : r.waiting_minutes >= (r.status === "open" ? 10 : 30);
+  const big = "h-14 w-full text-base";
+  return (
+    <Card className={cn("flex flex-col gap-3 p-4", late && "border-crit")}>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="font-display text-2xl font-semibold text-ink">Room {r.room}</p>
+          <p className="text-base font-medium text-ink">
+            {REQUEST_KINDS[r.kind] ?? r.kind}
+            {r.due_at ? <span className="text-muted"> · {new Date(r.due_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span> : null}
+          </p>
+        </div>
+        <Badge tone={late ? "crit" : "neutral"}>{r.waiting_minutes} min</Badge>
+      </div>
+      {r.note ? <p className="rounded-lg bg-warn-bg px-3 py-2 text-warn">{r.note}</p> : null}
+      {r.assigned_to ? <p className="text-sm text-muted">{mine ? "You have this one" : `With ${r.assigned_to.name}`}</p> : null}
+      {act.error ? <ErrorNotice error={act.error} /> : null}
+      {canUpdate ? (
+        r.status === "in_progress" && mine ? (
+          <Button variant="success" className={big} loading={act.isPending} onClick={() => act.mutate("done")}>
+            Done
+          </Button>
+        ) : (
+          <div className="grid grid-cols-3 gap-2">
+            <Button className={cn(big, "col-span-2")} loading={act.isPending && act.variables === "start"} onClick={() => act.mutate("start")}>
+              I&apos;ll do it
+            </Button>
+            <Button variant="secondary" className={big} loading={act.isPending && act.variables === "done"} onClick={() => act.mutate("done")}>
+              Done
+            </Button>
+          </div>
+        )
+      ) : null}
+    </Card>
   );
 }
 

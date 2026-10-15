@@ -23,8 +23,10 @@ from app.schemas.orders import (
     Quote,
     QuoteRequest,
 )
+from app.schemas.requests import GuestRequestCreate, GuestRequestList, GuestRequestOut
 from app.services import guest as svc
 from app.services import orders as order_service
+from app.services import requests as request_service
 
 router = APIRouter(prefix="/guest", tags=["guest"])
 
@@ -104,6 +106,39 @@ async def my_folio(request: Request, uow: Uow, principal: DevicePrincipal) -> di
     ctx = _ctx(request, principal)
     stay = await svc.require_stay(uow, ctx, _tablet(request))
     return await svc.folio(uow, ctx, stay)
+
+
+@router.get("/requests", response_model=GuestRequestList)
+async def my_requests(request: Request, uow: Uow, principal: DevicePrincipal) -> dict[str, Any]:
+    """This stay's service requests (D93); empty before check-in."""
+    device = _tablet(request)
+    ctx = _ctx(request, principal)
+    assert device.room_id is not None  # noqa: S101 - checked by _tablet
+    stay = await svc.active_stay(uow, ctx, device.room_id)
+    return {"data": await request_service.for_stay(uow, ctx, stay.id) if stay else []}
+
+
+@router.post("/requests", status_code=201, response_model=GuestRequestOut)
+async def ask(
+    idem: IdemDevice, body: GuestRequestCreate, request: Request, uow: Uow, principal: DevicePrincipal
+) -> Response:
+    device = _tablet(request)
+    ctx = _ctx(request, principal)
+    stay = await svc.require_stay(uow, ctx, device)
+    result = await request_service.create_from_room(
+        uow, ctx, stay.room_id, stay, device.id, body.model_dump()
+    )
+    return await idem.complete(uow, 201, GuestRequestOut.model_validate(result).model_dump(mode="json"))
+
+
+@router.post("/requests/{request_id}/cancel", response_model=GuestRequestOut)
+async def cancel_request(
+    idem: IdemDevice, request_id: uuid.UUID, request: Request, uow: Uow, principal: DevicePrincipal
+) -> Response:
+    ctx = _ctx(request, principal)
+    stay = await svc.require_stay(uow, ctx, _tablet(request))
+    result = await request_service.cancel_by_guest(uow, ctx, request_id, stay.id)
+    return await idem.complete(uow, 200, GuestRequestOut.model_validate(result).model_dump(mode="json"))
 
 
 @router.get("/info", response_model=GuestInfo)

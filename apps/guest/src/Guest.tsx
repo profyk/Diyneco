@@ -35,7 +35,8 @@ type MenuItem = components["schemas"]["GuestMenuItem"];
 type ModifierGroup = components["schemas"]["ModifierGroupOut"];
 type Quote = components["schemas"]["Quote"];
 type CartLine = { key: string; item: MenuItem; quantity: number; options: string[]; note: string };
-type Tab = "menu" | "orders" | "bill" | "info";
+type Tab = "menu" | "orders" | "requests" | "bill" | "info";
+type RequestKind = components["schemas"]["GuestRequestCreate"]["kind"];
 
 const IDLE_MS = 3 * 60_000;
 
@@ -202,6 +203,7 @@ function Room({ onUnpaired }: { onUnpaired: () => void }) {
   const tabs: { key: Tab; label: string }[] = [
     { key: "menu", label: "Menu" },
     { key: "orders", label: "My orders" },
+    { key: "requests", label: "Requests" },
     { key: "bill", label: "My bill" },
     { key: "info", label: "Hotel info" },
   ];
@@ -228,6 +230,7 @@ function Room({ onUnpaired }: { onUnpaired: () => void }) {
           <MenuTab cart={cart} setCart={setCart} enabled={s.ordering_enabled} onOrdered={() => { setCart([]); setTab("orders"); }} />
         ) : null}
         {tab === "orders" ? <OrdersTab /> : null}
+        {tab === "requests" ? <RequestsTab /> : null}
         {tab === "bill" ? <BillTab /> : null}
         {tab === "info" ? <InfoTab /> : null}
       </main>
@@ -537,6 +540,156 @@ function OrdersTab() {
         );
       })}
     </section>
+  );
+}
+
+// Service requests (D93): towels, cleaning, a repair or a wake-up call, sent to the team.
+const REQUESTS: { kind: RequestKind; label: string; hint: string; time?: "wake" | "checkout" }[] = [
+  { kind: "towels", label: "Fresh towels", hint: "How many, bath or hand towels?" },
+  { kind: "toiletries", label: "Toiletries", hint: "Soap, shampoo, toothbrush…" },
+  { kind: "pillows", label: "Pillows or blankets", hint: "What would you like?" },
+  { kind: "cleaning", label: "Clean my room", hint: "A good time, or anything to skip?" },
+  { kind: "turndown", label: "Turndown", hint: "Anything we should know?" },
+  { kind: "maintenance", label: "Something is broken", hint: "What isn't working?" },
+  { kind: "wake_up", label: "Wake-up call", hint: "Anything else?", time: "wake" },
+  { kind: "late_checkout", label: "Late checkout", hint: "Reception will confirm availability.", time: "checkout" },
+  { kind: "luggage", label: "Help with luggage", hint: "When should we come?" },
+  { kind: "other", label: "Something else", hint: "Tell us what you need." },
+];
+const REQUEST_LABEL = Object.fromEntries(REQUESTS.map((r) => [r.kind, r.label])) as Record<string, string>;
+const REQUEST_STATUS: Record<string, { label: string; tone: "info" | "warn" | "good" | "crit" | "neutral" }> = {
+  open: { label: "Sent", tone: "warn" },
+  acknowledged: { label: "Seen by the team", tone: "info" },
+  in_progress: { label: "On the way", tone: "info" },
+  done: { label: "Done", tone: "good" },
+  cancelled: { label: "Cancelled", tone: "neutral" },
+};
+
+/** The next time the clock shows hh:mm (the tablet is in the hotel, so local time is hotel time). */
+function nextAt(hhmm: string): string | null {
+  const [h, m] = hhmm.split(":").map(Number);
+  if (h === undefined || m === undefined || Number.isNaN(h) || Number.isNaN(m)) return null;
+  const d = new Date();
+  d.setHours(h, m, 0, 0);
+  if (d.getTime() < Date.now() - 60_000) d.setDate(d.getDate() + 1);
+  return d.toISOString();
+}
+
+function RequestsTab() {
+  const qc = useQueryClient();
+  const list = useQuery({ queryKey: ["requests"], queryFn: () => ok(api.GET("/api/v1/guest/requests")), refetchInterval: 30_000 });
+  const [asking, setAsking] = useState<(typeof REQUESTS)[number] | null>(null);
+  const [sent, setSent] = useState<string | null>(null);
+  const cancel = useMutation({
+    mutationFn: (id: string) => ok(api.POST("/api/v1/guest/requests/{request_id}/cancel", { params: { path: { request_id: id } } })),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["requests"] }),
+  });
+  const rows = list.data?.data ?? [];
+  return (
+    <section className="mx-auto flex max-w-4xl flex-col gap-6 p-4">
+      <div>
+        <h2 className="font-display text-2xl font-semibold text-ink">How can we help?</h2>
+        <p className="mt-1 text-muted">Tap what you need and the team is told straight away.</p>
+      </div>
+      {sent ? (
+        <p role="status" className="rounded-lg bg-good-bg px-4 py-3 text-good">
+          {sent}
+        </p>
+      ) : null}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
+        {REQUESTS.map((r) => (
+          <button
+            key={r.kind}
+            type="button"
+            onClick={() => { setSent(null); setAsking(r); }}
+            className="min-h-24 rounded-[var(--radius-card)] border border-line bg-surface p-4 text-left text-lg font-semibold text-ink transition hover:border-blue active:scale-[0.98]"
+          >
+            {r.label}
+          </button>
+        ))}
+      </div>
+      <div>
+        <h3 className="mb-3 font-display text-lg font-semibold text-ink">Your requests</h3>
+        {list.isLoading ? <Spinner className="mx-auto size-8 text-muted" /> : null}
+        {!list.isLoading && rows.length === 0 ? <p className="text-muted">Nothing requested yet.</p> : null}
+        {cancel.error ? <ErrorNotice error={cancel.error} className="mb-3" /> : null}
+        <ul className="flex flex-col gap-3">
+          {rows.map((r) => {
+            const st = REQUEST_STATUS[r.status] ?? { label: r.status, tone: "neutral" as const };
+            return (
+              <li key={r.id} className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-card)] border border-line bg-surface p-4">
+                <div>
+                  <p className="font-semibold text-ink">
+                    {REQUEST_LABEL[r.kind] ?? r.kind}
+                    {r.due_at ? <span className="font-normal text-muted"> · {formatTime(r.due_at)}</span> : null}
+                  </p>
+                  {r.note ? <p className="text-sm text-muted">{r.note}</p> : null}
+                  <p className="text-xs text-muted">Asked at {formatTime(r.created_at)}</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Badge tone={st.tone} className="text-sm">
+                    {st.label}
+                  </Badge>
+                  {r.status === "open" ? (
+                    <Button variant="ghost" loading={cancel.isPending && cancel.variables === r.id} onClick={() => cancel.mutate(r.id)}>
+                      Cancel
+                    </Button>
+                  ) : null}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+      {asking ? (
+        <AskDialog
+          request={asking}
+          onClose={() => setAsking(null)}
+          onSent={(label) => {
+            setAsking(null);
+            setSent(`${label}: sent. We'll be with you soon.`);
+            void qc.invalidateQueries({ queryKey: ["requests"] });
+          }}
+        />
+      ) : null}
+    </section>
+  );
+}
+
+function AskDialog({ request, onClose, onSent }: { request: (typeof REQUESTS)[number]; onClose: () => void; onSent: (label: string) => void }) {
+  const [note, setNote] = useState("");
+  const [time, setTime] = useState(request.time === "checkout" ? "12:00" : "07:00");
+  const send = useMutation({
+    mutationFn: () =>
+      ok(
+        api.POST("/api/v1/guest/requests", {
+          body: { kind: request.kind, note: note.trim() || null, due_at: request.time ? nextAt(time) : null },
+        }),
+      ),
+    onSuccess: () => onSent(request.label),
+  });
+  return (
+    <Dialog open onClose={onClose} title={request.label} description={request.time === "checkout" ? request.hint : undefined}>
+      <div className="flex flex-col gap-4">
+        {request.time ? (
+          <Field label={request.time === "wake" ? "Wake me at" : "Check out at"}>
+            {(p) => <Input {...p} type="time" value={time} onChange={(e) => setTime(e.target.value)} className="text-2xl" />}
+          </Field>
+        ) : null}
+        <Field label="Note (optional)" hint={request.hint}>
+          {(p) => <Textarea {...p} rows={3} maxLength={300} value={note} onChange={(e) => setNote(e.target.value)} />}
+        </Field>
+        {send.error ? <ErrorNotice error={send.error} /> : null}
+        <div className="flex justify-end gap-2">
+          <Button size="lg" variant="secondary" onClick={onClose}>
+            Back
+          </Button>
+          <Button size="lg" loading={send.isPending} onClick={() => send.mutate()}>
+            Send request
+          </Button>
+        </div>
+      </div>
+    </Dialog>
   );
 }
 

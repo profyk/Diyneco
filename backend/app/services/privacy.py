@@ -184,6 +184,13 @@ async def anonymise_guest(
         ),
         {**p, "r": REDACTED},
     )
+    await s.execute(
+        text(
+            "UPDATE app.service_requests SET note = :r WHERE hotel_id = :h AND note IS NOT NULL "
+            "AND stay_id IN (SELECT id FROM app.stays WHERE hotel_id = :h AND guest_id = :g)"
+        ),
+        {**p, "r": REDACTED},
+    )
     # Guest personal data never enters audit values (D33); the entry records who and why.
     await write_audit(
         s,

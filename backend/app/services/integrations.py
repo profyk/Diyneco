@@ -76,6 +76,8 @@ WEBHOOK_EVENTS = frozenset(
         "STAY_MOVED",
         "MENU_UPDATED",
         "ADJUSTMENT_REQUESTED",
+        "REQUEST_CREATED",  # D93
+        "REQUEST_UPDATED",
         "HOTEL_UPDATED",
         "SETTINGS_UPDATED",
         "DEVICE_PAIRED",

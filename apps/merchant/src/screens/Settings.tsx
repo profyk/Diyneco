@@ -454,7 +454,7 @@ function BillingSettings() {
 }
 
 const SCOPES = ["rooms.read", "orders.read", "stays.read", "folio.read", "payments.read", "invoices.read", "reports.read", "menu.read", "rooms.status", "menu.availability"];
-const EVENTS = ["NEW_ORDER", "ORDER_READY", "ORDER_DELIVERED", "ORDER_CANCELLED", "PAYMENT_UPDATED", "STAY_CHECKED_IN", "STAY_CHECKED_OUT", "STAY_MOVED", "FOLIO_UPDATED", "MENU_UPDATED"];
+const EVENTS = ["NEW_ORDER", "ORDER_READY", "ORDER_DELIVERED", "ORDER_CANCELLED", "PAYMENT_UPDATED", "STAY_CHECKED_IN", "STAY_CHECKED_OUT", "STAY_MOVED", "FOLIO_UPDATED", "MENU_UPDATED", "REQUEST_CREATED", "REQUEST_UPDATED"];
 
 function Integrations() {
   const { api } = useSession();

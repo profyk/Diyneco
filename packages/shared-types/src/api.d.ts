@@ -2344,6 +2344,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/guest/requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My Requests
+         * @description This stay's service requests (D93); empty before check-in.
+         */
+        get: operations["my_requests_api_v1_guest_requests_get"];
+        put?: never;
+        /** Ask */
+        post: operations["ask_api_v1_guest_requests_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/guest/requests/{request_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Request */
+        post: operations["cancel_request_api_v1_guest_requests__request_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/guest/session": {
         parameters: {
             query?: never;
@@ -3642,6 +3680,116 @@ export interface paths {
         get: operations["room_service_api_v1_reports_room_service_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Requests
+         * @description `open`: waiting or under way, oldest first. `mine`: those assigned to me. `recent`: the
+         *     last 7 days, newest first.
+         */
+        get: operations["list_requests_api_v1_requests_get"];
+        put?: never;
+        /**
+         * Log Request
+         * @description A request taken by phone or at the desk, for any room (with or without a guest).
+         */
+        post: operations["log_request_api_v1_requests_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/requests/{request_id}/acknowledge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Acknowledge */
+        post: operations["acknowledge_api_v1_requests__request_id__acknowledge_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/requests/{request_id}/assign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Assign */
+        post: operations["assign_api_v1_requests__request_id__assign_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/requests/{request_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel */
+        post: operations["cancel_api_v1_requests__request_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/requests/{request_id}/done": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Done */
+        post: operations["done_api_v1_requests__request_id__done_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/requests/{request_id}/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start */
+        post: operations["start_api_v1_requests__request_id__start_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5331,6 +5479,14 @@ export interface components {
              */
             user_id: string;
         };
+        /** AssignRequestTo */
+        AssignRequestTo: {
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+        };
         /** AttemptList */
         AttemptList: {
             /** Data */
@@ -5677,11 +5833,6 @@ export interface components {
              * @enum {string}
              */
             type: "cta";
-        };
-        /** CancelRequest */
-        CancelRequest: {
-            /** Reason */
-            reason: string;
         };
         /** CartLine */
         CartLine: {
@@ -7056,6 +7207,59 @@ export interface components {
             id: string;
             /** Name */
             name: string;
+        };
+        /** GuestRequestCreate */
+        GuestRequestCreate: {
+            /** Due At */
+            due_at?: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "towels" | "toiletries" | "pillows" | "cleaning" | "turndown" | "maintenance" | "wake_up" | "late_checkout" | "luggage" | "other";
+            /** Note */
+            note?: string | null;
+        };
+        /** GuestRequestList */
+        GuestRequestList: {
+            /** Data */
+            data: components["schemas"]["GuestRequestOut"][];
+        };
+        /**
+         * GuestRequestOut
+         * @description What the room's tablet sees: no staff names, only progress.
+         */
+        GuestRequestOut: {
+            /** Acknowledged At */
+            acknowledged_at: string | null;
+            /** Cancelled At */
+            cancelled_at: string | null;
+            /** Completed At */
+            completed_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Due At */
+            due_at: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "towels" | "toiletries" | "pillows" | "cleaning" | "turndown" | "maintenance" | "wake_up" | "late_checkout" | "luggage" | "other";
+            /** Note */
+            note: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "open" | "acknowledged" | "in_progress" | "done" | "cancelled";
         };
         /** GuestSession */
         GuestSession: {
@@ -9131,6 +9335,16 @@ export interface components {
             /** Sensitive */
             sensitive: boolean;
         };
+        /** Person */
+        Person: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+        };
         /** PlaceOrder */
         PlaceOrder: {
             /** Lines */
@@ -9971,6 +10185,82 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /** RequestList */
+        RequestList: {
+            /** Data */
+            data: components["schemas"]["RequestOut"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+            summary: components["schemas"]["RequestSummary"];
+        };
+        /** RequestOut */
+        RequestOut: {
+            /** Acknowledged At */
+            acknowledged_at: string | null;
+            assigned_to: components["schemas"]["Person"] | null;
+            /** Cancel Reason */
+            cancel_reason: string | null;
+            /** Cancelled At */
+            cancelled_at: string | null;
+            /** Cancelled By */
+            cancelled_by: ("guest" | "staff") | null;
+            /** Completed At */
+            completed_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            created_by: components["schemas"]["Person"] | null;
+            /** Due At */
+            due_at: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "towels" | "toiletries" | "pillows" | "cleaning" | "turndown" | "maintenance" | "wake_up" | "late_checkout" | "luggage" | "other";
+            /** Note */
+            note: string | null;
+            /** Room */
+            room: string;
+            /**
+             * Room Id
+             * Format: uuid
+             */
+            room_id: string;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "guest" | "staff";
+            /** Started At */
+            started_at: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "open" | "acknowledged" | "in_progress" | "done" | "cancelled";
+            /** Stay Id */
+            stay_id: string | null;
+            /** Waiting Minutes */
+            waiting_minutes: number;
+        };
+        /** RequestSummary */
+        RequestSummary: {
+            /** Done Today */
+            done_today: number;
+            /** In Progress */
+            in_progress: number;
+            /** Median Minutes To Done */
+            median_minutes_to_done: number | null;
+            /** Open */
+            open: number;
+        };
         /** ResendEmailCodeRequest */
         ResendEmailCodeRequest: {
             /** Email */
@@ -10695,6 +10985,23 @@ export interface components {
         StaffQuote: {
             /** Lines */
             lines: components["schemas"]["CartLine"][];
+            /**
+             * Room Id
+             * Format: uuid
+             */
+            room_id: string;
+        };
+        /** StaffRequestCreate */
+        StaffRequestCreate: {
+            /** Due At */
+            due_at?: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "towels" | "toiletries" | "pillows" | "cleaning" | "turndown" | "maintenance" | "wake_up" | "late_checkout" | "luggage" | "other";
+            /** Note */
+            note?: string | null;
             /**
              * Room Id
              * Format: uuid
@@ -11753,6 +12060,11 @@ export interface components {
             /** Orders */
             orders: number;
         };
+        /** CancelRequest */
+        app__schemas__reports__CancelRequest: {
+            /** Reason */
+            reason: string;
+        };
         /** DeliveryList */
         app__schemas__reports__DeliveryList: {
             /** Data */
@@ -11812,6 +12124,11 @@ export interface components {
             interval: "month" | "quarter" | "year";
             /** Plan Code */
             plan_code: string;
+        };
+        /** CancelRequest */
+        app__schemas__requests__CancelRequest: {
+            /** Reason */
+            reason?: string | null;
         };
         /** DeliveryList */
         app__schemas__room_service__DeliveryList: {
@@ -16587,6 +16904,90 @@ export interface operations {
             };
         };
     };
+    my_requests_api_v1_guest_requests_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuestRequestList"];
+                };
+            };
+        };
+    };
+    ask_api_v1_guest_requests_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GuestRequestCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuestRequestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_request_api_v1_guest_requests__request_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuestRequestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     session_api_v1_guest_session_get: {
         parameters: {
             query?: never;
@@ -19251,6 +19652,236 @@ export interface operations {
             };
         };
     };
+    list_requests_api_v1_requests_get: {
+        parameters: {
+            query?: {
+                scope?: "open" | "mine" | "recent";
+                kind?: ("towels" | "toiletries" | "pillows" | "cleaning" | "turndown" | "maintenance" | "wake_up" | "late_checkout" | "luggage" | "other") | null;
+                room_id?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    log_request_api_v1_requests_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StaffRequestCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    acknowledge_api_v1_requests__request_id__acknowledge_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    assign_api_v1_requests__request_id__assign_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignRequestTo"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_api_v1_requests__request_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["app__schemas__requests__CancelRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    done_api_v1_requests__request_id__done_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_api_v1_requests__request_id__start_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_roles_api_v1_roles_get: {
         parameters: {
             query?: never;
@@ -20788,7 +21419,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CancelRequest"];
+                "application/json": components["schemas"]["app__schemas__reports__CancelRequest"];
             };
         };
         responses: {

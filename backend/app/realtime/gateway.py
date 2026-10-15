@@ -212,6 +212,8 @@ async def _staff_principal(st: AppState, claims: dict[str, Any]) -> WsPrincipal:
                 channels.add(f"hotel:{hotel_id}:ops")
             if "deliveries.view" in perms:
                 channels.add(f"hotel:{hotel_id}:room-service")
+            if "requests.view" in perms:
+                channels.add(f"hotel:{hotel_id}:requests")  # D93
             if "kitchen.view" in perms:
                 for sid in (
                     await s.execute(

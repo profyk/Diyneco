@@ -322,6 +322,14 @@ The kitchen moves orders and items through preparation; room service moves deliv
 | POST | `/deliveries/{order_id}/delivered` | staff | `deliveries.update` (assignee only) | Idem | `PICKED_UP` → `DELIVERED` |
 | POST | `/deliveries/{order_id}/leave-on-room` | staff | `deliveries.update` (assignee only) | Idem | `DELIVERED` → `CLOSED`; amount stays on folio |
 | POST | `/orders` | staff | `orders.create` | Idem | Staff enter an order for a room (phone order, Wi-Fi outage fallback). Same pricing and approval rules as the tablet; the staff member is recorded as the placer |
+| GET | `/guest/requests` | device (guest) | — | — | This stay's service requests (DECISIONS D93) |
+| POST | `/guest/requests` | device (guest) | — | Idem | `{kind, note?, due_at?}`; kinds towels, toiletries, pillows, cleaning, turndown, maintenance, wake_up (needs `due_at`), late_checkout, luggage, other; at most 10 waiting per room |
+| POST | `/guest/requests/{id}/cancel` | device (guest) | — | Idem | Only while `open` |
+| GET | `/requests` | staff | `requests.view` | — | `?scope=open\|mine\|recent&kind=&room_id=`; with a summary (waiting, under way, done today, median minutes to done) |
+| POST | `/requests` | staff | `requests.update` | Idem | Log a request for a room (phone call, desk) |
+| POST | `/requests/{id}/acknowledge` \| `start` \| `done` | staff | `requests.update` | Idem | `open` → `acknowledged` → `in_progress` → `done` (steps may be skipped, never reversed) |
+| POST | `/requests/{id}/assign` | staff | `requests.update` | Idem | To a staff member who holds `requests.update` |
+| POST | `/requests/{id}/cancel` | staff | `requests.update` | Idem | `{reason?}`; before done |
 
 Each transition writes one `order_status_history` row with actor, device and timestamp, then publishes its realtime event after commit. Calls that would skip a state or repeat one return `409 INVALID_TRANSITION` with the current status.
 
@@ -469,6 +477,7 @@ One socket per client at `wss://api.diyneco.com/api/v1/ws`. Events are notificat
 | `hotel:{id}:room:{room_id}` | that room's guest device only | `ORDER_ACCEPTED`, `ORDER_PREPARING`, `ORDER_READY`, `ORDER_DELIVERING`, `ORDER_DELIVERED`, `ORDER_DECLINED`, `PAYMENT_UPDATED`, `FOLIO_UPDATED`, `STAY_CHECKED_IN`, `RESET_ROOM_SESSION`, `DEVICE_LOCKED`, `DEVICE_UNLOCKED`, `MENU_UPDATED` |
 | `hotel:{id}:kitchen:{station_id}` | kitchen device or `kitchen.view` | `NEW_ORDER`, `ORDER_CANCELLED`, `MENU_UPDATED` |
 | `hotel:{id}:room-service` | `deliveries.view` | `ORDER_READY`, `DELIVERY_ASSIGNED`, `DELIVERY_RELEASED`, `ORDER_CANCELLED` |
+| `hotel:{id}:requests` | `requests.view` | `REQUEST_CREATED`, `REQUEST_UPDATED` (also sent to the room's channel; D93) |
 | `hotel:{id}:ops` | `orders.read` | Every order, payment, stay, device and settings event, incl. `ORDER_PENDING_APPROVAL`, `STAY_CHECKED_OUT`, `DEVICE_OFFLINE` |
 | `platform` | platform token | `TENANT_CREATED`, `TENANT_SUSPENDED`, `HEALTH_DEGRADED` |
 

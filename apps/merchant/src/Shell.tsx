@@ -18,6 +18,7 @@ const NAV: { href: string; label: string; perm?: string; any?: string[]; owner?:
   { href: "/", label: "Today" },
   { href: "/orders", label: "Orders", perm: "orders.read" },
   { href: "/dispatch", label: "Dispatch", perm: "deliveries.manage" },
+  { href: "/requests", label: "Guest requests", perm: "requests.view" },
   { href: "/approvals", label: "Approvals", any: ["orders.approve", "folio.adjust.approve"] },
   { href: "/stays", label: "Stays & check-in", perm: "stays.read" },
   { href: "/rack", label: "Room rack", perm: "stays.read" },

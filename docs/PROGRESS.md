@@ -1,6 +1,6 @@
 # Progress
 
-## 2026-10-15: Deployment, onboarding, owners with several properties, insights, website (D84 to D91)
+## 2026-10-15: Deployment, onboarding, owners with several properties, insights, website, guest requests (D84 to D93)
 
 ### Done
 
@@ -22,6 +22,10 @@
   missing rate limit; unpublishing wrote JSON null), `apps/website` for Vercel with pricing
   from Plans & Pricing and legal pages from Legal documents, and Admin > Website to edit
   pages, posts, images, leads, redirects, settings and see visitors.
+- Session refresh has its own rate limit, 120 a minute per IP (D92).
+- Guest service requests (D93): towels, cleaning, repairs, wake-up calls and late checkout from
+  the room tablet or logged by staff; a live Guest requests board in the merchant app and a
+  Requests tab in the room-service app; migration 0037.
 - Website photo gallery (D91): a Photo gallery section with photos by hotel area (rooms,
   reception, kitchen, restaurant, outside and more), area tabs and a full-screen viewer;
   images upload several at a time in Admin > Website; feature cards can carry an image.

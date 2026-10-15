@@ -240,7 +240,7 @@ async def test_permissions_and_roles_catalogue(client, factory, owner_engine):
             )
     headers = await factory.auth(hotel, "general_manager")
     perms = (await client.get("/permissions", headers=headers)).json()["data"]
-    assert len(perms) == 52 and all(not p["code"].startswith("platform.") for p in perms)
+    assert len(perms) == 54 and all(not p["code"].startswith("platform.") for p in perms)
     assert {p["code"] for p in perms if p["sensitive"]} >= {"settings.update", "folio.adjust.approve"}
     roles = (await client.get("/roles", headers=headers)).json()["data"]
     codes = [r["code"] for r in roles]

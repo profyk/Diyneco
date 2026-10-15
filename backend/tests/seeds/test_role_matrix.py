@@ -68,7 +68,7 @@ async def test_seeded_hotel_roles_match_the_security_spec(owner_engine):
         )
     hotel_perms = {p.code for p in perms if p.scope == "hotel"}
     assert hotel_perms == set().union(*spec.values())
-    assert len(hotel_perms) == 52
+    assert len(hotel_perms) == 54  # requests.view and requests.update (D93)
     assert {p.code for p in perms if p.sensitive and p.scope == "hotel"} == spec_sensitive
 
 

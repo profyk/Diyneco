@@ -443,6 +443,33 @@ class Delivery(Base):
     released_count: Mapped[int] = mapped_column(SmallInteger, server_default=text("0"))
 
 
+class ServiceRequest(Base):
+    """A guest's request for towels, cleaning, a repair or a wake-up call (D93)."""
+
+    __tablename__ = "service_requests"
+    id: Mapped[uuid.UUID] = _pk()
+    hotel_id: Mapped[uuid.UUID]
+    room_id: Mapped[uuid.UUID]
+    room_number: Mapped[str]
+    stay_id: Mapped[uuid.UUID | None]
+    kind: Mapped[str]
+    note: Mapped[str | None]
+    due_at: Mapped[datetime | None]
+    source: Mapped[str]
+    created_by: Mapped[uuid.UUID | None]
+    device_id: Mapped[uuid.UUID | None]
+    status: Mapped[str] = mapped_column(server_default=text("'open'"))
+    assigned_to: Mapped[uuid.UUID | None]
+    acknowledged_at: Mapped[datetime | None]
+    started_at: Mapped[datetime | None]
+    completed_at: Mapped[datetime | None]
+    cancelled_at: Mapped[datetime | None]
+    cancelled_by: Mapped[str | None]
+    cancel_reason: Mapped[str | None]
+    created_at: Mapped[datetime] = _created()
+    updated_at: Mapped[datetime] = _updated()
+
+
 # --- Payments, tips and invoices -----------------------------------------------------------
 
 
