@@ -6,7 +6,19 @@
  * follows the country and is shown, not asked. The draft survives a reload (never the password).
  */
 import { ApiError, newIdempotencyKey } from "@diyneco/api-client";
-import { BrandLogo, Button, Card, cn, ErrorNotice, Field, Input, Select, Skeleton } from "@diyneco/shared-ui";
+import {
+  BrandLogo,
+  Button,
+  Card,
+  cn,
+  ErrorNotice,
+  Field,
+  Input,
+  propertyTypeGroups,
+  propertyTypeLabel,
+  Select,
+  Skeleton,
+} from "@diyneco/shared-ui";
 import { CountryPicker, Flag, PhoneInput, toE164 } from "@diyneco/shared-ui/countries";
 import { useQuery } from "@tanstack/react-query";
 import { type FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
@@ -24,17 +36,10 @@ interface Country {
   tax_label: string;
 }
 
-const PROPERTY_TYPES: { value: string; label: string; hint: string }[] = [
-  { value: "hotel", label: "Hotel", hint: "Full-service or business" },
-  { value: "boutique_hotel", label: "Boutique hotel", hint: "Small and design-led" },
-  { value: "resort", label: "Resort", hint: "Leisure, spa or beach" },
-  { value: "lodge", label: "Lodge", hint: "Safari, game or country" },
-  { value: "guest_house", label: "Guest house", hint: "Owner-run rooms" },
-  { value: "bed_and_breakfast", label: "Bed & breakfast", hint: "Rooms with breakfast" },
-  { value: "serviced_apartments", label: "Serviced apartments", hint: "Self-catering units" },
-  { value: "hostel", label: "Hostel", hint: "Dorms and private rooms" },
-  { value: "other", label: "Other", hint: "Something else" },
-];
+interface Regions {
+  label: string;
+  data: { code: string; name: string }[];
+}
 
 const STEPS = ["Property", "Location", "Your account", "Review"] as const;
 const DRAFT_KEY = "diyneco.signup.draft";
@@ -51,6 +56,7 @@ type Form = {
   line2: string;
   city: string;
   province: string;
+  provinceCode: string;
   postalCode: string;
   hotelPhoneCountry: string;
   hotelPhone: string;
@@ -74,6 +80,7 @@ const EMPTY: Form = {
   line2: "",
   city: "",
   province: "",
+  provinceCode: "",
   postalCode: "",
   hotelPhoneCountry: "",
   hotelPhone: "",
@@ -164,7 +171,7 @@ function zoneLabel(zone: string): string {
 
 type Errors = Partial<Record<keyof Form | "agreed", string>>;
 
-function validate(step: number, f: Form): Errors {
+function validate(step: number, f: Form, regions?: Regions): Errors {
   const e: Errors = {};
   if (step === 0) {
     if (!f.hotel.trim()) e.hotel = "Enter the name guests know you by.";
@@ -177,6 +184,9 @@ function validate(step: number, f: Form): Errors {
     if (!f.country) e.country = "Choose the country the property is in.";
     if (!f.line1.trim()) e.line1 = "Enter the street address.";
     if (!f.city.trim()) e.city = "Enter the town or city.";
+    if (regions?.data.length && !regions.data.some((r) => r.code === f.provinceCode)) {
+      e.provinceCode = `Choose the ${regions.label.toLowerCase()}.`;
+    }
     if (f.hotelPhone && toE164("+1", f.hotelPhone).length < 8) e.hotelPhone = "Enter the full phone number.";
     if (f.hotelEmail && !EMAIL.test(f.hotelEmail.trim())) e.hotelEmail = "Enter a valid email address.";
   }
@@ -227,6 +237,14 @@ export function Signup() {
     queryFn: () => publicJson<{ data: LegalDoc[] }>(`/legal/documents?audience=merchant&country=${f.country}`),
   });
   const docs = legal.data?.data ?? [];
+  const regionsQ = useQuery({
+    queryKey: ["regions", f.country],
+    enabled: Boolean(f.country),
+    queryFn: () => publicJson<Regions>(`/countries/${f.country}/regions`),
+    staleTime: Infinity,
+  });
+  const regions = regionsQ.data;
+  const regionName = regions?.data.find((r) => r.code === f.provinceCode)?.name;
 
   // Restore a draft, then fill the country from the browser when nothing was chosen yet.
   useEffect(() => setF(loadDraft()), []);
@@ -253,6 +271,7 @@ export function Signup() {
     setF((cur) => ({
       ...cur,
       country: code,
+      provinceCode: cur.country === code ? cur.provinceCode : "",
       timezone: c?.timezone ?? "",
       hotelPhoneCountry: cur.hotelPhone ? cur.hotelPhoneCountry || code : code,
       mobileCountry: cur.mobile ? cur.mobileCountry || code : code,
@@ -263,7 +282,7 @@ export function Signup() {
 
   const next = (e?: FormEvent) => {
     e?.preventDefault();
-    const found = validate(step, f);
+    const found = validate(step, f, regions);
     setErrors(found);
     if (Object.keys(found).length === 0) setStep((s) => Math.min(s + 1, STEPS.length - 1));
   };
@@ -275,7 +294,7 @@ export function Signup() {
       return;
     }
     for (let s = 0; s < 3; s++) {
-      const found = validate(s, f);
+      const found = validate(s, f, regions);
       if (Object.keys(found).length) {
         setErrors(found);
         setStep(s);
@@ -289,7 +308,9 @@ export function Signup() {
         line1: f.line1.trim(),
         line2: f.line2.trim() || null,
         city: f.city.trim(),
-        province: f.province.trim() || null,
+        ...(regions?.data.length
+          ? { province_code: f.provinceCode }
+          : { province: f.province.trim() || null }),
         postal_code: f.postalCode.trim() || null,
         country: f.country,
       };
@@ -360,31 +381,22 @@ export function Signup() {
                 <Field label="Property name" error={errors.hotel}>
                   {(p) => <Input {...p} autoComplete="organization" value={f.hotel} onChange={(e) => set("hotel", e.target.value)} placeholder="e.g. Sunbird Lodge" />}
                 </Field>
-                <fieldset>
-                  <legend className="text-sm font-medium text-ink">Type of property</legend>
-                  <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3" role="radiogroup">
-                    {PROPERTY_TYPES.map((t) => (
-                      <label
-                        key={t.value}
-                        className={cn(
-                          "cursor-pointer rounded-[10px] border px-3 py-2.5 transition",
-                          f.propertyType === t.value ? "border-blue bg-tint" : "border-line hover:bg-surface-2",
-                        )}
-                      >
-                        <input
-                          type="radio"
-                          name="property-type"
-                          className="sr-only"
-                          checked={f.propertyType === t.value}
-                          onChange={() => set("propertyType", t.value)}
-                        />
-                        <span className="block text-sm font-medium text-ink">{t.label}</span>
-                        <span className="block text-xs text-muted">{t.hint}</span>
-                      </label>
-                    ))}
-                  </div>
-                  {errors.propertyType ? <p className="mt-1.5 text-sm text-crit">{errors.propertyType}</p> : null}
-                </fieldset>
+                <Field label="Type of property" error={errors.propertyType} hint="Choose the closest match; you can change it later.">
+                  {(p) => (
+                    <Select {...p} value={f.propertyType} onChange={(e) => set("propertyType", e.target.value)}>
+                      <option value="">Choose a category</option>
+                      {propertyTypeGroups().map((g) => (
+                        <optgroup key={g.group} label={g.group}>
+                          {g.items.map((t) => (
+                            <option key={t.value} value={t.value}>
+                              {t.label}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ))}
+                    </Select>
+                  )}
+                </Field>
                 <div className="grid gap-5 sm:grid-cols-2">
                   <Field label="Number of rooms or units" error={errors.rooms} hint="Helps us suggest the right plan.">
                     {(p) => <Input {...p} type="number" inputMode="numeric" min={1} max={5000} value={f.rooms} onChange={(e) => set("rooms", e.target.value)} />}
@@ -446,8 +458,23 @@ export function Signup() {
                   <Field label="Town or city" error={errors.city}>
                     {(p) => <Input {...p} autoComplete="address-level2" value={f.city} onChange={(e) => set("city", e.target.value)} />}
                   </Field>
-                  <Field label="Province or state">
-                    {(p) => <Input {...p} autoComplete="address-level1" value={f.province} onChange={(e) => set("province", e.target.value)} />}
+                  <Field label={regions?.data.length ? regions.label : "Province or state"} error={errors.provinceCode}>
+                    {(p) =>
+                      regionsQ.isLoading ? (
+                        <Skeleton className="h-10 w-full" />
+                      ) : regions?.data.length ? (
+                        <Select {...p} autoComplete="address-level1" value={f.provinceCode} onChange={(e) => set("provinceCode", e.target.value)}>
+                          <option value="">Choose…</option>
+                          {regions.data.map((r) => (
+                            <option key={r.code} value={r.code}>
+                              {r.name}
+                            </option>
+                          ))}
+                        </Select>
+                      ) : (
+                        <Input {...p} autoComplete="address-level1" value={f.province} onChange={(e) => set("province", e.target.value)} />
+                      )
+                    }
                   </Field>
                   <Field label="Postal code">
                     {(p) => <Input {...p} autoComplete="postal-code" value={f.postalCode} onChange={(e) => set("postalCode", e.target.value)} />}
@@ -554,8 +581,12 @@ export function Signup() {
           <form onSubmit={submit} className="mt-6 flex flex-col gap-5">
             <Summary
               rows={[
-                ["Property", `${f.hotel} · ${PROPERTY_TYPES.find((t) => t.value === f.propertyType)?.label ?? ""} · ${f.rooms} rooms`, 0],
-                ["Location", [f.line1, f.line2, f.city, f.province, f.postalCode, country?.name].filter(Boolean).join(", "), 1],
+                ["Property", `${f.hotel} · ${propertyTypeLabel(f.propertyType)} · ${f.rooms} rooms`, 0],
+                [
+                  "Location",
+                  [f.line1, f.line2, f.city, regionName ?? f.province, f.postalCode, country?.name].filter(Boolean).join(", "),
+                  1,
+                ],
                 ["Currency and time zone", `${country?.currency ?? ""} · ${f.timezone ? zoneLabel(f.timezone) : ""}`, 1],
                 ["Owner", `${f.name} · ${f.email} · ${toE164(dialOf(f.mobileCountry), f.mobile)}`, 2],
               ]}

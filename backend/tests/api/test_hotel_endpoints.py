@@ -27,7 +27,12 @@ def signup_body(email: str | None = None) -> dict:
             "country": "ZA",
             "currency": "ZAR",
             "phone": "+27 21 555 0100",
-            "address": {"line1": "1 Beach Rd", "city": "Cape Town", "country": "ZA"},
+            "address": {
+                "line1": "1 Beach Rd",
+                "city": "Cape Town",
+                "province_code": "ZA-WC",
+                "country": "ZA",
+            },
         },
     }
 

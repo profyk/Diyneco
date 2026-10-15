@@ -19,6 +19,9 @@ class Address(StrictModel):
     line2: Annotated[str, StringConstraints(max_length=200)] | None = None
     city: Annotated[str, StringConstraints(max_length=100)] | None = None
     province: Annotated[str, StringConstraints(max_length=100)] | None = None
+    # ISO 3166-2 code of the province or state (D85), e.g. "ZA-WC"; required at signup where
+    # the country lists regions (GET /countries/{code}/regions), and it sets `province`.
+    province_code: Annotated[str, StringConstraints(pattern=r"^[A-Z]{2}-[A-Z0-9]{1,3}$")] | None = None
     postal_code: Annotated[str, StringConstraints(max_length=20)] | None = None
     country: Annotated[str, StringConstraints(pattern=r"^[A-Z]{2}$")] | None = None
 
@@ -29,11 +32,17 @@ PropertyType = Literal[
     "hotel",
     "boutique_hotel",
     "resort",
+    "motel",
+    "inn",
     "lodge",
     "guest_house",
     "bed_and_breakfast",
+    "aparthotel",
     "serviced_apartments",
+    "holiday_home",
+    "country_house",
     "hostel",
+    "camp",  # campsites, glamping and tented camps
     "other",
 ]
 Website = Annotated[str, StringConstraints(max_length=200, pattern=r"^https?://[^\s]+$")]
@@ -63,6 +72,16 @@ class CountryOut(BaseModel):
 
 class CountryList(BaseModel):
     data: list[CountryOut]
+
+
+class RegionOut(BaseModel):
+    code: str  # ISO 3166-2, e.g. ZA-WC
+    name: str
+
+
+class RegionList(BaseModel):
+    label: str  # what the country calls them: Province, State, County...
+    data: list[RegionOut]  # empty: the country lists none; the region is free text
 
 
 class CurrencyOut(BaseModel):

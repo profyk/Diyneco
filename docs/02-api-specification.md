@@ -77,6 +77,7 @@ A new owner signs up, creates a hotel, and the onboarding wizard tracks which of
 | --- | --- | --- | --- | --- | --- |
 | POST | `/signup` | none | — | Idem | Owner account + hotel in one call; sends verification email with a 6-digit code. Only operational countries; no currency asked (the country's); property type, rooms, website, address, the country's time zone and the owner's mobile (D84) |
 | GET | `/countries` | none | — | — | Countries open for signups (operational, D84) with currency, every time zone, dialling code and tax defaults |
+| GET | `/countries/{code}/regions` | none | — | — | `{label, data: [{code, name}]}`: the country's provinces or states (ISO 3166-2, D85); empty where none are listed (free text) |
 | GET | `/admin/countries` | platform | `platform.countries.manage` | — | Every country with whether it takes signups and its hotel counts (D84) |
 | PUT | `/admin/countries/{code}` | platform | `platform.countries.manage` + Step-up | — | `{operational, reason}`: open or pause signups in a country; audited; existing hotels unaffected (D84) |
 | GET | `/hotel` | staff | `hotel.read` | — | Name, address, contacts, logo URL, status, plan |

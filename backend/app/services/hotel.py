@@ -21,6 +21,7 @@ from app.integrations.storage import Storage, hotel_key
 from app.models.tenancy import Hotel, HotelSettings
 from app.realtime.outbox import emit, hotel_channel
 from app.repositories.hotels import HotelRepository
+from app.services import countries
 
 # API field -> (column, kind). Money fields arrive as {"amount_minor", "currency"}.
 SETTINGS_FIELDS: dict[str, tuple[str, str]] = {
@@ -142,6 +143,10 @@ async def patch_hotel(
     before = await repo.get()
     if before is None:
         raise AppError("NOT_FOUND")
+    if changes.get("address") is not None:
+        changes["address"] = countries.checked_address(
+            before.country, changes["address"], require_region=False
+        )
     old = {k: getattr(before, k) for k in changes}
     updated = await repo.update(expected_version, changes)
     if updated is None:

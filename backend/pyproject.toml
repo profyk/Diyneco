@@ -54,6 +54,9 @@ ignore = ["PLR0913", "PLR0917", "PLR2004", "PLR0911", "PLR0912", "S105", "S106"]
 # Scripts import the app only after preparing the environment.
 "scripts/**" = ["S603", "S607", "T201", "PLC0415"]
 "alembic/alembic_helpers.py" = ["S608"]
+# Generated place names (D84, D85): real spellings such as Şəki or Ağdam.
+"app/core/regions.py" = ["RUF001"]
+"app/core/world.py" = ["RUF001"]
 
 [tool.mypy]
 python_version = "3.12"

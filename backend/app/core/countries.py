@@ -11,6 +11,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, replace
 
+from app.core.regions import REGIONS as SUBDIVISIONS
 from app.core.world import WORLD
 
 REGIONS = ("af-south", "eu-west", "me-central", "ap-southeast", "us-east")
@@ -424,6 +425,16 @@ COUNTRIES: dict[str, Country] = _world()
 
 def country(code: str | None) -> Country | None:
     return COUNTRIES.get((code or "").upper())
+
+
+def regions(code: str) -> tuple[str, tuple[tuple[str, str], ...]]:
+    """What the country calls its first-level regions and the list (ISO 3166-2), or ("Region",
+    ()) where none are listed and the region is free text (D85)."""
+    return SUBDIVISIONS.get(code.upper(), ("Region", ()))
+
+
+def region_name(country_code: str, region_code: str) -> str | None:
+    return dict(regions(country_code)[1]).get(region_code)
 
 
 def tax_id_ok(country_code: str | None, value: str) -> bool:

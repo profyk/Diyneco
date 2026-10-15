@@ -95,6 +95,11 @@ async def signup(
             },
         )
     # Checked before the email lookup so a known address gets the same answers (no enumeration).
+    address = (
+        countries.checked_address(place.code, hotel["address"], "hotel.address")
+        if hotel.get("address")
+        else {}
+    )
     documents = await legal.signup_documents(uow, place.code, accepted_documents)
 
     existing = (await s.execute(select(User).where(User.email == email))).scalar_one_or_none()
@@ -130,7 +135,7 @@ async def signup(
             name=hotel["name"].strip(),
             legal_name=hotel.get("legal_name"),
             slug=slugify(hotel["name"]),
-            address=hotel.get("address") or {},
+            address=address,
             phone=hotel.get("phone"),
             email=hotel.get("email"),
             country=place.code,

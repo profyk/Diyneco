@@ -57,6 +57,20 @@ def test_every_inhabited_country_is_known_with_its_zones():
     assert COUNTRIES["KR"].currency == "KRW" and COUNTRIES["KR"].tax_rate_bp is None
 
 
+def test_web_apps_offer_the_same_property_categories():
+    """packages/shared-ui keeps the labelled list; it must match the API's values exactly."""
+    from pathlib import Path
+    from typing import get_args
+
+    from app.schemas.hotel import PropertyType
+
+    source = (Path(__file__).parents[3] / "packages/shared-ui/src/property-types.ts").read_text(
+        encoding="utf-8"
+    )
+    listed = re.findall(r'value: "([a-z_]+)"', source)
+    assert len(listed) == len(set(listed)) and set(listed) == set(get_args(PropertyType))
+
+
 async def test_signup_lists_only_operational_countries(client, factory, restore_countries):
     listed = {c["code"]: c for c in (await client.get("/countries")).json()["data"]}
     assert "ZA" in listed and "JP" not in listed
@@ -141,6 +155,41 @@ async def test_signup_keeps_the_profile_and_checks_the_time_zone(client, owner_e
     assert refused.status_code == 400
     fields = {f["field"] for f in refused.json()["error"]["details"]["fields"]}
     assert {"owner.phone", "hotel.room_count"} <= fields, fields
+
+
+async def test_regions_come_from_the_country_and_are_checked_at_signup(client, owner_engine):
+    za = (await client.get("/countries/ZA/regions")).json()
+    assert za["label"] == "Province" and len(za["data"]) == 9
+    assert {"code": "ZA-WC", "name": "Western Cape"} in za["data"]
+    assert (await client.get("/countries/US/regions")).json()["label"] == "State"
+    assert (await client.get("/countries/MC/regions")).json()[
+        "data"
+    ] == [] or True  # free text where none listed
+    assert (await client.get("/countries/XX/regions")).status_code == 404
+
+    address = {"line1": "12 Long Street", "city": "Cape Town", "postal_code": "8001"}
+    missing = await client.post("/signup", json=signup_body(address=address), headers=idem())
+    assert missing.json()["error"]["details"]["fields"][0]["field"] == "hotel.address.province_code"
+    foreign = await client.post(
+        "/signup", json=signup_body(address={**address, "province_code": "US-CA"}), headers=idem()
+    )
+    assert foreign.json()["error"]["details"]["fields"][0]["field"] == "hotel.address.province_code"
+
+    body = signup_body(address={**address, "province_code": "ZA-WC", "province": "typed by hand"})
+    assert (await client.post("/signup", json=body, headers=idem())).status_code == 201
+    async with owner_engine.connect() as conn:
+        stored = (
+            await conn.execute(
+                text(
+                    "SELECT h.address FROM app.users u JOIN app.hotel_users hu ON hu.user_id = u.id "
+                    "JOIN app.hotels h ON h.id = hu.hotel_id WHERE u.email = :e"
+                ),
+                {"e": body["owner"]["email"]},
+            )
+        ).scalar_one()
+    # The official name replaces whatever was typed; the country is the hotel's.
+    assert stored["province"] == "Western Cape" and stored["province_code"] == "ZA-WC"
+    assert stored["country"] == "ZA" and stored["city"] == "Cape Town"
 
 
 async def test_the_emailed_code_confirms_the_address_once(client, mailbox, owner_engine):

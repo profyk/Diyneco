@@ -9,7 +9,7 @@ from typing import Any
 from sqlalchemy import delete, insert, select, text
 
 from app.audit.writer import write_platform_audit
-from app.core.countries import COUNTRIES, Country
+from app.core.countries import COUNTRIES, Country, regions
 from app.core.errors import AppError
 from app.db.session import UnitOfWork
 from app.models.tenancy import OperationalCountry
@@ -30,6 +30,41 @@ def payload(c: Country) -> dict[str, Any]:
         "tax_id_pattern": c.tax_id_pattern,
         "tax_rate_bp": c.tax_rate_bp,
     }
+
+
+def _address_error(field: str, problem: str) -> AppError:
+    return AppError(
+        "VALIDATION_FAILED",
+        problem,
+        details={"fields": [{"field": field, "problem": problem, "type": "value_error"}]},
+    )
+
+
+def checked_address(
+    country_code: str, address: dict[str, Any], prefix: str = "address", *, require_region: bool = True
+) -> dict[str, Any]:
+    """The address with its country set to the hotel's and its region checked (D85): where
+    the country lists regions, `province_code` must be one of them and names the province
+    (required at signup; settings may still hold an older free-text province); elsewhere the
+    province stays free text."""
+    out = {k: v for k, v in address.items() if v not in (None, "")}
+    out["country"] = country_code
+    label, items = regions(country_code)
+    code = out.get("province_code")
+    if items:
+        if code is None:
+            if not require_region:
+                return out
+            raise _address_error(f"{prefix}.province_code", f"Choose the {label.lower()}.")
+        name = dict(items).get(code)
+        if name is None:
+            raise _address_error(f"{prefix}.province_code", f"That {label.lower()} is not in this country.")
+        out["province"] = name
+    elif code is not None:
+        raise _address_error(
+            f"{prefix}.province_code", "This country has no listed regions; type it instead."
+        )
+    return out
 
 
 async def operational_codes(uow: UnitOfWork) -> set[str]:

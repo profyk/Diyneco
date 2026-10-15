@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Header, Request
+from fastapi import APIRouter, Depends, Header, Path, Request
 from fastapi.responses import JSONResponse, Response
 
 from app.api.deps import (
@@ -18,6 +18,8 @@ from app.api.deps import (
     require_permission,
     state_of,
 )
+from app.core.countries import country as country_of
+from app.core.countries import regions as regions_of
 from app.core.currencies import CURRENCIES
 from app.core.errors import AppError
 from app.core.logging import request_id_var
@@ -31,6 +33,7 @@ from app.schemas.hotel import (
     LogoUploadRequest,
     OnboardingOut,
     PermissionList,
+    RegionList,
     RoleList,
     SettingsOut,
     SettingsPatch,
@@ -164,6 +167,16 @@ async def countries(uow: Uow) -> dict[str, Any]:
     """Countries where new hotels can sign up, with the defaults each suggests (public: the
     signup form needs it). The platform chooses them (operational countries, D84)."""
     return {"data": await countries_service.public_list(uow)}
+
+
+@router.get("/countries/{code}/regions", response_model=RegionList)
+async def country_regions(code: Annotated[str, Path(pattern=r"^[A-Z]{2}$")]) -> dict[str, Any]:
+    """A country's provinces, states or other first-level regions (ISO 3166-2, D85). Public:
+    the signup form and hotel settings use it. An empty list means the region is free text."""
+    if country_of(code) is None:
+        raise AppError("NOT_FOUND")
+    label, items = regions_of(code)
+    return {"label": label, "data": [{"code": c, "name": n} for c, n in items]}
 
 
 @router.get("/permissions", response_model=PermissionList)

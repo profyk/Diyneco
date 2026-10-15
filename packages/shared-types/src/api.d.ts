@@ -1458,6 +1458,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/countries/{code}/regions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Country Regions
+         * @description A country's provinces, states or other first-level regions (ISO 3166-2, D85). Public:
+         *     the signup form and hotel settings use it. An empty list means the region is free text.
+         */
+        get: operations["country_regions_api_v1_countries__code__regions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/currencies": {
         parameters: {
             query?: never;
@@ -6042,7 +6063,7 @@ export interface components {
             /** Phone */
             phone?: string | null;
             /** Property Type */
-            property_type?: ("hotel" | "boutique_hotel" | "resort" | "lodge" | "guest_house" | "bed_and_breakfast" | "serviced_apartments" | "hostel" | "other") | null;
+            property_type?: ("hotel" | "boutique_hotel" | "resort" | "motel" | "inn" | "lodge" | "guest_house" | "bed_and_breakfast" | "aparthotel" | "serviced_apartments" | "holiday_home" | "country_house" | "hostel" | "camp" | "other") | null;
             /** Room Count */
             room_count?: number | null;
             /** Website */
@@ -8053,6 +8074,20 @@ export interface components {
             /** Reference */
             reference?: string | null;
         };
+        /** RegionList */
+        RegionList: {
+            /** Data */
+            data: components["schemas"]["RegionOut"][];
+            /** Label */
+            label: string;
+        };
+        /** RegionOut */
+        RegionOut: {
+            /** Code */
+            code: string;
+            /** Name */
+            name: string;
+        };
         /** RejectRequest */
         RejectRequest: {
             /** Reason */
@@ -8553,7 +8588,7 @@ export interface components {
             /** Phone */
             phone?: string | null;
             /** Property Type */
-            property_type?: ("hotel" | "boutique_hotel" | "resort" | "lodge" | "guest_house" | "bed_and_breakfast" | "serviced_apartments" | "hostel" | "other") | null;
+            property_type?: ("hotel" | "boutique_hotel" | "resort" | "motel" | "inn" | "lodge" | "guest_house" | "bed_and_breakfast" | "aparthotel" | "serviced_apartments" | "holiday_home" | "country_house" | "hostel" | "camp" | "other") | null;
             /** Room Count */
             room_count?: number | null;
             /** Timezone */
@@ -9483,6 +9518,8 @@ export interface components {
             postal_code?: string | null;
             /** Province */
             province?: string | null;
+            /** Province Code */
+            province_code?: string | null;
         };
         /** PlanOut */
         app__schemas__hotel__PlanOut: {
@@ -12617,6 +12654,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CountryList"];
+                };
+            };
+        };
+    };
+    country_regions_api_v1_countries__code__regions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegionList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
