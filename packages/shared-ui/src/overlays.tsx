@@ -13,7 +13,7 @@ import {
   useState,
 } from "react";
 
-import { Button, cn, Field, Input } from "./primitives";
+import { Button, cn, Field, Input, PasswordInput } from "./primitives";
 
 /** Modal dialog on the native <dialog> element: focus trap, Escape and backdrop for free. */
 export function Dialog({
@@ -165,10 +165,10 @@ export function StepUpProvider({
         <form onSubmit={submit} className="flex flex-col gap-4">
           <Field label={mode === "pin" ? "PIN" : "Password"} error={error ? (error as Error).message : undefined}>
             {(props) => (
-              <Input
+              <PasswordInput
                 {...props}
                 autoFocus
-                type="password"
+                revealLabel={mode === "pin" ? "PIN" : "password"}
                 inputMode={mode === "pin" ? "numeric" : "text"}
                 autoComplete={mode === "pin" ? "off" : "current-password"}
                 maxLength={mode === "pin" ? 8 : 200}

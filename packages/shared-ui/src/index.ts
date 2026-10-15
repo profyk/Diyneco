@@ -8,6 +8,7 @@ export {
   Field,
   Input,
   PageHeader,
+  PasswordInput,
   Select,
   Skeleton,
   Spinner,

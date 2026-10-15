@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError, formatDate, newIdempotencyKey, ok } from "@diyneco/api-client";
-import { Badge, BrandLogo, Button, Card, CardHeader, ErrorNotice, Field, Input, PageHeader, Table, Td } from "@diyneco/shared-ui";
+import { Badge, BrandLogo, Button, Card, CardHeader, ErrorNotice, Field, Input, PageHeader, PasswordInput, Table, Td } from "@diyneco/shared-ui";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { type FormEvent, type ReactNode, useState } from "react";
@@ -103,7 +103,7 @@ export function ResetPassword() {
         <form onSubmit={s.submit} className="flex flex-col gap-4">
           {codeField}
           <Field label="New password" hint="At least 12 characters.">
-            {(p) => <Input {...p} type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />}
+            {(p) => <PasswordInput {...p} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />}
           </Field>
           {s.error ? <ErrorNotice error={s.error} /> : null}
           <Button type="submit" loading={s.busy} disabled={!token || password.length < 12}>
@@ -130,10 +130,10 @@ export function AcceptInvite() {
           {codeField}
           <Field label="Your name">{(p) => <Input {...p} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />}</Field>
           <Field label="Password" hint="At least 12 characters.">
-            {(p) => <Input {...p} type="password" autoComplete="new-password" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} />}
+            {(p) => <PasswordInput {...p} autoComplete="new-password" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} />}
           </Field>
           <Field label="PIN" hint="4 to 6 digits, used on kitchen displays and to confirm actions.">
-            {(p) => <Input {...p} type="password" inputMode="numeric" maxLength={6} value={f.pin} onChange={(e) => setF({ ...f, pin: e.target.value })} />}
+            {(p) => <PasswordInput {...p} revealLabel="PIN" inputMode="numeric" maxLength={6} value={f.pin} onChange={(e) => setF({ ...f, pin: e.target.value })} />}
           </Field>
           {s.error ? <ErrorNotice error={s.error} /> : null}
           <Button type="submit" loading={s.busy} disabled={!token || !f.name || f.password.length < 12 || !/^\d{4,6}$/.test(f.pin)}>
@@ -187,7 +187,7 @@ export function Account() {
           <p className="mt-1 text-sm text-muted">Used on kitchen displays and in room service, to set up tablets and displays, and to confirm approvals, discounts and checkouts.</p>
           <div className="mt-4 flex items-end gap-3">
             <Field label="New PIN">
-              {(p) => <Input {...p} type="password" inputMode="numeric" maxLength={6} value={pin} onChange={(e) => setPin(e.target.value)} />}
+              {(p) => <PasswordInput {...p} revealLabel="PIN" inputMode="numeric" maxLength={6} value={pin} onChange={(e) => setPin(e.target.value)} />}
             </Field>
             <Button disabled={!/^\d{4,6}$/.test(pin)} loading={savePin.isPending} onClick={() => savePin.mutate(undefined)}>
               Save PIN

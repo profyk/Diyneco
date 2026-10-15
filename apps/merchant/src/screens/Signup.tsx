@@ -15,6 +15,7 @@ import {
   Field,
   Input,
   PageHeader,
+  PasswordInput,
   type PropertyType,
   propertyTypeGroups,
   propertyTypeLabel,
@@ -226,7 +227,6 @@ export function Signup({ mode = "signup" }: { mode?: "signup" | "add" }) {
   const [step, setStep] = useState(0);
   const [errors, setErrors] = useState<Errors>({});
   const [agreed, setAgreed] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [submitError, setSubmitError] = useState<unknown>(null);
   const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
@@ -575,24 +575,7 @@ export function Signup({ mode = "signup" }: { mode?: "signup" | "add" }) {
                 </Field>
                 <Field label="Password" error={errors.password} hint="At least 12 characters. A short phrase of four or more words works well.">
                   {(p) => (
-                    <div className="relative">
-                      <Input
-                        {...p}
-                        type={showPassword ? "text" : "password"}
-                        autoComplete="new-password"
-                        className="pr-16"
-                        value={f.password}
-                        onChange={(e) => set("password", e.target.value)}
-                      />
-                      <button
-                        type="button"
-                        className="absolute inset-y-0 right-2 my-auto h-7 rounded-md px-2 text-xs font-medium text-blue hover:bg-surface-2"
-                        onClick={() => setShowPassword((v) => !v)}
-                        aria-pressed={showPassword}
-                      >
-                        {showPassword ? "Hide" : "Show"}
-                      </button>
-                    </div>
+                    <PasswordInput {...p} autoComplete="new-password" value={f.password} onChange={(e) => set("password", e.target.value)} />
                   )}
                 </Field>
                 {f.password ? (

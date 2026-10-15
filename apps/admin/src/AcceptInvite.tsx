@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError, newIdempotencyKey } from "@diyneco/api-client";
-import { BrandLogo, Button, Card, ErrorNotice, Field, Input } from "@diyneco/shared-ui";
+import { BrandLogo, Button, Card, ErrorNotice, Field, Input, PasswordInput } from "@diyneco/shared-ui";
 import { useSearchParams } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
@@ -65,7 +65,7 @@ export function AcceptInvite() {
               )}
               <Field label="Password" hint="At least 12 characters.">
                 {(p) => (
-                  <Input {...p} type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+                  <PasswordInput {...p} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
                 )}
               </Field>
               {error ? <ErrorNotice error={error} /> : null}

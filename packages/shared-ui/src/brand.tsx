@@ -3,7 +3,7 @@
 import { type FormEvent, useEffect, useState } from "react";
 
 import { ErrorNotice } from "./overlays";
-import { Button, cn, Field, Input } from "./primitives";
+import { Button, cn, Field, Input, PasswordInput } from "./primitives";
 
 /**
  * The Diyneco logo (brand/logo-draft.png, trimmed and resized into each app's
@@ -119,9 +119,9 @@ export function DeviceSetupForm({
           </Field>
           <Field label="Manager PIN" hint="The PIN of the manager who created the code.">
             {(p) => (
-              <Input
+              <PasswordInput
                 {...p}
-                type="password"
+                revealLabel="PIN"
                 inputMode="numeric"
                 autoComplete="off"
                 maxLength={6}

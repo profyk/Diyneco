@@ -9,6 +9,7 @@ import {
   Field,
   Input,
   looksLikeHotelCode,
+  PasswordInput,
   rememberedHotelCode,
   tidyHotelCode,
 } from "@diyneco/shared-ui";
@@ -96,9 +97,9 @@ function CodeLogin({ onEmail }: { onEmail: () => void }) {
         </Field>
         <Field label="PIN">
           {(p) => (
-            <Input
+            <PasswordInput
               {...p}
-              type="password"
+              revealLabel="PIN"
               inputMode="numeric"
               autoComplete="current-password"
               maxLength={6}
@@ -183,7 +184,7 @@ function EmailLogin({ onCode }: { onCode: () => void }) {
         </Field>
         <Field label="Password">
           {(p) => (
-            <Input {...p} type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+            <PasswordInput {...p} autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
           )}
         </Field>
         {error ? <ErrorNotice error={error} /> : null}

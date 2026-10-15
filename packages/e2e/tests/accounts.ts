@@ -52,7 +52,7 @@ export async function signIn(page: Page, email: string, password: string): Promi
   await page.waitForLoadState("networkidle");
   for (let attempt = 0; attempt < 2; attempt++) {
     await page.getByLabel("Email").fill(email);
-    await page.getByLabel("Password").fill(password);
+    await page.getByLabel("Password", { exact: true }).fill(password);
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
     // The API allows 10 sign-ins a minute per address; the whole suite signs in from one.
     // Wait the window out once rather than loosening the limit for tests.
@@ -109,7 +109,7 @@ export async function confirmIfAsked(page: Page, secret: string): Promise<void> 
   } catch {
     return; // still confirmed from an earlier step-up
   }
-  await dialog.getByLabel(/Password|PIN/).fill(secret);
+  await dialog.getByLabel(/^(Password|PIN)$/).fill(secret);
   await dialog.getByRole("button", { name: "Confirm" }).click();
   await dialog.waitFor({ state: "hidden" });
 }

@@ -42,7 +42,7 @@ async function fillSetup(page: Page, hotelCode: string, code: string, pin: strin
   // Typed loosely, as on a tablet keyboard: lower case, without the dash.
   await page.getByLabel("Hotel ID").fill(hotelCode.toLowerCase().replace("-", ""));
   await page.getByLabel("Setup code").fill(code);
-  await page.getByLabel("Manager PIN").fill(pin);
+  await page.getByLabel("Manager PIN", { exact: true }).fill(pin);
 }
 
 test("a staff code signs a room-service member in with the Hotel ID and their PIN", async ({ page, browser }) => {
@@ -66,10 +66,10 @@ test("a staff code signs a room-service member in with the Hotel ID and their PI
   await expect(runner.getByRole("img", { name: "Diyneco" })).toBeVisible();
   await runner.getByLabel("Hotel ID").fill(hotelCode);
   await runner.getByLabel("Staff code").fill(staffCode);
-  await runner.getByLabel("PIN").fill("9999");
+  await runner.getByLabel("PIN", { exact: true }).fill("9999");
   await runner.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(runner.getByText(/That PIN is not correct/)).toBeVisible();
-  await runner.getByLabel("PIN").fill(accounts.pin);
+  await runner.getByLabel("PIN", { exact: true }).fill(accounts.pin);
   await runner.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(runner.getByRole("button", { name: "Sign out" }).first()).toBeAttached();
 });
@@ -82,7 +82,7 @@ test("a kitchen display is set up with the Hotel ID, a setup code and the manage
   await fillSetup(display, hotelCode, code, "9999");
   await display.getByRole("button", { name: "Set up display" }).click();
   await expect(display.getByText(/That PIN is not correct/)).toBeVisible(); // the code survives a wrong PIN
-  await display.getByLabel("Manager PIN").fill(accounts.pin);
+  await display.getByLabel("Manager PIN", { exact: true }).fill(accounts.pin);
   await display.getByRole("button", { name: "Set up display" }).click();
   await expect(display.getByRole("heading", { name: "Kitchen" })).toBeVisible();
 });

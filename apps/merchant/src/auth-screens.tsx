@@ -1,7 +1,7 @@
 "use client";
 
 import { ok } from "@diyneco/api-client";
-import { BrandLogo, Button, Card, ErrorNotice, Field, Input } from "@diyneco/shared-ui";
+import { BrandLogo, Button, Card, ErrorNotice, Field, Input, PasswordInput } from "@diyneco/shared-ui";
 import { type FormEvent, type ReactNode, useEffect, useState } from "react";
 
 import { useSession } from "./session";
@@ -84,7 +84,7 @@ export function LoginScreen() {
         </Field>
         <Field label="Password">
           {(p) => (
-            <Input {...p} type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+            <PasswordInput {...p} autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
           )}
         </Field>
         {error ? <ErrorNotice error={error} /> : null}
