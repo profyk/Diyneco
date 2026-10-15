@@ -36,7 +36,7 @@ jobs:
       STORAGE_URL: ${{ vars.PUBLIC_STORAGE_URL || '' }}
       API_FALLBACK_URL: ${{ vars.PUBLIC_API_FALLBACK_URL || '' }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: docker/setup-buildx-action@v4
       - name: Build
         # Plain docker build so a failure shows the build's own error lines as annotations.
