@@ -6413,7 +6413,7 @@ export interface components {
             /** Author */
             author?: string | null;
             /** Blocks */
-            blocks?: (components["schemas"]["Hero"] | components["schemas"]["Features"] | components["schemas"]["Steps"] | components["schemas"]["Split"] | components["schemas"]["Stats"] | components["schemas"]["Testimonials"] | components["schemas"]["Faq"] | components["schemas"]["CallToAction"] | components["schemas"]["Logos"] | components["schemas"]["Pricing"] | components["schemas"]["RichText"] | components["schemas"]["LeadForm"] | components["schemas"]["PostList"])[];
+            blocks?: (components["schemas"]["Hero"] | components["schemas"]["Features"] | components["schemas"]["Steps"] | components["schemas"]["Split"] | components["schemas"]["Stats"] | components["schemas"]["Testimonials"] | components["schemas"]["Faq"] | components["schemas"]["CallToAction"] | components["schemas"]["Logos"] | components["schemas"]["Pricing"] | components["schemas"]["RichText"] | components["schemas"]["LeadForm"] | components["schemas"]["PostList"] | components["schemas"]["Gallery"])[];
             /** Body */
             body?: string | null;
             /** Cover Id */
@@ -6584,6 +6584,8 @@ export interface components {
             body: string;
             /** Icon */
             icon?: string | null;
+            /** Image Id */
+            image_id?: string | null;
             /** Title */
             title: string;
         };
@@ -6761,6 +6763,45 @@ export interface components {
             label: string;
             /** Step */
             step: string;
+        };
+        /**
+         * Gallery
+         * @description Photos of hotels using Diyneco (kitchens, reception, rooms, outside...), with filters by
+         *     area and a full-screen viewer (D91).
+         */
+        Gallery: {
+            /** Heading */
+            heading?: string | null;
+            /** Intro */
+            intro?: string | null;
+            /** Items */
+            items: components["schemas"]["GalleryItem"][];
+            /**
+             * Show Filters
+             * @default true
+             */
+            show_filters: boolean;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "gallery";
+        };
+        /** GalleryItem */
+        GalleryItem: {
+            /** Caption */
+            caption?: string | null;
+            /**
+             * Category
+             * @default other
+             * @enum {string}
+             */
+            category: "rooms" | "reception" | "kitchen" | "restaurant" | "outside" | "pool" | "spa" | "conference" | "events" | "other";
+            /**
+             * Image Id
+             * Format: uuid
+             */
+            image_id: string;
         };
         /** GroupCheckoutOut */
         GroupCheckoutOut: {

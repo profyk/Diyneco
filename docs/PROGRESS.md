@@ -1,6 +1,6 @@
 # Progress
 
-## 2026-10-15: Deployment, onboarding, owners with several properties, insights, website (D84 to D90)
+## 2026-10-15: Deployment, onboarding, owners with several properties, insights, website (D84 to D91)
 
 ### Done
 
@@ -22,6 +22,9 @@
   missing rate limit; unpublishing wrote JSON null), `apps/website` for Vercel with pricing
   from Plans & Pricing and legal pages from Legal documents, and Admin > Website to edit
   pages, posts, images, leads, redirects, settings and see visitors.
+- Website photo gallery (D91): a Photo gallery section with photos by hotel area (rooms,
+  reception, kitchen, restaurant, outside and more), area tabs and a full-screen viewer;
+  images upload several at a time in Admin > Website; feature cards can carry an image.
 - CI fixes: website code formatting, tests always on local storage, exact sign-in buttons in
   browser tests, a longer timeout for the two-sign-in subscription test.
 

@@ -7,6 +7,7 @@ from __future__ import annotations
 import base64
 import io
 import secrets
+import uuid
 
 from PIL import Image
 from sqlalchemy import text
@@ -144,6 +145,46 @@ async def test_images_are_re_encoded_and_served_at_fixed_addresses(client, facto
     assert r.status_code == 200 and r.headers["content-type"] == "image/webp"
     assert "immutable" in r.headers["cache-control"]
     assert (await client.get(f"/site/media/{media['id']}/123.webp")).status_code == 404
+
+
+async def test_a_photo_gallery_shows_hotels_by_area_and_keeps_its_photos(client, factory):
+    editor = await _editor(factory)
+    up = await client.post(
+        "/admin/site/media",
+        json={"filename": "kitchen.png", "alt": "A kitchen display in use", "data_base64": _png()},
+        headers=editor,
+    )
+    photo = up.json()["id"]
+    slug = f"gallery-{secrets.token_hex(3)}"
+    gallery = {
+        "type": "gallery",
+        "heading": "Diyneco in hotels",
+        "items": [
+            {"image_id": photo, "caption": "Orders on the kitchen display", "category": "kitchen"},
+        ],
+    }
+    page = {**PAGE, "slug": slug, "content": {**PAGE["content"], "blocks": [gallery]}}
+    missing = {
+        **page,
+        "content": {**page["content"], "blocks": [{**gallery, "items": [{"image_id": str(uuid.uuid4())}]}]},
+    }
+    assert (await client.post("/admin/site/entries", json=missing, headers=editor)).status_code == 400
+    wrong_area = {
+        **page,
+        "content": {
+            **page["content"],
+            "blocks": [{**gallery, "items": [{"image_id": photo, "category": "garage"}]}],
+        },
+    }
+    assert (await client.post("/admin/site/entries", json=wrong_area, headers=editor)).status_code == 400
+
+    created = (await client.post("/admin/site/entries", json=page, headers=editor)).json()
+    await client.post(f"/admin/site/entries/{created['id']}/publish", headers=editor)
+    live = (await client.get("/site/entry", params={"kind": "page", "locale": "en", "slug": slug})).json()
+    assert live["content"]["blocks"][0]["items"][0]["category"] == "kitchen"
+    assert photo in live["media"] and live["media"][photo]["alt"] == "A kitchen display in use"
+    # A photo a page uses cannot be deleted.
+    assert (await client.delete(f"/admin/site/media/{photo}", headers=editor)).status_code == 409
 
 
 async def test_page_views_are_counted_without_identifying_anyone(client, factory, owner_engine):

@@ -5284,6 +5284,7 @@
                   "cta": "#/components/schemas/CallToAction",
                   "faq": "#/components/schemas/Faq",
                   "features": "#/components/schemas/Features",
+                  "gallery": "#/components/schemas/Gallery",
                   "hero": "#/components/schemas/Hero",
                   "lead_form": "#/components/schemas/LeadForm",
                   "logos": "#/components/schemas/Logos",
@@ -5336,6 +5337,9 @@
                 },
                 {
                   "$ref": "#/components/schemas/PostList"
+                },
+                {
+                  "$ref": "#/components/schemas/Gallery"
                 }
               ]
             },
@@ -5829,6 +5833,18 @@
               }
             ],
             "title": "Icon"
+          },
+          "image_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Id"
           },
           "title": {
             "maxLength": 160,
@@ -6360,6 +6376,106 @@
           "hotels"
         ],
         "title": "FunnelStep",
+        "type": "object"
+      },
+      "Gallery": {
+        "additionalProperties": false,
+        "description": "Photos of hotels using Diyneco (kitchens, reception, rooms, outside...), with filters by\narea and a full-screen viewer (D91).",
+        "properties": {
+          "heading": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heading"
+          },
+          "intro": {
+            "anyOf": [
+              {
+                "maxLength": 1200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Intro"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/GalleryItem"
+            },
+            "maxItems": 60,
+            "minItems": 1,
+            "title": "Items",
+            "type": "array"
+          },
+          "show_filters": {
+            "default": true,
+            "title": "Show Filters",
+            "type": "boolean"
+          },
+          "type": {
+            "const": "gallery",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "items"
+        ],
+        "title": "Gallery",
+        "type": "object"
+      },
+      "GalleryItem": {
+        "additionalProperties": false,
+        "properties": {
+          "caption": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Caption"
+          },
+          "category": {
+            "default": "other",
+            "enum": [
+              "rooms",
+              "reception",
+              "kitchen",
+              "restaurant",
+              "outside",
+              "pool",
+              "spa",
+              "conference",
+              "events",
+              "other"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "image_id": {
+            "format": "uuid",
+            "title": "Image Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "image_id"
+        ],
+        "title": "GalleryItem",
         "type": "object"
       },
       "GroupCheckoutOut": {

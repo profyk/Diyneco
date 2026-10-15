@@ -5,6 +5,7 @@
 import type { ReactNode } from "react";
 
 import { type Entry, MERCHANT_URL, plans } from "./api";
+import { GalleryGrid } from "./Gallery";
 import { LeadForm } from "./LeadForm";
 import { Markdown } from "./markdown";
 import { PricingTable } from "./Pricing";
@@ -88,15 +89,18 @@ async function render(b: Block, i: number, ctx: BlockContext): Promise<ReactNode
         </section>
       );
     case "features": {
-      const items = (b.items as { title: string; body: string }[]) ?? [];
+      const items = (b.items as { title: string; body: string; image_id?: string }[]) ?? [];
       return (
         <Section key={i}>
           <Heading text={b.heading} intro={b.intro} />
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {items.map((it) => (
-              <div key={it.title} className="rounded-[var(--radius-card)] border border-line bg-surface p-6">
-                <h3 className="font-display text-lg font-semibold text-ink">{it.title}</h3>
-                <p className="mt-2 text-muted">{it.body}</p>
+              <div key={it.title} className="overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface">
+                <Img id={it.image_id} media={ctx.media} sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" className="aspect-[16/10] w-full object-cover" />
+                <div className="p-6">
+                  <h3 className="font-display text-lg font-semibold text-ink">{it.title}</h3>
+                  <p className="mt-2 text-muted">{it.body}</p>
+                </div>
               </div>
             ))}
           </div>
@@ -248,6 +252,30 @@ async function render(b: Block, i: number, ctx: BlockContext): Promise<ReactNode
           </div>
         </Section>
       );
+    case "gallery": {
+      const items = (b.items as { image_id: string; caption?: string | null; category?: string }[]) ?? [];
+      const photos = items
+        .map((it) => {
+          const m = ctx.media[it.image_id];
+          if (!m) return null;
+          return {
+            url: m.url,
+            srcSet: m.src ? Object.entries(m.src).map(([w, u]) => `${u} ${w}w`).join(", ") : undefined,
+            alt: m.alt || it.caption || "",
+            width: m.width,
+            height: m.height,
+            caption: it.caption,
+            category: it.category ?? "other",
+          };
+        })
+        .filter((p) => p !== null);
+      return (
+        <Section key={i}>
+          <Heading text={b.heading} intro={b.intro} />
+          <GalleryGrid photos={photos} showFilters={b.show_filters !== false} />
+        </Section>
+      );
+    }
     case "post_list":
       return (
         <Section key={i}>

@@ -52,6 +52,7 @@ class FeatureItem(StrictModel):
     icon: Icon | None = None
     title: Line
     body: Para
+    image_id: uuid.UUID | None = None  # a photo on the card (D91)
 
 
 class Features(StrictModel):
@@ -156,6 +157,28 @@ class LeadForm(StrictModel):
     intro: Para | None = None
 
 
+GalleryCategory = Literal[
+    "rooms", "reception", "kitchen", "restaurant", "outside", "pool", "spa", "conference", "events", "other"
+]
+
+
+class GalleryItem(StrictModel):
+    image_id: uuid.UUID
+    caption: Annotated[str, StringConstraints(max_length=160)] | None = None
+    category: GalleryCategory = "other"
+
+
+class Gallery(StrictModel):
+    """Photos of hotels using Diyneco (kitchens, reception, rooms, outside...), with filters by
+    area and a full-screen viewer (D91)."""
+
+    type: Literal["gallery"]
+    heading: Line | None = None
+    intro: Para | None = None
+    items: Annotated[list[GalleryItem], Field(min_length=1, max_length=60)]
+    show_filters: bool = True
+
+
 class PostList(StrictModel):
     """The latest blog posts in the page's language."""
 
@@ -177,7 +200,8 @@ Block = Annotated[
     | Pricing
     | RichText
     | LeadForm
-    | PostList,
+    | PostList
+    | Gallery,
     Field(discriminator="type"),
 ]
 

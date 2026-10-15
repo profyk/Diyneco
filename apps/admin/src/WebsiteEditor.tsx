@@ -13,11 +13,34 @@ import { useSession } from "./session";
 // Publish makes the draft live and keeps a version; Preview opens the draft for 15 minutes.
 
 type Json = Record<string, unknown>;
-type FieldKind = "text" | "textarea" | "markdown" | "cta" | "image" | "number" | { select: string[] } | { list: Spec[] };
+type FieldKind =
+  | "text"
+  | "textarea"
+  | "markdown"
+  | "cta"
+  | "image"
+  | "number"
+  | "checkbox"
+  | { select: string[]; labels?: Record<string, string> }
+  | { list: Spec[]; bulkImage?: string };
 type Spec = { key: string; label: string; kind: FieldKind; required?: boolean; hint?: string };
 
 const T = (key: string, label: string, required = false, hint?: string): Spec => ({ key, label, kind: "text", required, hint });
 const TA = (key: string, label: string, required = false): Spec => ({ key, label, kind: "textarea", required });
+
+// Areas of a hotel a gallery photo shows (D91); the website offers them as filter tabs.
+export const GALLERY_AREAS: Record<string, string> = {
+  rooms: "Rooms",
+  reception: "Reception",
+  kitchen: "Kitchen",
+  restaurant: "Restaurant",
+  outside: "Outside",
+  pool: "Pool",
+  spa: "Spa",
+  conference: "Conference",
+  events: "Events",
+  other: "Other",
+};
 
 export const BLOCKS: Record<string, { label: string; fields: Spec[] }> = {
   hero: {
@@ -26,7 +49,31 @@ export const BLOCKS: Record<string, { label: string; fields: Spec[] }> = {
   },
   features: {
     label: "Features",
-    fields: [T("heading", "Heading"), TA("intro", "Intro"), { key: "items", label: "Features", kind: { list: [T("title", "Title", true), TA("body", "Text", true)] } }],
+    fields: [
+      T("heading", "Heading"),
+      TA("intro", "Intro"),
+      { key: "items", label: "Features", kind: { list: [T("title", "Title", true), TA("body", "Text", true), { key: "image_id", label: "Image", kind: "image" }] } },
+    ],
+  },
+  gallery: {
+    label: "Photo gallery",
+    fields: [
+      T("heading", "Heading"),
+      TA("intro", "Intro"),
+      { key: "show_filters", label: "Show area tabs (Rooms, Kitchen, …)", kind: "checkbox" },
+      {
+        key: "items",
+        label: "Photos",
+        kind: {
+          bulkImage: "image_id",
+          list: [
+            { key: "image_id", label: "Photo", kind: "image", required: true },
+            { key: "category", label: "Area", kind: { select: Object.keys(GALLERY_AREAS), labels: GALLERY_AREAS } },
+            T("caption", "Caption", false, "e.g. Orders on the kitchen display"),
+          ],
+        },
+      },
+    ],
   },
   steps: { label: "Steps", fields: [T("heading", "Heading"), { key: "items", label: "Steps", kind: { list: [T("title", "Title", true), TA("body", "Text", true)] } }] },
   split: {
@@ -47,13 +94,19 @@ export const BLOCKS: Record<string, { label: string; fields: Spec[] }> = {
   post_list: { label: "Latest posts", fields: [T("heading", "Heading"), { key: "limit", label: "How many", kind: "number" }] },
 };
 
-function blank(type: string): Json {
-  const b: Json = { type };
-  for (const f of BLOCKS[type]?.fields ?? []) {
-    if (typeof f.kind === "object" && "list" in f.kind) b[f.key] = [{}];
+/** A new list item or block with each select at its first option and each checkbox on. */
+function defaults(fields: Spec[]): Json {
+  const b: Json = {};
+  for (const f of fields) {
+    if (typeof f.kind === "object" && "list" in f.kind) b[f.key] = f.kind.bulkImage ? [] : [defaults(f.kind.list)];
     if (typeof f.kind === "object" && "select" in f.kind) b[f.key] = f.kind.select[0];
+    if (f.kind === "checkbox") b[f.key] = true;
   }
   return b;
+}
+
+function blank(type: string): Json {
+  return { type, ...defaults(BLOCKS[type]?.fields ?? []) };
 }
 
 /** Drops empty optional values so the API's strict schema accepts the content. */
@@ -105,47 +158,104 @@ export function ImagePicker({ value, onChange }: { value: string | undefined; on
   );
 }
 
-export function MediaDialog({ onClose, onPick }: { onClose: () => void; onPick?: (id: string) => void }) {
+function readBase64(file: File): Promise<string> {
+  return new Promise<string>((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result).split(",", 2)[1] ?? "");
+    r.onerror = () => reject(new Error(`${file.name} could not be read.`));
+    r.readAsDataURL(file);
+  });
+}
+
+/**
+ * The image library. Several files upload at once (one after another, so a slow connection
+ * is not flooded). With `onPickMany`, images are ticked and added together; new uploads come
+ * ticked already.
+ */
+export function MediaDialog({ onClose, onPick, onPickMany }: { onClose: () => void; onPick?: (id: string) => void; onPickMany?: (ids: string[]) => void }) {
   const { api } = useSession();
   const media = useMedia();
+  const [picked, setPicked] = useState<string[]>([]);
+  const [progress, setProgress] = useState("");
   const upload = useAction(
-    async (file: File) => {
-      const data = await new Promise<string>((resolve, reject) => {
-        const r = new FileReader();
-        r.onload = () => resolve(String(r.result).split(",", 2)[1] ?? "");
-        r.onerror = () => reject(new Error("The file could not be read."));
-        r.readAsDataURL(file);
-      });
-      return ok(api.POST("/api/v1/admin/site/media", { body: { filename: file.name, alt: "", data_base64: data } }));
+    async (files: File[]) => {
+      const ids: string[] = [];
+      for (const [n, file] of files.entries()) {
+        setProgress(`Uploading ${n + 1} of ${files.length}…`);
+        // A descriptive file name ("kitchen-display.jpg") is a fair first alt text; a camera's is not.
+        const name = file.name.replace(/\.[a-z0-9]+$/i, "").replace(/[-_]+/g, " ").trim();
+        const alt = /^(img|dsc|pxl|photo|image|whatsapp)?[\s\d]*$/i.test(name) || /^(img|dsc|pxl)\s/i.test(name) ? "" : name.slice(0, 300);
+        const m = await ok(api.POST("/api/v1/admin/site/media", { body: { filename: file.name, alt, data_base64: await readBase64(file) } }));
+        ids.push(m.id);
+      }
+      return ids;
     },
-    { success: "Image uploaded." },
+    {
+      success: (ids) => (ids.length === 1 ? "Image uploaded." : `${ids.length} images uploaded.`),
+      onDone: (ids) => {
+        setProgress("");
+        if (onPickMany) setPicked((p) => [...p, ...ids.filter((id) => !p.includes(id))]);
+      },
+    },
   );
+  const toggle = (id: string) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
   return (
-    <Dialog open onClose={onClose} size="lg" title="Images" description="JPEG, PNG or WebP up to 6 MB. Images are resized and stripped of camera data.">
-      <label className="mb-4 inline-flex cursor-pointer items-center gap-2 rounded-[10px] border border-line px-4 py-2 text-sm hover:bg-surface-2">
-        Upload an image
-        <input
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          className="sr-only"
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) upload.mutate(f);
-          }}
-        />
-      </label>
-      {upload.isPending ? <p className="mb-2 text-sm text-muted">Uploading…</p> : null}
+    <Dialog
+      open
+      onClose={onClose}
+      size="lg"
+      title="Images"
+      description="JPEG, PNG or WebP up to 6 MB each; choose several at once if you like. Images are resized and stripped of camera data."
+    >
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <label className="inline-flex cursor-pointer items-center gap-2 rounded-[10px] border border-line px-4 py-2 text-sm hover:bg-surface-2">
+          Upload images
+          <input
+            type="file"
+            multiple
+            accept="image/jpeg,image/png,image/webp"
+            className="sr-only"
+            disabled={upload.isPending}
+            onChange={(e) => {
+              const files = Array.from(e.target.files ?? []);
+              e.target.value = "";
+              if (files.length) upload.mutate(files);
+            }}
+          />
+        </label>
+        {onPickMany ? (
+          <Button disabled={!picked.length} onClick={() => onPickMany(picked)}>
+            {picked.length ? `Add ${picked.length} photo${picked.length === 1 ? "" : "s"}` : "Tick photos to add"}
+          </Button>
+        ) : null}
+      </div>
+      {upload.isPending ? (
+        <p className="mb-2 text-sm text-muted" aria-live="polite">
+          {progress || "Uploading…"}
+        </p>
+      ) : null}
       {upload.error ? <ErrorNotice error={upload.error} className="mb-2" /> : null}
       {!media.data ? (
         <Skeleton className="h-40" />
       ) : (
         <div className="grid max-h-96 grid-cols-2 gap-3 overflow-auto sm:grid-cols-4">
-          {media.data.data.map((m) => (
-            <button key={m.id} type="button" disabled={!onPick} onClick={() => onPick?.(m.id)} className="overflow-hidden rounded-lg border border-line text-left hover:border-blue">
-              <img src={m.url} alt={m.alt} className="aspect-[4/3] w-full object-cover" />
-              <span className="block truncate px-2 py-1 text-xs text-muted">{m.filename}</span>
-            </button>
-          ))}
+          {media.data.data.map((m) => {
+            const on = picked.includes(m.id);
+            return (
+              <button
+                key={m.id}
+                type="button"
+                disabled={!onPick && !onPickMany}
+                aria-pressed={onPickMany ? on : undefined}
+                onClick={() => (onPickMany ? toggle(m.id) : onPick?.(m.id))}
+                className={`relative overflow-hidden rounded-lg border text-left hover:border-blue ${on ? "border-blue ring-2 ring-blue" : "border-line"}`}
+              >
+                <img src={m.url} alt={m.alt} className="aspect-[4/3] w-full object-cover" />
+                {on ? <span className="absolute right-1.5 top-1.5 rounded-full bg-blue px-2 py-0.5 text-xs font-semibold text-white">{picked.indexOf(m.id) + 1}</span> : null}
+                <span className="block truncate px-2 py-1 text-xs text-muted">{m.filename}</span>
+              </button>
+            );
+          })}
         </div>
       )}
     </Dialog>
@@ -155,6 +265,15 @@ export function MediaDialog({ onClose, onPick }: { onClose: () => void; onPick?:
 function FieldEditor({ spec, value, onChange }: { spec: Spec; value: unknown; onChange: (v: unknown) => void }) {
   const label = `${spec.label}${spec.required ? "" : " (optional)"}`;
   const k = spec.kind;
+  const [bulk, setBulk] = useState(false);
+  if (k === "checkbox") {
+    return (
+      <label className="flex items-center gap-2 self-end pb-2 text-sm text-ink">
+        <input type="checkbox" checked={value !== false} onChange={(e) => onChange(e.target.checked)} />
+        {spec.label}
+      </label>
+    );
+  }
   if (k === "image") return <Field label={label}>{() => <ImagePicker value={value as string | undefined} onChange={onChange} />}</Field>;
   if (k === "cta") {
     const v = (value as { label?: string; href?: string } | undefined) ?? {};
@@ -175,7 +294,7 @@ function FieldEditor({ spec, value, onChange }: { spec: Spec; value: unknown; on
           <Select {...p} value={String(value ?? k.select[0])} onChange={(e) => onChange(e.target.value)}>
             {k.select.map((o) => (
               <option key={o} value={o}>
-                {o}
+                {k.labels?.[o] ?? o}
               </option>
             ))}
           </Select>
@@ -206,9 +325,27 @@ function FieldEditor({ spec, value, onChange }: { spec: Spec; value: unknown; on
             </div>
           </div>
         ))}
-        <Button size="sm" variant="secondary" className="self-start" onClick={() => onChange([...items, {}])}>
-          + Add
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          {k.bulkImage ? (
+            <Button size="sm" className="self-start" onClick={() => setBulk(true)}>
+              + Add photos
+            </Button>
+          ) : null}
+          <Button size="sm" variant="secondary" className="self-start" onClick={() => onChange([...items, defaults(k.list)])}>
+            {k.bulkImage ? "+ Add one" : "+ Add"}
+          </Button>
+        </div>
+        {k.bulkImage && items.length ? <p className="text-xs text-muted">{items.length} of 60 photos</p> : null}
+        {bulk && k.bulkImage ? (
+          <MediaDialog
+            onClose={() => setBulk(false)}
+            onPickMany={(ids) => {
+              const key = k.bulkImage as string;
+              onChange([...items, ...ids.map((id) => ({ ...defaults(k.list), [key]: id }))].slice(0, 60));
+              setBulk(false);
+            }}
+          />
+        ) : null}
       </fieldset>
     );
   }
