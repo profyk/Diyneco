@@ -1,8 +1,11 @@
 """Device registry, pairing and device credentials (API spec, Devices; security spec,
 Device and kiosk security).
 
-- A pairing code is 6 random digits, stored as SHA-256(code + pepper), valid 15 minutes and
-  single use. Wrong codes count per IP; 5 in 15 minutes locks pairing from that IP.
+- A setup (pairing) code is 8 random digits, stored as SHA-256(code + pepper), valid 15
+  minutes and single use (D82). The device sends it with the hotel's Hotel ID and the PIN of
+  the manager who created it; the code is looked up only inside that hotel, and a wrong PIN
+  counts against that manager's PIN lockout without using up the code. Wrong Hotel IDs and
+  codes count per IP; 5 in 15 minutes locks pairing from that IP.
 - Redeeming a code creates the device and returns a 256-bit credential once. A replayed
   pair request returns the stored response without the credential (DECISIONS D23).
 - The credential is exchanged for a 1-hour device token bound to hotel, device and room;
@@ -29,6 +32,8 @@ from app.models.domain import Device, KitchenStation, Room
 from app.models.tenancy import Hotel
 from app.realtime.outbox import emit, hotel_channel
 from app.repositories.devices import DeviceRepository
+from app.repositories.staff import StaffRepository
+from app.services.auth import check_member_pin, hotel_by_code
 from app.services.plans import ensure_capacity
 
 PAIRING_TTL = timedelta(minutes=15)
@@ -273,7 +278,7 @@ async def create_pairing(
         raise AppError("UNAUTHENTICATED")
     expires = datetime.now(UTC) + PAIRING_TTL
     for _ in range(5):
-        code = f"{secrets.randbelow(1_000_000):06d}"
+        code = f"{secrets.randbelow(100_000_000):08d}"
         taken = (
             await uow.session.execute(
                 text("SELECT 1 FROM app.device_pairings WHERE code_hash = :c AND used_at IS NULL"),
@@ -282,7 +287,7 @@ async def create_pairing(
         ).first()
         if taken is None:
             break
-    else:  # pragma: no cover - a million codes, 15-minute lifetime
+    else:  # pragma: no cover - a hundred million codes, 15-minute lifetime
         raise AppError("SERVICE_UNAVAILABLE")
     pairing = await repo.create_pairing(
         {
@@ -302,7 +307,13 @@ async def create_pairing(
         pairing.id,
         new_value={"kind": kind, "room_id": str(room_id) if room_id else None},
     )
-    return {"code": code, "qr_payload": f"diyneco:pair:{code}", "expires_at": expires}
+    hotel_code = (await uow.session.execute(select(Hotel.code).where(Hotel.id == ctx.hotel_id))).scalar_one()
+    return {
+        "code": code,
+        "hotel_code": hotel_code,
+        "qr_payload": f"diyneco:pair:{hotel_code}:{code}",
+        "expires_at": expires,
+    }
 
 
 async def _new_label(repo: DeviceRepository, kind: str, room: Room | None) -> str:
@@ -314,25 +325,35 @@ async def _new_label(repo: DeviceRepository, kind: str, room: Room | None) -> st
     return f"{base}{n:02d}"
 
 
+PAIRING_WRONG = "The Hotel ID or setup code is wrong, used or expired. Ask a manager for a new code."
+
+
 async def pair(
-    st: AppState, uow: UnitOfWork, code: str, info: dict[str, Any], ip: str | None, request_id: str | None
+    st: AppState,
+    uow: UnitOfWork,
+    hotel_code: str,
+    code: str,
+    pin: str,
+    info: dict[str, Any],
+    ip: str | None,
+    request_id: str | None,
 ) -> dict[str, Any]:
     ip_key = ip or "unknown"
     if await st.limiter.peek("pair_fail", ip_key) >= PAIR_FAIL_LIMIT:
         security_event("device.pairing_locked", ip=ip)
         raise AppError("RATE_LIMITED", "Too many wrong codes. Try again in 15 minutes.")
     s = uow.session
-    found = (
-        await s.execute(text("SELECT * FROM app.redeem_pairing(:c)"), {"c": code_hash(st, code)})
-    ).first()
-    if found is None:
+
+    async def wrong(reason: str) -> AppError:
         await st.limiter.hit("pair_fail", ip_key)
-        security_event("device.pairing_failed", ip=ip)
-        raise AppError("PAIRING_INVALID", "This code is wrong, used or expired. Ask reception for a new one.")
-    await set_tenant(s, found.hotel_id)
-    hotel = (await s.execute(select(Hotel).where(Hotel.id == found.hotel_id))).scalar_one()
-    if hotel.status in ("suspended", "closed"):
-        raise AppError("HOTEL_SUSPENDED")
+        security_event("device.pairing_failed", reason=reason, ip=ip)
+        return AppError("PAIRING_INVALID", PAIRING_WRONG)
+
+    found = await hotel_by_code(s, hotel_code)
+    if found is None:
+        raise await wrong("unknown_hotel")
+    await set_tenant(s, found.id)
+    hotel = (await s.execute(select(Hotel).where(Hotel.id == found.id))).scalar_one()
     ctx = TenantContext(
         hotel_id=hotel.id,
         actor_type="system",
@@ -342,9 +363,22 @@ async def pair(
         request_id=request_id,
     )
     repo = DeviceRepository(s, ctx)
-    pairing = await repo.pairing(found.pairing_id)
-    if pairing is None:  # pragma: no cover - the definer function just returned it
-        raise AppError("PAIRING_INVALID")
+    pairing = await repo.live_pairing_by_code(code_hash(st, code))
+    if pairing is None:
+        raise await wrong("bad_code")
+    if hotel.status in ("suspended", "closed"):
+        raise AppError("HOTEL_SUSPENDED")
+    # The manager who created the code confirms it on the device with their own PIN. A wrong
+    # PIN counts against their PIN lockout and leaves the code usable until it expires.
+    staff = StaffRepository(s, ctx)
+    issuer = await staff.member(pairing.created_by)
+    if (
+        issuer is None
+        or issuer[0].status != "active"
+        or "devices.manage" not in await staff.member_permissions(issuer[0].id)
+    ):
+        raise AppError("PAIRING_INVALID", "The manager who made this code can no longer set up devices.")
+    await check_member_pin(st, hotel.id, issuer[0], pin)
     room = await repo.live_room(pairing.room_id) if pairing.room_id else None
     if pairing.kind == "guest" and (room is None or await repo.live_guest_device_for_room(room.id)):
         raise AppError("PAIRING_INVALID", "This room can no longer be paired. Ask reception for a new code.")

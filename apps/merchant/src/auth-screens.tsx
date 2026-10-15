@@ -1,7 +1,7 @@
 "use client";
 
 import { ok } from "@diyneco/api-client";
-import { Button, Card, ErrorNotice, Field, Input } from "@diyneco/shared-ui";
+import { BrandLogo, Button, Card, ErrorNotice, Field, Input } from "@diyneco/shared-ui";
 import { type FormEvent, type ReactNode, useEffect, useState } from "react";
 
 import { useSession } from "./session";
@@ -11,8 +11,8 @@ function AuthCard({ title, subtitle, children }: { title: string; subtitle?: Rea
     <main className="flex min-h-dvh items-center justify-center bg-bg p-4">
       <div className="w-full max-w-sm">
         <div className="mb-6 text-center">
-          <p className="font-display text-sm font-semibold uppercase tracking-[0.2em] text-brand">Diyneco</p>
-          <h1 className="mt-2 font-display text-2xl font-semibold text-ink">{title}</h1>
+          <BrandLogo className="w-48" />
+          <h1 className="mt-4 font-display text-2xl font-semibold text-ink">{title}</h1>
           {subtitle ? <p className="mt-1 text-sm text-muted">{subtitle}</p> : null}
         </div>
         <Card className="p-6">{children}</Card>

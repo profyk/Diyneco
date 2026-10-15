@@ -33,6 +33,10 @@ class Settings(BaseSettings):
     merchant_app_url: str | None = None
     # Public address of the Admin panel; platform staff invitations link to it (D71).
     admin_app_url: str | None = None
+    # The public website (D83). Publishing asks it to refresh the changed pages at once when
+    # both are set; otherwise pages refresh within its cache time (5 minutes).
+    website_url: str | None = None
+    website_revalidate_secret: str | None = None
     log_level: str = "info"
 
     # Database

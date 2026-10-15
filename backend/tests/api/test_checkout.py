@@ -10,6 +10,7 @@ from sqlalchemy import text
 from tests.api.test_billing import laundry, walk_in
 from tests.api.test_ordering import set_settings
 from tests.api.test_room_service import idem, ready_order, zar
+from tests.factories import pair_body
 
 ADDRESS = {"line1": "12 Long Street", "city": "Cape Town", "postal_code": "8001", "country": "ZA"}
 
@@ -26,8 +27,8 @@ async def pair_tablet(client, gm, room_id) -> dict[str, str]:
         await client.post(
             "/devices/pairings", json={"type": "guest", "room_id": str(room_id)}, headers={**gm, **idem()}
         )
-    ).json()["code"]
-    cred = (await client.post("/devices/pair", json={"code": code}, headers=idem())).json()[
+    ).json()
+    cred = (await client.post("/devices/pair", json=pair_body(code), headers=idem())).json()[
         "device_credential"
     ]
     token = (await client.post("/devices/token", json={"device_credential": cred})).json()["access_token"]

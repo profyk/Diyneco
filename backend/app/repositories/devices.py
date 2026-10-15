@@ -6,7 +6,7 @@ import uuid
 from collections import defaultdict
 from typing import Any
 
-from sqlalchemy import delete, insert, select, text, update
+from sqlalchemy import delete, func, insert, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import TenantContext
@@ -170,9 +170,24 @@ class DeviceRepository:
             )
         ).scalar_one_or_none()
 
+    async def live_pairing_by_code(self, code_hash: bytes) -> DevicePairing | None:
+        """An unused, unexpired setup code of this hotel, locked until the request ends."""
+        return (
+            await self.s.execute(
+                select(DevicePairing)
+                .where(
+                    DevicePairing.hotel_id == self.ctx.hotel_id,
+                    DevicePairing.code_hash == code_hash,
+                    DevicePairing.used_at.is_(None),
+                    DevicePairing.expires_at > func.now(),
+                )
+                .with_for_update()
+            )
+        ).scalar_one_or_none()
+
     async def mark_pairing_used(self, pairing_id: uuid.UUID, device_id: uuid.UUID) -> None:
         await self.s.execute(
             update(DevicePairing)
             .where(DevicePairing.hotel_id == self.ctx.hotel_id, DevicePairing.id == pairing_id)
-            .values(used_by_device=device_id)
+            .values(used_at=func.now(), used_by_device=device_id)
         )

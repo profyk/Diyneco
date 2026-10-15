@@ -17,7 +17,7 @@ from jwt import PyJWK
 
 from app.core.errors import AppError
 
-TokenType = Literal["access", "step_up", "mfa_pending", "storage"]
+TokenType = Literal["access", "step_up", "mfa_pending", "storage", "site_preview"]
 AUDIENCE = "diyneco-api"
 
 ACCESS_TTL_S = 15 * 60

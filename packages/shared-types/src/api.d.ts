@@ -1263,6 +1263,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/staff-code/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Staff Code Login
+         * @description Room-service sign-in with the Hotel ID, an 8-digit staff code and the member's PIN
+         *     (D82). Accounts that must use two-step sign-in are sent to /auth/login.
+         */
+        post: operations["staff_code_login_api_v1_auth_staff_code_login_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/step-up": {
         parameters: {
             query?: never;
@@ -1543,8 +1564,9 @@ export interface paths {
         put?: never;
         /**
          * Pair Device
-         * @description Redeems a pairing code. The credential is in this response only; a replay of the same
-         *     request returns `device_credential: null` (DECISIONS D23).
+         * @description Redeems a setup code with the Hotel ID and the issuing manager's PIN (D82). The
+         *     credential is in this response only; a replay of the same request returns
+         *     `device_credential: null` (DECISIONS D23).
          */
         post: operations["pair_device_api_v1_devices_pair_post"];
         delete?: never;
@@ -3360,6 +3382,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/staff/{user_id}/staff-code": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Issue Staff Code
+         * @description A new 8-digit staff code for room-service sign-in (D82), shown once. Replaces any
+         *     earlier code.
+         */
+        post: operations["issue_staff_code_api_v1_staff__user_id__staff_code_post"];
+        /** Remove Staff Code */
+        delete: operations["remove_staff_code_api_v1_staff__user_id__staff_code_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/stays": {
         parameters: {
             query?: never;
@@ -4108,6 +4152,8 @@ export interface components {
         };
         /** AdminHotel */
         AdminHotel: {
+            /** Code */
+            code: string;
             counts: components["schemas"]["HotelCounts"];
             /**
              * Created At
@@ -5807,6 +5853,8 @@ export interface components {
             address: {
                 [key: string]: unknown;
             };
+            /** Code */
+            code: string;
             /** Country */
             country: string;
             /**
@@ -6608,6 +6656,8 @@ export interface components {
         };
         /** MeHotel */
         MeHotel: {
+            /** Code */
+            code: string;
             /** Currency */
             currency: string;
             /**
@@ -6632,6 +6682,11 @@ export interface components {
          *     still checks every permission on every request.
          */
         MeOut: {
+            /**
+             * Has Pin
+             * @default false
+             */
+            has_pin: boolean;
             hotel: components["schemas"]["MeHotel"] | null;
             /** Kind */
             kind: string;
@@ -7110,11 +7165,19 @@ export interface components {
             /** Status */
             status: string;
         };
-        /** PairRequest */
+        /**
+         * PairRequest
+         * @description Device setup (D82): the Hotel ID, the 8-digit setup code and the PIN of the manager who
+         *     created the code.
+         */
         PairRequest: {
             /** Code */
             code: string;
             device_info?: components["schemas"]["DeviceInfo"];
+            /** Hotel Code */
+            hotel_code: string;
+            /** Pin */
+            pin: string;
         };
         /** PairResponse */
         PairResponse: {
@@ -7163,6 +7226,11 @@ export interface components {
              * Format: date-time
              */
             expires_at: string;
+            /**
+             * Hotel Code
+             * @description The hotel's Hotel ID, entered on the device with the code.
+             */
+            hotel_code: string;
             /** Qr Payload */
             qr_payload: string;
         };
@@ -8371,6 +8439,28 @@ export interface components {
             /** Available */
             available: boolean;
         };
+        /**
+         * StaffCodeLoginRequest
+         * @description Room-service sign-in (D82): Hotel ID, the member's 8-digit staff code and their PIN.
+         */
+        StaffCodeLoginRequest: {
+            /** Hotel Code */
+            hotel_code: string;
+            /** Pin */
+            pin: string;
+            /** Staff Code */
+            staff_code: string;
+        };
+        /** StaffCodeOut */
+        StaffCodeOut: {
+            /** Hotel Code */
+            hotel_code: string;
+            /**
+             * Staff Code
+             * @description Shown once. Issuing again replaces it.
+             */
+            staff_code: string;
+        };
         /** StaffList */
         StaffList: {
             /** Data */
@@ -8386,6 +8476,8 @@ export interface components {
             email: string;
             /** Has Pin */
             has_pin: boolean;
+            /** Has Staff Code */
+            has_staff_code: boolean;
             /**
              * Joined At
              * Format: date-time
@@ -12042,6 +12134,39 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    staff_code_login_api_v1_auth_staff_code_login_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StaffCodeLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenResponse"];
+                };
             };
             /** @description Validation Error */
             422: {
@@ -16330,6 +16455,66 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["StaffMember"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    issue_staff_code_api_v1_staff__user_id__staff_code_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffCodeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_staff_code_api_v1_staff__user_id__staff_code_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

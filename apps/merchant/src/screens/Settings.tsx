@@ -24,7 +24,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
 import { label, useAction } from "../common";
-import { useSession } from "../session";
+import { useMe, useSession } from "../session";
 import { Plan } from "./Subscription";
 
 type Tab = "hotel" | "billing" | "tablet" | "integrations" | "plan" | "support" | "audit";
@@ -49,7 +49,7 @@ export function Settings() {
   }, []);
   return (
     <>
-      <PageHeader title="Settings" />
+      <PageHeader title="Settings" actions={<HotelId />} />
       <div role="tablist" className="mb-5 flex flex-wrap gap-1">
         {visible.map((t) => (
           <button
@@ -74,6 +74,31 @@ export function Settings() {
       {tab === "support" ? <Support /> : null}
       {tab === "audit" ? <Audit /> : null}
     </>
+  );
+}
+
+/** The hotel's Hotel ID (D82): staff type it on tablets, kitchen displays and room service. */
+function HotelId() {
+  const { me } = useMe();
+  const [copied, setCopied] = useState(false);
+  const code = me.hotel?.code;
+  if (!code) return null;
+  return (
+    <div className="flex items-center gap-2 rounded-xl border border-line bg-surface px-3 py-2">
+      <span className="text-xs font-semibold uppercase tracking-[0.15em] text-muted">Hotel ID</span>
+      <span className="font-mono text-sm font-semibold tracking-wider text-ink">{code}</span>
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={async () => {
+          await navigator.clipboard.writeText(code);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        }}
+      >
+        {copied ? "Copied" : "Copy"}
+      </Button>
+    </div>
   );
 }
 

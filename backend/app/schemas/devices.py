@@ -8,6 +8,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, StringConstraints, model_validator
 
+from app.core.hotel_code import HotelCode
 from app.schemas.common import StrictModel
 
 DeviceKind = Literal["guest", "kitchen"]
@@ -40,6 +41,7 @@ class PairingCreate(StrictModel):
 
 class PairingOut(BaseModel):
     code: str
+    hotel_code: str = Field(description="The hotel's Hotel ID, entered on the device with the code.")
     qr_payload: str
     expires_at: datetime
 
@@ -51,7 +53,12 @@ class DeviceInfo(StrictModel):
 
 
 class PairRequest(StrictModel):
-    code: Annotated[str, StringConstraints(pattern=r"^\d{6}$")]
+    """Device setup (D82): the Hotel ID, the 8-digit setup code and the PIN of the manager who
+    created the code."""
+
+    hotel_code: HotelCode
+    code: Annotated[str, StringConstraints(pattern=r"^\d{8}$")]
+    pin: Annotated[str, StringConstraints(pattern=r"^\d{4,6}$")]
     device_info: DeviceInfo = Field(default_factory=DeviceInfo)
 
 

@@ -169,7 +169,7 @@ jobs:
           exit $status
 
   e2e:
-    name: Browser end-to-end tests (Admin and Merchant)
+    name: Browser end-to-end tests (all five apps)
     runs-on: ubuntu-latest
     timeout-minutes: 40
     services:
@@ -213,7 +213,7 @@ jobs:
           {
             echo "APP_ENV=development"
             echo "API_BASE_URL=http://localhost:8000"
-            echo "CORS_ALLOWED_ORIGINS=http://localhost:3001,http://localhost:3003"
+            echo "CORS_ALLOWED_ORIGINS=http://localhost:3001,http://localhost:3002,http://localhost:3003,http://localhost:3004,http://localhost:3005"
             echo "MERCHANT_APP_URL=http://localhost:3001"
             echo "ADMIN_APP_URL=http://localhost:3003"
             echo "DATABASE_URL=postgresql+asyncpg://diyneco_api:$API_PW@localhost:5432/diyneco"
@@ -227,18 +227,20 @@ jobs:
       - name: Start the API
         working-directory: backend
         run: nohup uv run uvicorn app.main:create_app --factory --port 8000 > /tmp/api.log 2>&1 &
-      - name: Build and start the Admin and Merchant apps
+      - name: Build and start the apps
         run: |
-          (cd apps/admin && pnpm build) > /tmp/build-admin.log 2>&1 || { tail -40 /tmp/build-admin.log; exit 1; }
-          (cd apps/merchant && pnpm build) > /tmp/build-merchant.log 2>&1 || { tail -40 /tmp/build-merchant.log; exit 1; }
-          (cd apps/admin && nohup npx next start --port 3003 > /tmp/admin.log 2>&1 &)
-          (cd apps/merchant && nohup npx next start --port 3001 > /tmp/merchant.log 2>&1 &)
+          for app in admin:3003 merchant:3001 kitchen:3002 room-service:3004 guest:3005; do
+            name=${app%%:*}; port=${app##*:}
+            (cd apps/$name && pnpm build) > /tmp/build-$name.log 2>&1 || { tail -40 /tmp/build-$name.log; exit 1; }
+            (cd apps/$name && nohup npx next start --port $port > /tmp/$name.log 2>&1 &)
+          done
       - name: Install the browser
         working-directory: packages/e2e
         run: npx playwright install --with-deps chromium
       - name: Wait for the servers
         run: |
-          for url in http://localhost:8000/api/v1/health http://localhost:3003 http://localhost:3001; do
+          for url in http://localhost:8000/api/v1/health http://localhost:3003 http://localhost:3001 \
+                     http://localhost:3002 http://localhost:3004 http://localhost:3005; do
             for i in $(seq 1 60); do curl -sf -o /dev/null "$url" && break; sleep 2; done
             curl -sf -o /dev/null "$url" || { echo "::error::$url did not start"; tail -40 /tmp/*.log; exit 1; }
           done
@@ -248,5 +250,6 @@ jobs:
       - name: Show server errors
         if: failure()
         run: |
-          grep -hiE '"level": "error"|Traceback|Error' /tmp/api.log /tmp/admin.log /tmp/merchant.log | tail -20 \
+          grep -hiE '"level": "error"|Traceback|Error' /tmp/api.log /tmp/admin.log /tmp/merchant.log \
+            /tmp/kitchen.log /tmp/room-service.log /tmp/guest.log | tail -20 \
             | while IFS= read -r line; do echo "::warning title=Server log::${line:0:900}"; done

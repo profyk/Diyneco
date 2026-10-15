@@ -58,6 +58,7 @@ async def list_staff(uow: UnitOfWork, ctx: TenantContext) -> list[dict[str, Any]
             "status": hu.status,
             "roles": [_role_ref(r) for r in roles.get(hu.id, [])],
             "has_pin": hu.pin_hash is not None,
+            "has_staff_code": hu.staff_code_hash is not None,
             "mfa_enabled": mfa,
             "last_sign_in_at": u.last_login_at,
             "joined_at": hu.created_at,
@@ -175,7 +176,13 @@ async def deactivate(
     await _keeps_an_owner(repo, hu.id)
     await repo.update_member(
         hu.id,
-        {"status": "deactivated", "deactivated_at": datetime.now(UTC), "perms_version": hu.perms_version + 1},
+        {
+            "status": "deactivated",
+            "deactivated_at": datetime.now(UTC),
+            "perms_version": hu.perms_version + 1,
+            "staff_code_hash": None,
+            "staff_code_set_at": None,
+        },
     )
     revoked = await repo.revoke_sessions(user_id, "deactivated")
     await write_audit(

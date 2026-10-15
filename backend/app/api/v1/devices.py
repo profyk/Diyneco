@@ -86,12 +86,15 @@ async def create_pairing(
 
 @router.post("/pair", status_code=201, response_model=PairResponse, dependencies=[Depends(limit_auth_ip)])
 async def pair_device(idem: IdemAnon, body: PairRequest, request: Request, uow: Uow) -> Response:
-    """Redeems a pairing code. The credential is in this response only; a replay of the same
-    request returns `device_credential: null` (DECISIONS D23)."""
+    """Redeems a setup code with the Hotel ID and the issuing manager's PIN (D82). The
+    credential is in this response only; a replay of the same request returns
+    `device_credential: null` (DECISIONS D23)."""
     result = await svc.pair(
         state_of(request),
         uow,
+        body.hotel_code,
         body.code,
+        body.pin,
         body.device_info.model_dump(),
         client_ip(request),
         request_id_var.get(),

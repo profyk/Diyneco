@@ -2,22 +2,28 @@
 
 from __future__ import annotations
 
+import re
 import uuid
 
 from sqlalchemy import text
+
+from tests.factories import pair_body
 
 
 def idem() -> dict[str, str]:
     return {"Idempotency-Key": str(uuid.uuid4())}
 
 
-async def _code(client, headers, room_id) -> str:
+async def _code(client, headers, room_id) -> dict:
     r = await client.post(
         "/devices/pairings", json={"type": "guest", "room_id": str(room_id)}, headers={**headers, **idem()}
     )
     assert r.status_code == 201, r.text
-    assert r.json()["qr_payload"] == f"diyneco:pair:{r.json()['code']}"
-    return r.json()["code"]
+    body = r.json()
+    assert re.fullmatch(r"\d{8}", body["code"])
+    assert re.fullmatch(r"DYN-[0-9A-HJKMNP-TV-Z]{13}", body["hotel_code"])
+    assert body["qr_payload"] == f"diyneco:pair:{body['hotel_code']}:{body['code']}"
+    return body
 
 
 async def _paired(client, factory, hotel, room_index=0):
@@ -25,7 +31,7 @@ async def _paired(client, factory, hotel, room_index=0):
     code = await _code(client, gm, hotel.room_ids[room_index])
     r = await client.post(
         "/devices/pair",
-        json={"code": code, "device_info": {"model": "Tab A9", "os": "Android 14"}},
+        json=pair_body(code, device_info={"model": "Tab A9", "os": "Android 14"}),
         headers=idem(),
     )
     assert r.status_code == 201, r.text
@@ -55,8 +61,8 @@ async def test_pair_replay_never_returns_the_credential_again(client, factory):
     gm = await factory.auth(hotel, "general_manager")
     code = await _code(client, gm, hotel.room_ids[0])
     h = idem()
-    first = await client.post("/devices/pair", json={"code": code}, headers=h)
-    replay = await client.post("/devices/pair", json={"code": code}, headers=h)
+    first = await client.post("/devices/pair", json=pair_body(code), headers=h)
+    replay = await client.post("/devices/pair", json=pair_body(code), headers=h)
     assert first.json()["device_credential"]
     assert replay.headers.get("Idempotent-Replayed") == "true"
     assert replay.json()["device_credential"] is None
@@ -67,15 +73,79 @@ async def test_code_is_single_use_and_wrong_codes_lock_the_ip(client, factory):
     hotel = await factory.hotel(rooms=2)
     gm = await factory.auth(hotel, "general_manager")
     code = await _code(client, gm, hotel.room_ids[0])
-    assert (await client.post("/devices/pair", json={"code": code}, headers=idem())).status_code == 201
-    used = await client.post("/devices/pair", json={"code": code}, headers=idem())
+    assert (await client.post("/devices/pair", json=pair_body(code), headers=idem())).status_code == 201
+    used = await client.post("/devices/pair", json=pair_body(code), headers=idem())
     assert used.json()["error"]["code"] == "PAIRING_INVALID"
     for _ in range(4):
-        wrong = await client.post("/devices/pair", json={"code": "000000"}, headers=idem())
+        wrong = await client.post(
+            "/devices/pair", json={**pair_body(code), "code": "00000000"}, headers=idem()
+        )
         assert wrong.json()["error"]["code"] == "PAIRING_INVALID"
     good = await _code(client, gm, hotel.room_ids[1])
-    locked = await client.post("/devices/pair", json={"code": good}, headers=idem())
+    locked = await client.post("/devices/pair", json=pair_body(good), headers=idem())
     assert locked.json()["error"]["code"] == "RATE_LIMITED"
+
+
+async def test_setup_code_works_only_with_its_own_hotel_id(client, factory):
+    """D82: the code is looked up only inside the hotel the Hotel ID names."""
+    hotel, other = await factory.hotel(rooms=1), await factory.hotel(rooms=1)
+    gm = await factory.auth(hotel, "general_manager")
+    code = await _code(client, gm, hotel.room_ids[0])
+    other_code = await _code(client, await factory.auth(other, "general_manager"), other.room_ids[0])
+    assert other_code["hotel_code"] != code["hotel_code"]
+    crossed = await client.post(
+        "/devices/pair", json={**pair_body(code), "hotel_code": other_code["hotel_code"]}, headers=idem()
+    )
+    assert crossed.json()["error"]["code"] == "PAIRING_INVALID"
+    unknown = await client.post(
+        "/devices/pair", json={**pair_body(code), "hotel_code": "DYN-ZZZZZZZZZZZZZ"}, headers=idem()
+    )
+    assert unknown.json()["error"]["code"] == "PAIRING_INVALID"
+    # Typed loosely on a tablet: lower case, spaces, no dash, O for zero all still match.
+    loose = code["hotel_code"].lower().replace("-", " ").replace("0", "o")
+    ok = await client.post("/devices/pair", json={**pair_body(code), "hotel_code": loose}, headers=idem())
+    assert ok.status_code == 201, ok.text
+
+
+async def test_setup_needs_the_issuing_managers_pin(client, factory, owner_engine):
+    hotel = await factory.hotel(rooms=1)
+    gm = await factory.auth(hotel, "general_manager")
+    code = await _code(client, gm, hotel.room_ids[0])
+    wrong = await client.post("/devices/pair", json=pair_body(code, pin="9999"), headers=idem())
+    assert wrong.status_code == 403 and wrong.json()["error"]["code"] == "PIN_INVALID"
+    assert wrong.json()["error"]["details"]["attempts_left"] == 4
+    # A wrong PIN does not use up the code.
+    right = await client.post("/devices/pair", json=pair_body(code), headers=idem())
+    assert right.status_code == 201, right.text
+
+    # Once the manager has lost access, codes they made stop working.
+    kitchen = (
+        await client.post(
+            "/devices/pairings",
+            json={"type": "kitchen", "station_id": str(hotel.station_id)},
+            headers={**gm, **idem()},
+        )
+    ).json()
+    async with owner_engine.begin() as conn:
+        await conn.execute(
+            text("UPDATE app.hotel_users SET status = 'deactivated' WHERE id = :h"),
+            {"h": hotel.users["general_manager"].hotel_user_id},
+        )
+    gone = await client.post("/devices/pair", json=pair_body(kitchen), headers=idem())
+    assert gone.json()["error"]["code"] == "PAIRING_INVALID"
+
+
+async def test_setup_request_shape(client, factory):
+    hotel = await factory.hotel(rooms=1)
+    gm = await factory.auth(hotel, "general_manager")
+    code = await _code(client, gm, hotel.room_ids[0])
+    for bad in (
+        {**pair_body(code), "code": code["code"][:6]},  # the old 6-digit codes
+        {**pair_body(code), "hotel_code": "not-a-hotel"},
+        {k: v for k, v in pair_body(code).items() if k != "pin"},
+    ):
+        r = await client.post("/devices/pair", json=bad, headers=idem())
+        assert r.status_code == 400, r.text
 
 
 async def test_one_tablet_per_room(client, factory):
@@ -104,7 +174,7 @@ async def test_pairing_request_shape(client, factory):
         headers={**gm, **idem()},
     )
     assert kitchen.status_code == 201
-    paired = await client.post("/devices/pair", json={"code": kitchen.json()["code"]}, headers=idem())
+    paired = await client.post("/devices/pair", json=pair_body(kitchen.json()), headers=idem())
     assert paired.status_code == 201, paired.text
     assert paired.json()["room"] is None
     assert [s["name"] for s in paired.json()["stations"]] == ["Main Kitchen"]
@@ -187,7 +257,7 @@ async def test_unpair_revokes_credential_and_frees_the_room(client, factory):
     assert (await client.post("/devices/heartbeat", json={}, headers=device)).status_code == 401
     token = await client.post("/devices/token", json={"device_credential": body["device_credential"]})
     assert token.json()["error"]["code"] == "DEVICE_UNAUTHORISED"
-    assert (await _code(client, gm, hotel.room_ids[0])).isdigit()  # room can be paired again
+    assert (await _code(client, gm, hotel.room_ids[0]))["code"].isdigit()  # room can be paired again
 
 
 async def test_room_with_tablet_cannot_be_deleted(client, factory):

@@ -1,7 +1,17 @@
 "use client";
 
 import { ok } from "@diyneco/api-client";
-import { Button, Card, ErrorNotice, Field, Input } from "@diyneco/shared-ui";
+import {
+  BrandLogo,
+  Button,
+  Card,
+  ErrorNotice,
+  Field,
+  Input,
+  looksLikeHotelCode,
+  rememberedHotelCode,
+  tidyHotelCode,
+} from "@diyneco/shared-ui";
 import { type FormEvent, type ReactNode, useEffect, useState } from "react";
 
 import { useSession } from "./session";
@@ -11,8 +21,8 @@ function AuthCard({ title, subtitle, children }: { title: string; subtitle?: Rea
     <main className="flex min-h-dvh items-center justify-center bg-bg p-4">
       <div className="w-full max-w-sm">
         <div className="mb-6 text-center">
-          <p className="font-display text-sm font-semibold uppercase tracking-[0.2em] text-brand">Diyneco</p>
-          <h1 className="mt-2 font-display text-2xl font-semibold text-ink">{title}</h1>
+          <BrandLogo className="w-48" />
+          <h1 className="mt-4 font-display text-2xl font-semibold text-ink">{title}</h1>
           {subtitle ? <p className="mt-1 text-sm text-muted">{subtitle}</p> : null}
         </div>
         <Card className="p-6">{children}</Card>
@@ -21,7 +31,96 @@ function AuthCard({ title, subtitle, children }: { title: string; subtitle?: Rea
   );
 }
 
+/** Staff sign in with the Hotel ID, their 8-digit staff code and PIN (D82); managers whose role
+ * needs two-step sign-in use email instead. */
 export function LoginScreen() {
+  const [withEmail, setWithEmail] = useState(false);
+  return withEmail ? <EmailLogin onCode={() => setWithEmail(false)} /> : <CodeLogin onEmail={() => setWithEmail(true)} />;
+}
+
+function CodeLogin({ onEmail }: { onEmail: () => void }) {
+  const { signInWithCode } = useSession();
+  const [hotelCode, setHotelCode] = useState("");
+  const [staffCode, setStaffCode] = useState("");
+  const [pin, setPin] = useState("");
+  const [error, setError] = useState<unknown>(null);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => setHotelCode(rememberedHotelCode.get()), []);
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      await signInWithCode(hotelCode.trim(), staffCode, pin);
+      rememberedHotelCode.set(hotelCode.trim());
+    } catch (err) {
+      setError(err);
+      setPin("");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <AuthCard title="Room service" subtitle="Sign in with your staff code">
+      <form onSubmit={submit} className="flex flex-col gap-4">
+        <Field label="Hotel ID" hint="Ask your manager. It looks like DYN-7K3M9QX2FHT4W.">
+          {(p) => (
+            <Input
+              {...p}
+              autoFocus={!hotelCode}
+              autoCapitalize="characters"
+              autoComplete="organization"
+              spellCheck={false}
+              placeholder="DYN-"
+              className="h-12 font-mono text-lg tracking-wider"
+              value={hotelCode}
+              onChange={(e) => setHotelCode(tidyHotelCode(e.target.value))}
+            />
+          )}
+        </Field>
+        <Field label="Staff code" hint="Your own 8-digit code from your manager.">
+          {(p) => (
+            <Input
+              {...p}
+              autoFocus={Boolean(hotelCode)}
+              inputMode="numeric"
+              autoComplete="username"
+              maxLength={8}
+              className="h-12 text-center font-mono text-2xl tracking-[0.3em]"
+              value={staffCode}
+              onChange={(e) => setStaffCode(e.target.value.replace(/\D/g, "").slice(0, 8))}
+            />
+          )}
+        </Field>
+        <Field label="PIN">
+          {(p) => (
+            <Input
+              {...p}
+              type="password"
+              inputMode="numeric"
+              autoComplete="current-password"
+              maxLength={6}
+              className="h-12 text-center font-mono text-2xl tracking-[0.5em]"
+              value={pin}
+              onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+            />
+          )}
+        </Field>
+        {error ? <ErrorNotice error={error} /> : null}
+        <Button type="submit" size="lg" loading={busy} disabled={!looksLikeHotelCode(hotelCode) || staffCode.length !== 8 || pin.length < 4}>
+          Sign in
+        </Button>
+        <button type="button" className="text-sm text-blue hover:underline" onClick={onEmail}>
+          Managers: sign in with email
+        </button>
+      </form>
+    </AuthCard>
+  );
+}
+
+function EmailLogin({ onCode }: { onCode: () => void }) {
   const { signIn, verifyMfa } = useSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -91,7 +190,9 @@ export function LoginScreen() {
         <Button type="submit" loading={busy} disabled={!email || !password}>
           Sign in
         </Button>
-
+        <button type="button" className="text-sm text-blue hover:underline" onClick={onCode}>
+          Sign in with a staff code
+        </button>
       </form>
     </AuthCard>
   );

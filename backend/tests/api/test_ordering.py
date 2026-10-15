@@ -7,6 +7,8 @@ import uuid
 
 from sqlalchemy import text
 
+from tests.factories import pair_body
+
 
 def idem() -> dict[str, str]:
     return {"Idempotency-Key": str(uuid.uuid4())}
@@ -52,8 +54,8 @@ async def setup(client, factory, owner_engine, *, check_in=True, rooms=1, fee=50
             json={"type": "guest", "room_id": str(hotel.room_ids[0])},
             headers={**gm, **idem()},
         )
-    ).json()["code"]
-    cred = (await client.post("/devices/pair", json={"code": code}, headers=idem())).json()[
+    ).json()
+    cred = (await client.post("/devices/pair", json=pair_body(code), headers=idem())).json()[
         "device_credential"
     ]
     token = (await client.post("/devices/token", json={"device_credential": cred})).json()["access_token"]

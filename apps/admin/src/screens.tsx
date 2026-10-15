@@ -100,8 +100,11 @@ export function Hotels() {
     (id: string) => ok(api.POST("/api/v1/admin/hotels/{hotel_id}/approve", { params: { path: { hotel_id: id } } })),
     { success: "Approved. The owner was emailed." },
   );
+  const needle = q.trim().toLowerCase();
   const list = (hotels.data?.data ?? []).filter(
-    (h) => (!q || h.name.toLowerCase().includes(q.toLowerCase()) || h.slug.includes(q.toLowerCase())) && (!status || h.status === status),
+    (h) =>
+      (!needle || h.name.toLowerCase().includes(needle) || h.slug.includes(needle) || h.code.toLowerCase().includes(needle)) &&
+      (!status || h.status === status),
   );
   const count = (st: string) => (hotels.data?.data ?? []).filter((h) => !st || h.status === st).length;
   const selected = hotels.data?.data.find((h) => h.id === open);
@@ -109,7 +112,7 @@ export function Hotels() {
     <>
       <PageHeader title="Hotels" description="Counts only: guest records are never visible to Diyneco staff." />
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <Input type="search" aria-label="Search hotels" placeholder="Search hotels" className="max-w-sm" value={q} onChange={(e) => setQ(e.target.value)} />
+        <Input type="search" aria-label="Search hotels" placeholder="Search by name or Hotel ID" className="max-w-sm" value={q} onChange={(e) => setQ(e.target.value)} />
         {["", "pending_approval", "active", "suspended"].map((st) => (
           <button
             key={st || "all"}
@@ -146,7 +149,9 @@ export function Hotels() {
                     <Link className="font-medium text-blue hover:underline" href={`/hotels/${h.id}`}>
                       {h.name}
                     </Link>
-                    <p className="text-xs text-muted">Since {formatDate(h.created_at)}</p>
+                    <p className="text-xs text-muted">
+                      <span className="font-mono">{h.code}</span> · Since {formatDate(h.created_at)}
+                    </p>
                   </Td>
                   <Td>
                     <Badge tone={h.status === "active" ? "good" : h.status === "pending_approval" ? "warn" : "crit"}>{label(h.status)}</Badge>

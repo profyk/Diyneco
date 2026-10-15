@@ -29,6 +29,8 @@ interface SessionContext {
   /** The current access token (refreshed if missing), for the realtime connection. */
   accessToken: () => Promise<string | null>;
   signIn: (email: string, password: string) => Promise<{ mfaToken: string } | null>;
+  /** Hotel ID, 8-digit staff code and PIN (D82). */
+  signInWithCode: (hotelCode: string, staffCode: string, pin: string) => Promise<void>;
   verifyMfa: (mfaToken: string, code: string, recovery?: boolean) => Promise<void>;
   completeEnrolment: (tokens: TokenResponse) => Promise<void>;
   switchHotel: (hotelId: string) => Promise<void>;
@@ -149,6 +151,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         if ("mfa_token" in data) return { mfaToken: data.mfa_token };
         await accept(data);
         return null;
+      },
+      async signInWithCode(hotelCode, staffCode, pin) {
+        const { data } = await post<TokenResponse>("/auth/staff-code/login", {
+          hotel_code: hotelCode,
+          staff_code: staffCode,
+          pin,
+        });
+        await accept(data);
       },
       async verifyMfa(mfaToken, code, recovery = false) {
         const { data } = await post<TokenResponse>(

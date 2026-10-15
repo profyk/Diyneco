@@ -101,6 +101,7 @@ class HotelOut(BaseModel):
     name: str
     legal_name: str | None
     slug: str
+    code: str  # Hotel ID (D82): staff enter it on tablets and in room service
     status: str
     address: dict[str, object]
     phone: str | None

@@ -104,6 +104,7 @@ async def hotel_payload(repo: HotelRepository, hotel: Hotel, storage: Storage, b
         "name": hotel.name,
         "legal_name": hotel.legal_name,
         "slug": hotel.slug,
+        "code": hotel.code,
         "status": hotel.status,
         "address": hotel.address,
         "phone": hotel.phone,

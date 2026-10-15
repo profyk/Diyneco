@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError, newIdempotencyKey } from "@diyneco/api-client";
-import { Button, Card, ErrorNotice, Field, Input } from "@diyneco/shared-ui";
+import { BrandLogo, Button, Card, ErrorNotice, Field, Input } from "@diyneco/shared-ui";
 import { useSearchParams } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
@@ -42,8 +42,8 @@ export function AcceptInvite() {
     <main className="flex min-h-dvh items-center justify-center bg-bg p-4">
       <div className="w-full max-w-sm">
         <div className="mb-6 text-center">
-          <p className="font-display text-sm font-semibold uppercase tracking-[0.2em] text-brand">Diyneco</p>
-          <h1 className="mt-2 font-display text-2xl font-semibold text-ink">Join the Diyneco admin panel</h1>
+          <BrandLogo className="w-48" />
+          <h1 className="mt-4 font-display text-2xl font-semibold text-ink">Join the Diyneco admin panel</h1>
           <p className="mt-1 text-sm text-muted">Choose your password. You set up two-step sign-in when you first sign in.</p>
         </div>
         <Card className="p-6">

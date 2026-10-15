@@ -40,13 +40,14 @@ from app.schemas.auth import (
     ResetPasswordRequest,
     SessionList,
     SetPinRequest,
+    StaffCodeLoginRequest,
     StepUpRequest,
     StepUpResponse,
     TokenResponse,
     VerifyEmailRequest,
 )
 from app.services import auth as auth_service
-from app.services import invitations
+from app.services import invitations, staff_codes
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 AuthLimited = [Depends(limit_auth_ip)]
@@ -109,6 +110,17 @@ async def login(body: LoginRequest, request: Request, uow: Uow) -> Response:
     )
     if result.mfa_token is not None:
         return JSONResponse(MfaChallengeResponse(mfa_token=result.mfa_token).model_dump())
+    return _token_response(result, client)
+
+
+@router.post("/staff-code/login", dependencies=AuthLimited, response_model=TokenResponse)
+async def staff_code_login(body: StaffCodeLoginRequest, request: Request, uow: Uow) -> Response:
+    """Room-service sign-in with the Hotel ID, an 8-digit staff code and the member's PIN
+    (D82). Accounts that must use two-step sign-in are sent to /auth/login."""
+    client = _client(request)
+    result = await staff_codes.sign_in(
+        state_of(request), uow, body.hotel_code, body.staff_code, body.pin, client
+    )
     return _token_response(result, client)
 
 

@@ -262,22 +262,25 @@ async def test_one_guest_tablet_per_room(factory, api_session):
 # --- Definer functions and helpers -----------------------------------------------------------
 
 
-async def test_redeem_pairing_is_single_use_and_tenant_free(factory, api_session, owner_engine):
+async def test_hotel_by_code_names_one_hotel_and_nothing_else(factory, api_session, owner_engine):
+    """D82: the only thing resolvable before a hotel is known is a Hotel ID's hotel id and
+    status. Setup codes are no longer redeemable without a hotel context."""
     hotel = await factory.hotel(roles=("hotel_admin",))
-    code_hash = uuid.uuid4().bytes
-    async with owner_engine.begin() as conn:
-        await conn.execute(
-            text(
-                "INSERT INTO app.device_pairings (hotel_id, kind, room_id, code_hash, created_by, expires_at) "
-                "VALUES (:h, 'guest', :r, :c, :u, now() + interval '15 minutes')"
-            ),
-            {"h": hotel.id, "r": hotel.room_ids[0], "c": code_hash, "u": hotel.users["hotel_admin"].user_id},
-        )
-    await as_hotel(api_session, None)  # pairing runs before any hotel is known
-    first = (await api_session.execute(text("SELECT * FROM app.redeem_pairing(:c)"), {"c": code_hash})).all()
-    second = (await api_session.execute(text("SELECT * FROM app.redeem_pairing(:c)"), {"c": code_hash})).all()
-    assert len(first) == 1 and first[0].hotel_id == hotel.id
-    assert second == []
+    async with owner_engine.connect() as conn:
+        code = (
+            await conn.execute(text("SELECT code FROM app.hotels WHERE id = :h"), {"h": hotel.id})
+        ).scalar_one()
+    await as_hotel(api_session, None)  # Hotel IDs are typed before any hotel is known
+    found = (await api_session.execute(text("SELECT * FROM app.hotel_by_code(:c)"), {"c": code})).all()
+    assert [(r.hotel_id, r.status) for r in found] == [(hotel.id, "active")]
+    assert (
+        await api_session.execute(text("SELECT * FROM app.hotel_by_code('DYN-ZZZZZZZZZZZZZ')"))
+    ).all() == []
+    assert (await api_session.execute(text("SELECT count(*) FROM app.hotels"))).scalar_one() == 0
+    gone = (
+        await api_session.execute(text("SELECT count(*) FROM pg_proc WHERE proname = 'redeem_pairing'"))
+    ).scalar_one()
+    assert gone == 0
 
 
 async def test_uuid_v7_is_version_7_and_time_ordered(api_session):

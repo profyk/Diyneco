@@ -11,7 +11,20 @@ import {
   ok,
   setDisplayLocale,
 } from "@diyneco/api-client";
-import { ApiGate, Badge, Button, cn, Dialog, ErrorNotice, Field, Input, Spinner, Textarea } from "@diyneco/shared-ui";
+import {
+  ApiGate,
+  Badge,
+  Button,
+  cn,
+  type DeviceSetup,
+  DeviceSetupForm,
+  Dialog,
+  ErrorNotice,
+  Field,
+  Input,
+  Spinner,
+  Textarea,
+} from "@diyneco/shared-ui";
 import { QueryClient, QueryClientProvider, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -55,53 +68,34 @@ function GuestAppMain() {
   );
 }
 
+/** Set-up (D82): Hotel ID, the room's 8-digit setup code and the issuing manager's PIN. */
 function PairScreen({ onDone }: { onDone: () => void }) {
-  const [code, setCode] = useState("");
-  const [error, setError] = useState<unknown>(null);
-  const [busy, setBusy] = useState(false);
-  const pair = async () => {
-    setBusy(true);
-    setError(null);
-    try {
-      const res = await fetch(`${API_URL}/api/v1/devices/pair`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Idempotency-Key": newIdempotencyKey() },
-        body: JSON.stringify({ code, device_info: { os: navigator.platform || "browser", app_version: APP_VERSION } }),
-      });
-      const body = await res.json();
-      if (!res.ok) throw new ApiError(res.status, body.error);
-      if (body.kind !== "guest") {
-        throw new ApiError(422, { code: "PAIRING_INVALID", message: "That code is for a kitchen display. Create a room tablet code.", request_id: null, details: {} });
-      }
-      credential.set(body.device_credential);
-      onDone();
-    } catch (e) {
-      setError(e);
-      setCode("");
-    } finally {
-      setBusy(false);
+  const pair = async ({ hotelCode, code, pin }: DeviceSetup) => {
+    const res = await fetch(`${API_URL}/api/v1/devices/pair`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Idempotency-Key": newIdempotencyKey() },
+      body: JSON.stringify({
+        hotel_code: hotelCode,
+        code,
+        pin,
+        device_info: { os: navigator.platform || "browser", app_version: APP_VERSION },
+      }),
+    });
+    const body = await res.json();
+    if (!res.ok) throw new ApiError(res.status, body.error);
+    if (body.kind !== "guest") {
+      throw new ApiError(422, { code: "PAIRING_INVALID", message: "That code is for a kitchen display. Create a room tablet code.", request_id: null, details: {} });
     }
+    credential.set(body.device_credential);
+    onDone();
   };
   return (
-    <main className="flex min-h-dvh items-center justify-center p-6">
-      <div className="w-full max-w-md text-center">
-        <h1 className="font-display text-3xl font-semibold text-ink">Pair this tablet</h1>
-        <p className="mt-2 text-muted">A manager creates a 6-digit code for this room in the Merchant app, under Devices.</p>
-        <Input
-          aria-label="Pairing code"
-          inputMode="numeric"
-          maxLength={6}
-          autoFocus
-          className="mt-6 h-16 text-center font-mono text-3xl tracking-[0.4em]"
-          value={code}
-          onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-        />
-        {error ? <ErrorNotice error={error} className="mt-4 text-left" /> : null}
-        <Button size="xl" className="mt-6 w-full" disabled={code.length !== 6} loading={busy} onClick={pair}>
-          Pair tablet
-        </Button>
-      </div>
-    </main>
+    <DeviceSetupForm
+      title="Set up this tablet"
+      intro="A manager creates a setup code for this room in the Merchant app, under Devices."
+      submitLabel="Set up tablet"
+      onSubmit={pair}
+    />
   );
 }
 

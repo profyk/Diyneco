@@ -46,6 +46,12 @@ def strong_password() -> str:
     return f"Test-Password-{secrets.token_hex(6)}"
 
 
+def pair_body(pairing: dict[str, Any], pin: str = PIN, **extra: Any) -> dict[str, Any]:
+    """POST /devices/pair body for a POST /devices/pairings response (D82): Hotel ID, setup
+    code and the issuing manager's PIN (every seeded member's PIN is PIN)."""
+    return {"hotel_code": pairing["hotel_code"], "code": pairing["code"], "pin": pin, **extra}
+
+
 @dataclass
 class SeededUser:
     role: str

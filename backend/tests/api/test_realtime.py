@@ -14,6 +14,7 @@ from starlette.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
 from app.main import build_state, create_app
+from tests.factories import pair_body
 
 
 def idem() -> dict[str, str]:
@@ -28,8 +29,8 @@ async def _tablet(client, factory, hotel):
             json={"type": "guest", "room_id": str(hotel.room_ids[0])},
             headers={**gm, **idem()},
         )
-    ).json()["code"]
-    pair = (await client.post("/devices/pair", json={"code": code}, headers=idem())).json()
+    ).json()
+    pair = (await client.post("/devices/pair", json=pair_body(code), headers=idem())).json()
     token = (
         await client.post("/devices/token", json={"device_credential": pair["device_credential"]})
     ).json()

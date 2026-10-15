@@ -293,7 +293,8 @@ async def test_set_pin_needs_step_up(client, factory, owner_engine):
 
 def _token_from(mailbox, email: str, template: str) -> str:
     message = [m for m in mailbox.sent if m.to == email and m.template == template][-1]
-    return next(w for w in message.body.split() if len(w) > 30 and " " not in w)
+    # The bare code, not the app link that precedes it when MERCHANT_APP_URL is set.
+    return next(w for w in message.body.split() if len(w) > 30 and "://" not in w)
 
 
 async def test_forgot_password_never_reveals_accounts_and_reset_revokes_sessions(client, factory, mailbox):

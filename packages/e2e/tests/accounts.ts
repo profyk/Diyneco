@@ -9,6 +9,9 @@ import { TOTP } from "otpauth";
 export const ADMIN_URL = process.env.ADMIN_URL ?? "http://localhost:3003";
 export const MERCHANT_URL = process.env.MERCHANT_URL ?? "http://localhost:3001";
 export const API_URL = process.env.API_URL ?? "http://localhost:8000";
+export const KITCHEN_URL = process.env.KITCHEN_URL ?? "http://localhost:3002";
+export const ROOM_SERVICE_URL = process.env.ROOM_SERVICE_URL ?? "http://localhost:3004";
+export const GUEST_URL = process.env.GUEST_URL ?? "http://localhost:3005";
 
 export const accounts = JSON.parse(readFileSync(fileURLToPath(new URL("../.accounts.json", import.meta.url)), "utf8")) as {
   admin: { email: string; password: string; totp_secret: string };
@@ -16,6 +19,9 @@ export const accounts = JSON.parse(readFileSync(fileURLToPath(new URL("../.accou
   owner: { email: string; password: string; totp_secret: string };
   plan: { code: string; name: string };
   pin: string;
+  hotel_code: string; // the demo hotel's Hotel ID (D82)
+  room: string; // a room with no tablet
+  room_service: string; // email of the demo room-service staff member
 };
 
 export function totp(secret: string): string {

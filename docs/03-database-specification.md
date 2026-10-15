@@ -349,7 +349,7 @@ CREATE TABLE app.device_pairings (
   kind         text NOT NULL CHECK (kind IN ('guest','kitchen')),
   room_id      uuid,
   station_ids  uuid[],
-  code_hash    bytea NOT NULL,                            -- SHA-256 of the 6-digit code + pepper
+  code_hash    bytea NOT NULL,                            -- SHA-256 of the 8-digit code + pepper (D82)
   created_by   uuid NOT NULL REFERENCES app.users(id),
   expires_at   timestamptz NOT NULL,
   used_at      timestamptz,
@@ -361,7 +361,7 @@ CREATE TABLE app.device_pairings (
 CREATE UNIQUE INDEX device_pairings_live_code ON app.device_pairings(code_hash) WHERE used_at IS NULL;
 ```
 
-A 6-digit code has only a million values, so pairing is protected by the 15-minute expiry, a lockout after 5 failed attempts from one device or IP, and per-IP rate limiting on `/devices/pair`, not by the hash alone.
+An 8-digit code has a hundred million values and is redeemed only together with the hotel's Hotel ID and the issuing manager's PIN (D82); pairing is still protected by the 15-minute expiry, a lockout after 5 failed attempts from one device or IP, and per-IP rate limiting on `/devices/pair`, not by the hash alone.
 
 ## Guests, stays and folios
 
@@ -1122,15 +1122,18 @@ END $$;
 CREATE TRIGGER orders_guard BEFORE UPDATE ON app.orders
   FOR EACH ROW EXECUTE FUNCTION app.orders_guard_transition();
 
--- Pairing runs before any hotel context exists, so it goes through one narrow definer function
-CREATE FUNCTION app.redeem_pairing(p_code_hash bytea) RETURNS TABLE (pairing_id uuid, hotel_id uuid)
-LANGUAGE sql SECURITY DEFINER SET search_path = app AS $$
-  UPDATE app.device_pairings SET used_at = now()
-  WHERE code_hash = p_code_hash AND used_at IS NULL AND expires_at > now()
-  RETURNING id, hotel_id
+-- Device set-up and staff-code sign-in start from a Hotel ID before any hotel context exists
+-- (D82): one narrow definer function resolves it; the setup code or staff code is then looked
+-- up under that hotel's RLS. (Replaces app.redeem_pairing, which redeemed a code on its own.)
+-- hotels.code: 'DYN-' + 13 Crockford base32 characters with at least one letter, DEFAULT
+-- app.new_hotel_code(), UNIQUE, never updated (trigger hotels_code_fixed).
+-- hotel_users.staff_code_hash bytea, staff_code_set_at timestamptz: UNIQUE (hotel_id, staff_code_hash).
+CREATE FUNCTION app.hotel_by_code(p_code text) RETURNS TABLE (hotel_id uuid, status text)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = app AS $$
+  SELECT id, status FROM app.hotels WHERE code = p_code
 $$;
-REVOKE ALL ON FUNCTION app.redeem_pairing(bytea) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION app.redeem_pairing(bytea) TO diyneco_api;
+REVOKE ALL ON FUNCTION app.hotel_by_code(text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION app.hotel_by_code(text) TO diyneco_api;
 ```
 
 The service maps SQLSTATE `P0001`–`P0004` to `INVALID_TRANSITION` or `INTERNAL_ERROR` and logs them as security events, because the API layer should have stopped those writes first.

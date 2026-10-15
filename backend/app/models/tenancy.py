@@ -110,6 +110,7 @@ class Hotel(Base):
     name: Mapped[str]
     legal_name: Mapped[str | None]
     slug: Mapped[str]
+    code: Mapped[str] = mapped_column(server_default=text("app.new_hotel_code()"))  # Hotel ID (D82)
     status: Mapped[str] = mapped_column(server_default=text("'pending_approval'"))
     status_reason: Mapped[str | None]
     address: Mapped[dict[str, Any]] = mapped_column(JSONB, server_default=text("'{}'"))
@@ -326,6 +327,8 @@ class HotelUser(Base):
     pin_failed: Mapped[int] = mapped_column(Integer, server_default=text("0"))
     pin_failed_window_start: Mapped[datetime | None]
     pin_locked_until: Mapped[datetime | None]
+    staff_code_hash: Mapped[bytes | None] = mapped_column(LargeBinary)
+    staff_code_set_at: Mapped[datetime | None]
     perms_version: Mapped[int] = mapped_column(Integer, server_default=text("1"))
     status: Mapped[str] = mapped_column(server_default=text("'active'"))
     created_at: Mapped[datetime] = _created()

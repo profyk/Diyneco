@@ -98,6 +98,18 @@ async def memberships(session: AsyncSession, user_id: uuid.UUID) -> list[Members
     ]
 
 
+@dataclass(frozen=True)
+class HotelRef:
+    id: uuid.UUID
+    status: str
+
+
+async def hotel_by_code(session: AsyncSession, code: str) -> HotelRef | None:
+    """Resolve a Hotel ID (D82) before any hotel context exists. Callers then set the tenant."""
+    row = (await session.execute(text("SELECT * FROM app.hotel_by_code(:c)"), {"c": code})).first()
+    return HotelRef(row.hotel_id, row.status) if row else None
+
+
 def hotels_payload(ms: list[Membership]) -> list[dict[str, Any]]:
     return [
         {"id": m.hotel_id, "name": m.hotel_name, "status": m.hotel_status, "roles": list(m.role_codes)}
@@ -795,6 +807,15 @@ async def me(
         if hotel_id
         else None
     )
+    pin_hash = (
+        (
+            await s.execute(
+                select(HotelUser.pin_hash).where(HotelUser.hotel_id == hotel_id, HotelUser.user_id == user_id)
+            )
+        ).scalar_one_or_none()
+        if hotel_id and user_id
+        else None
+    )
     return {
         "kind": kind,
         "user": {
@@ -808,6 +829,7 @@ async def me(
         "hotel": {
             "id": hotel.id,
             "name": hotel.name,
+            "code": hotel.code,
             "status": hotel.status,
             "currency": local.currency if local else None,
             "locale": local.locale if local else None,
@@ -820,4 +842,5 @@ async def me(
         "permissions": sorted(permissions),
         "mfa": "mfa" in amr,
         "mfa_pending": mfa_pending,
+        "has_pin": pin_hash is not None,
     }

@@ -1,6 +1,6 @@
 """SQLAlchemy models for every table in schema app (see base.py for the drift rule)."""
 
-from app.models import domain, events, tenancy
+from app.models import domain, events, site, tenancy
 from app.models.base import Base
 
-__all__ = ["Base", "domain", "events", "tenancy"]
+__all__ = ["Base", "domain", "events", "site", "tenancy"]

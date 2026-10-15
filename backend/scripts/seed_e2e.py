@@ -7,8 +7,9 @@ so a browser test can sign in to the Admin panel on every run, and prints the de
 receptionist (from seed_dev.py) for the Merchant app. For the subscription journey it adds a
 fresh owner (with two-step sign-in) to the demo hotel, puts the demo hotel back on a free trial
 (ending any current subscription; nothing is deleted) and publishes a test plan priced in the
-database. Refuses to run unless APP_ENV=development. The output holds credentials for local
-demo accounts only.
+database. For the device and staff-code journey (D82) it unpairs the demo hotel's devices and
+prints its Hotel ID and a room to set a tablet up in. Refuses to run unless
+APP_ENV=development. The output holds credentials for local demo accounts only.
 """
 
 from __future__ import annotations
@@ -74,6 +75,7 @@ async def main() -> int:
         )
         owner = await _trial_owner(s, keyring)
         plan = await _published_plan(s)
+        devices = await _free_devices(s)
     await db.dispose()
     print(
         json.dumps(
@@ -83,6 +85,7 @@ async def main() -> int:
                 "owner": owner,
                 "plan": plan,
                 "pin": DEMO_PIN,
+                **devices,
             },
             indent=2,
         )
@@ -145,6 +148,31 @@ async def _trial_owner(s, keyring: Keyring) -> dict[str, str]:  # type: ignore[n
         )
     )
     return {"email": email, "password": password, "totp_secret": secret}
+
+
+async def _free_devices(s) -> dict[str, str]:  # type: ignore[no-untyped-def]
+    """Device set-up and staff-code tests (D82): unpair the demo hotel's devices so every run
+    has a free room and stays inside the trial's device limit, and name the room to use."""
+    hotel_id, hotel_code = (
+        await s.execute(select(t.Hotel.id, t.Hotel.code).where(t.Hotel.slug == HOTELS[0]["slug"]))
+    ).one()
+    await s.execute(
+        text(
+            "UPDATE app.devices SET status = 'revoked', revoked_at = now(), credential_hash = NULL "
+            "WHERE hotel_id = :h AND status <> 'revoked'"
+        ),
+        {"h": hotel_id},
+    )
+    room = (
+        await s.execute(
+            text(
+                "SELECT number FROM app.rooms WHERE hotel_id = :h AND deleted_at IS NULL "
+                "ORDER BY length(number), number LIMIT 1"
+            ),
+            {"h": hotel_id},
+        )
+    ).scalar_one()
+    return {"hotel_code": hotel_code, "room": room, "room_service": "roomservice@grandexample.example"}
 
 
 async def _published_plan(s) -> dict[str, str]:  # type: ignore[no-untyped-def]

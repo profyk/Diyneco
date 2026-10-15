@@ -47,7 +47,19 @@ export function Staff() {
     (id: string) => ok(api.POST("/api/v1/staff/{user_id}/deactivate", { params: { path: { user_id: id } } })),
     { success: "Access removed. Their sessions ended." },
   );
-  const error = cancelInvite.error ?? resetPin.error ?? deactivate.error;
+  const [issued, setIssued] = useState<{ name: string; staff_code: string; hotel_code: string } | null>(null);
+  const issueCode = useAction(
+    async (person: { id: string; name: string }) => ({
+      name: person.name,
+      ...(await ok(api.POST("/api/v1/staff/{user_id}/staff-code", { params: { path: { user_id: person.id } } }))),
+    }),
+    { onDone: (out) => setIssued(out) },
+  );
+  const removeCode = useAction(
+    (id: string) => ok(api.DELETE("/api/v1/staff/{user_id}/staff-code", { params: { path: { user_id: id } } })),
+    { success: "Staff code removed. It no longer signs in." },
+  );
+  const error = cancelInvite.error ?? resetPin.error ?? deactivate.error ?? issueCode.error ?? removeCode.error;
 
   return (
     <>
@@ -92,6 +104,7 @@ export function Staff() {
                     <div className="flex flex-wrap gap-1">
                       <Badge tone={s.mfa_enabled ? "good" : "neutral"}>{s.mfa_enabled ? "Two-step on" : "Password only"}</Badge>
                       <Badge tone={s.has_pin ? "good" : "warn"}>{s.has_pin ? "PIN set" : "No PIN"}</Badge>
+                      {s.has_staff_code ? <Badge tone="teal">Staff code</Badge> : null}
                     </div>
                   </Td>
                   <Td className="text-muted">{s.last_sign_in_at ? formatDate(s.last_sign_in_at) : "Never"}</Td>
@@ -111,6 +124,21 @@ export function Staff() {
                         {s.has_pin ? (
                           <Button size="sm" variant="ghost" onClick={() => resetPin.mutate(s.user_id)}>
                             Reset PIN
+                          </Button>
+                        ) : null}
+                        {canUseStaffCode(s) ? (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            loading={issueCode.isPending && issueCode.variables?.id === s.user_id}
+                            onClick={() => issueCode.mutate({ id: s.user_id, name: s.name })}
+                          >
+                            {s.has_staff_code ? "New staff code" : "Staff code"}
+                          </Button>
+                        ) : null}
+                        {s.has_staff_code ? (
+                          <Button size="sm" variant="ghost" onClick={() => removeCode.mutate(s.user_id)}>
+                            Remove code
                           </Button>
                         ) : null}
                         <Button size="sm" variant="ghost" onClick={() => deactivate.mutate(s.user_id)}>
@@ -153,6 +181,7 @@ export function Staff() {
       ) : null}
       {can("roles.manage") || can("staff.read") ? <Roles /> : null}
       {inviting ? <InviteDialog onClose={() => setInviting(false)} /> : null}
+      {issued ? <StaffCodeDialog issued={issued} onClose={() => setIssued(null)} /> : null}
       {profile ? <ProfileDialog person={profile} onClose={() => setProfile(null)} /> : null}
       {editing ? (
         <RolesDialog
@@ -162,6 +191,41 @@ export function Staff() {
         />
       ) : null}
     </>
+  );
+}
+
+// Roles that must use two-step sign-in never sign in with a staff code (D82).
+const TWO_STEP_ROLES = new Set(["hotel_owner", "hotel_admin", "general_manager", "finance_manager"]);
+
+function canUseStaffCode(s: { status: string; mfa_enabled: boolean; roles: { code: string }[] }): boolean {
+  return s.status === "active" && !s.mfa_enabled && !s.roles.some((r) => TWO_STEP_ROLES.has(r.code));
+}
+
+/** The new code is shown once; the server keeps only a hash of it. */
+function StaffCodeDialog({
+  issued,
+  onClose,
+}: {
+  issued: { name: string; staff_code: string; hotel_code: string };
+  onClose: () => void;
+}) {
+  return (
+    <Dialog
+      open
+      onClose={onClose}
+      title={`Staff code for ${issued.name}`}
+      description="Give these to them privately. They sign in to room service with the Hotel ID, this code and their own PIN. The code is shown only now; any earlier code stops working."
+      footer={<Button onClick={onClose}>Done</Button>}
+    >
+      <div className="text-center">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">Hotel ID</p>
+        <p className="mt-1 font-mono text-2xl font-semibold tracking-wider text-ink">{issued.hotel_code}</p>
+        <p className="mt-5 text-xs font-semibold uppercase tracking-[0.2em] text-muted">Staff code</p>
+        <p className="mt-1 font-mono text-5xl font-semibold tracking-[0.2em] text-ink">
+          {issued.staff_code.slice(0, 4)} {issued.staff_code.slice(4)}
+        </p>
+      </div>
+    </Dialog>
   );
 }
 

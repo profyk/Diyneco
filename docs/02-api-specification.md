@@ -48,6 +48,7 @@ Staff sign in with email and password, platform admins always add TOTP, and sens
 | POST | `/auth/email/verify` | none | — | — | One-time token from email |
 | POST | `/auth/invitations/{token}/accept` | none | — | Idem | Staff sets name, password, PIN; joins the hotel with invited roles |
 | POST | `/auth/kitchen/sign-in` | device (kitchen) | — | — | Staff PIN on a kitchen display → 8-hour staff session bound to that device |
+| POST | `/auth/staff-code/login` | none | — | — | `{hotel_code, staff_code, pin}` → tokens like `/auth/login` (`amr` code, pin). Room-service sign-in (D82); refused for roles that need MFA (`details.reason = use_email`) |
 
 **Login response**
 
@@ -127,13 +128,13 @@ Rooms can be created one at a time, as number ranges, or from a CSV; every bulk 
 
 ## Devices
 
-A tablet becomes a trusted device only by redeeming a single-use pairing code issued for one room; the server then binds device, hotel and room and returns a device credential once. Every later device request is checked against that binding.
+A tablet becomes a trusted device only by redeeming a single-use 8-digit setup (pairing) code issued for one room, together with the hotel's Hotel ID (`DYN-` + 13 characters) and the PIN of the manager who issued the code (D82); the server then binds device, hotel and room and returns a device credential once. Every later device request is checked against that binding.
 
 | Method | Path | Principal | Perm | Idem | Purpose |
 | --- | --- | --- | --- | --- | --- |
 | GET | `/devices` | staff | `devices.read` | — | Filters: `type` (`guest`, `kitchen`), `status`, `room_id` |
-| POST | `/devices/pairings` | staff | `devices.manage` | Idem | `{type, room_id \| station_id}` → `{code, qr_payload, expires_at}` (15 min, single use) |
-| POST | `/devices/pair` | none | — | Idem | `{code, device_info}` → `{device_id, device_credential, hotel, room}`; credential shown once |
+| POST | `/devices/pairings` | staff | `devices.manage` | Idem | `{type, room_id \| station_id}` → `{code, hotel_code, qr_payload, expires_at}` (8 digits, 15 min, single use) |
+| POST | `/devices/pair` | none | — | Idem | `{hotel_code, code, pin, device_info}` → `{device_id, device_credential, hotel, room}`; credential shown once. Wrong PIN: `PIN_INVALID` (code stays usable) |
 | POST | `/devices/heartbeat` | device | — | — | Every 30 s: app version, battery, network. Returns pending commands (`RESET`, `LOCK`) |
 | POST | `/devices/{id}/lock` | staff | `devices.manage` | — | Guest screen shows "paused"; publishes `DEVICE_LOCKED` |
 | POST | `/devices/{id}/unlock` | staff | `devices.manage` | — |  |
@@ -160,6 +161,8 @@ Staff join by invitation and receive roles; a role is a named bundle of permissi
 | PUT | `/staff/{user_id}/roles` | staff | `staff.manage` + Step-up | — | Replace roles; bumps `perms_v`; audited |
 | POST | `/staff/{user_id}/deactivate` | staff | `staff.manage` + Step-up | — | Revokes all sessions immediately; history kept |
 | POST | `/staff/{user_id}/pin/reset` | staff | `staff.manage` + Step-up | — | Forces the user to set a new PIN |
+| POST | `/staff/{user_id}/staff-code` | staff | `staff.manage` + Step-up | — | New 8-digit staff code → `{staff_code, hotel_code}`, shown once; replaces any earlier code. Refused for roles that need MFA (D82) |
+| DELETE | `/staff/{user_id}/staff-code` | staff | `staff.manage` + Step-up | — | Removes the staff code |
 | GET | `/roles` | staff | `staff.read` | — | System roles + hotel custom roles with permissions |
 | POST | `/roles` | staff | `roles.manage` + Step-up | Idem | Custom role from a subset of the caller's permissions |
 | PATCH | `/roles/{id}` | staff | `roles.manage` + Step-up | — | System roles cannot be edited, only copied |

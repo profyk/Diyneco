@@ -18,6 +18,7 @@ from app.core.jwt import ACCESS_TTL_S
 from tests.api.test_billing import laundry, walk_in
 from tests.api.test_checkout import settle
 from tests.api.test_room_service import idem, ready_order, zar
+from tests.factories import pair_body
 
 
 async def paired_tablet(client, gm, room_id) -> tuple[dict[str, str], str, str]:
@@ -25,8 +26,8 @@ async def paired_tablet(client, gm, room_id) -> tuple[dict[str, str], str, str]:
         await client.post(
             "/devices/pairings", json={"type": "guest", "room_id": str(room_id)}, headers={**gm, **idem()}
         )
-    ).json()["code"]
-    paired = (await client.post("/devices/pair", json={"code": code}, headers=idem())).json()
+    ).json()
+    paired = (await client.post("/devices/pair", json=pair_body(code), headers=idem())).json()
     token = (
         await client.post("/devices/token", json={"device_credential": paired["device_credential"]})
     ).json()

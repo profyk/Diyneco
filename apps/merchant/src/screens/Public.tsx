@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError, formatDate, newIdempotencyKey, ok } from "@diyneco/api-client";
-import { Badge, Button, Card, CardHeader, ErrorNotice, Field, Input, PageHeader, Select, Table, Td } from "@diyneco/shared-ui";
+import { Badge, BrandLogo, Button, Card, CardHeader, ErrorNotice, Field, Input, PageHeader, Select, Table, Td } from "@diyneco/shared-ui";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { type FormEvent, type ReactNode, useState } from "react";
@@ -28,8 +28,8 @@ function Panel({ title, subtitle, children }: { title: string; subtitle?: ReactN
     <main className="flex min-h-dvh items-center justify-center bg-bg p-4">
       <div className="w-full max-w-md">
         <div className="mb-6 text-center">
-          <p className="font-display text-sm font-semibold uppercase tracking-[0.2em] text-brand">Diyneco</p>
-          <h1 className="mt-2 font-display text-2xl font-semibold text-ink">{title}</h1>
+          <BrandLogo className="w-48" />
+          <h1 className="mt-4 font-display text-2xl font-semibold text-ink">{title}</h1>
           {subtitle ? <p className="mt-1 text-sm text-muted">{subtitle}</p> : null}
         </div>
         <Card className="p-6">{children}</Card>
@@ -305,7 +305,7 @@ export function Account() {
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className="p-5">
           <h2 className="font-display text-base font-semibold">PIN</h2>
-          <p className="mt-1 text-sm text-muted">Used on kitchen displays and to confirm approvals, discounts and checkouts.</p>
+          <p className="mt-1 text-sm text-muted">Used on kitchen displays and in room service, to set up tablets and displays, and to confirm approvals, discounts and checkouts.</p>
           <div className="mt-4 flex items-end gap-3">
             <Field label="New PIN">
               {(p) => <Input {...p} type="password" inputMode="numeric" maxLength={6} value={pin} onChange={(e) => setPin(e.target.value)} />}

@@ -85,6 +85,7 @@ async def hotels(uow: UnitOfWork) -> list[dict[str, Any]]:
             "id": r["id"],
             "name": r["name"],
             "slug": r["slug"],
+            "code": r["code"],
             "status": r["status"],
             "status_reason": r["status_reason"],
             "created_at": r["created_at"],

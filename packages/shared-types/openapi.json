@@ -531,6 +531,10 @@
       },
       "AdminHotel": {
         "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
           "counts": {
             "$ref": "#/components/schemas/HotelCounts"
           },
@@ -618,6 +622,7 @@
           "id",
           "name",
           "slug",
+          "code",
           "status",
           "status_reason",
           "created_at",
@@ -5812,6 +5817,10 @@
             "title": "Address",
             "type": "object"
           },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
           "country": {
             "title": "Country",
             "type": "string"
@@ -5906,6 +5915,7 @@
           "name",
           "legal_name",
           "slug",
+          "code",
           "status",
           "address",
           "phone",
@@ -8307,6 +8317,10 @@
       },
       "MeHotel": {
         "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
           "currency": {
             "title": "Currency",
             "type": "string"
@@ -8340,6 +8354,7 @@
         "required": [
           "id",
           "name",
+          "code",
           "status",
           "currency",
           "locale",
@@ -8352,6 +8367,11 @@
       "MeOut": {
         "description": "Who is signed in and what they may do, so apps show only usable actions. The server\nstill checks every permission on every request.",
         "properties": {
+          "has_pin": {
+            "default": false,
+            "title": "Has Pin",
+            "type": "boolean"
+          },
           "hotel": {
             "anyOf": [
               {
@@ -9652,18 +9672,31 @@
       },
       "PairRequest": {
         "additionalProperties": false,
+        "description": "Device setup (D82): the Hotel ID, the 8-digit setup code and the PIN of the manager who\ncreated the code.",
         "properties": {
           "code": {
-            "pattern": "^\\d{6}$",
+            "pattern": "^\\d{8}$",
             "title": "Code",
             "type": "string"
           },
           "device_info": {
             "$ref": "#/components/schemas/DeviceInfo"
+          },
+          "hotel_code": {
+            "maxLength": 40,
+            "title": "Hotel Code",
+            "type": "string"
+          },
+          "pin": {
+            "pattern": "^\\d{4,6}$",
+            "title": "Pin",
+            "type": "string"
           }
         },
         "required": [
-          "code"
+          "hotel_code",
+          "code",
+          "pin"
         ],
         "title": "PairRequest",
         "type": "object"
@@ -9801,6 +9834,11 @@
             "title": "Expires At",
             "type": "string"
           },
+          "hotel_code": {
+            "description": "The hotel's Hotel ID, entered on the device with the code.",
+            "title": "Hotel Code",
+            "type": "string"
+          },
           "qr_payload": {
             "title": "Qr Payload",
             "type": "string"
@@ -9808,6 +9846,7 @@
         },
         "required": [
           "code",
+          "hotel_code",
           "qr_payload",
           "expires_at"
         ],
@@ -13799,6 +13838,55 @@
         "title": "SoldOutChange",
         "type": "object"
       },
+      "StaffCodeLoginRequest": {
+        "additionalProperties": false,
+        "description": "Room-service sign-in (D82): Hotel ID, the member's 8-digit staff code and their PIN.",
+        "properties": {
+          "hotel_code": {
+            "maxLength": 40,
+            "title": "Hotel Code",
+            "type": "string"
+          },
+          "pin": {
+            "maxLength": 6,
+            "minLength": 4,
+            "pattern": "^\\d+$",
+            "title": "Pin",
+            "type": "string"
+          },
+          "staff_code": {
+            "pattern": "^\\d{8}$",
+            "title": "Staff Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "hotel_code",
+          "staff_code",
+          "pin"
+        ],
+        "title": "StaffCodeLoginRequest",
+        "type": "object"
+      },
+      "StaffCodeOut": {
+        "properties": {
+          "hotel_code": {
+            "title": "Hotel Code",
+            "type": "string"
+          },
+          "staff_code": {
+            "description": "Shown once. Issuing again replaces it.",
+            "title": "Staff Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "staff_code",
+          "hotel_code"
+        ],
+        "title": "StaffCodeOut",
+        "type": "object"
+      },
       "StaffList": {
         "properties": {
           "data": {
@@ -13845,6 +13933,10 @@
           },
           "has_pin": {
             "title": "Has Pin",
+            "type": "boolean"
+          },
+          "has_staff_code": {
+            "title": "Has Staff Code",
             "type": "boolean"
           },
           "joined_at": {
@@ -13901,6 +13993,7 @@
           "status",
           "roles",
           "has_pin",
+          "has_staff_code",
           "mfa_enabled",
           "last_sign_in_at",
           "joined_at"
@@ -21077,6 +21170,48 @@
         ]
       }
     },
+    "/api/v1/auth/staff-code/login": {
+      "post": {
+        "description": "Room-service sign-in with the Hotel ID, an 8-digit staff code and the member's PIN\n(D82). Accounts that must use two-step sign-in are sent to /auth/login.",
+        "operationId": "staff_code_login_api_v1_auth_staff_code_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StaffCodeLoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Staff Code Login",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/api/v1/auth/step-up": {
       "post": {
         "operationId": "step_up_api_v1_auth_step_up_post",
@@ -21788,7 +21923,7 @@
     },
     "/api/v1/devices/pair": {
       "post": {
-        "description": "Redeems a pairing code. The credential is in this response only; a replay of the same\nrequest returns `device_credential: null` (DECISIONS D23).",
+        "description": "Redeems a setup code with the Hotel ID and the issuing manager's PIN (D82). The\ncredential is in this response only; a replay of the same request returns\n`device_credential: null` (DECISIONS D23).",
         "operationId": "pair_device_api_v1_devices_pair_post",
         "requestBody": {
           "content": {
@@ -27354,6 +27489,84 @@
           }
         },
         "summary": "Set Staff Roles",
+        "tags": [
+          "staff"
+        ]
+      }
+    },
+    "/api/v1/staff/{user_id}/staff-code": {
+      "delete": {
+        "operationId": "remove_staff_code_api_v1_staff__user_id__staff_code_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Staff Code",
+        "tags": [
+          "staff"
+        ]
+      },
+      "post": {
+        "description": "A new 8-digit staff code for room-service sign-in (D82), shown once. Replaces any\nearlier code.",
+        "operationId": "issue_staff_code_api_v1_staff__user_id__staff_code_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffCodeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Issue Staff Code",
         "tags": [
           "staff"
         ]

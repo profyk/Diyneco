@@ -21,12 +21,14 @@ from app.schemas.staff import (
     InvitationOut,
     RoleCreate,
     RolePatch,
+    StaffCodeOut,
     StaffList,
     StaffMember,
     StaffPatch,
     StaffRoles,
 )
 from app.services import staff as svc
+from app.services import staff_codes
 
 router = APIRouter(tags=["staff"])
 
@@ -66,6 +68,25 @@ async def reset_staff_pin(
     user_id: uuid.UUID, request: Request, uow: Uow, principal: StaffManage, _s: StepUp
 ) -> Response:
     await svc.reset_pin(uow, principal.tenant(request), user_id, principal.permissions)
+    return Response(status_code=204)
+
+
+@router.post("/staff/{user_id}/staff-code", status_code=201, response_model=StaffCodeOut)
+async def issue_staff_code(
+    user_id: uuid.UUID, request: Request, uow: Uow, principal: StaffManage, _s: StepUp
+) -> dict[str, Any]:
+    """A new 8-digit staff code for room-service sign-in (D82), shown once. Replaces any
+    earlier code."""
+    return await staff_codes.issue(
+        state_of(request), uow, principal.tenant(request), user_id, principal.permissions
+    )
+
+
+@router.delete("/staff/{user_id}/staff-code", status_code=204)
+async def remove_staff_code(
+    user_id: uuid.UUID, request: Request, uow: Uow, principal: StaffManage, _s: StepUp
+) -> Response:
+    await staff_codes.revoke(uow, principal.tenant(request), user_id, principal.permissions)
     return Response(status_code=204)
 
 

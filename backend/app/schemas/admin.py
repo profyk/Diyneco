@@ -43,6 +43,7 @@ class AdminHotel(BaseModel):
     id: uuid.UUID
     name: str
     slug: str
+    code: str  # Hotel ID (D82)
     status: str
     status_reason: str | None
     created_at: datetime

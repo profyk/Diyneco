@@ -20,7 +20,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
 import { label, useAction } from "../common";
-import { useSession } from "../session";
+import { useMe, useSession } from "../session";
 
 type DeviceAction = "lock" | "unlock" | "reset" | "disable";
 
@@ -50,14 +50,14 @@ export function Devices() {
       <PageHeader
         title="Devices"
         description="Room tablets and kitchen displays. A tablet belongs to one room; unpairing stops it at once."
-        actions={can("devices.manage") ? <Button onClick={() => setPairing(true)}>Pair a device</Button> : null}
+        actions={can("devices.manage") ? <Button onClick={() => setPairing(true)}>Set up a device</Button> : null}
       />
       {act.error || unpair.error ? <ErrorNotice error={act.error ?? unpair.error} className="mb-4" /> : null}
       <Card>
         {devices.isLoading ? (
           <Skeleton className="m-5 h-10" />
         ) : !devices.data?.data.length ? (
-          <EmptyState title="No devices yet" body="Pair a room tablet or a kitchen display with a 6-digit code." />
+          <EmptyState title="No devices yet" body="Set up a room tablet or a kitchen display with your Hotel ID, an 8-digit setup code and your PIN." />
         ) : (
           <Table>
             <thead>
@@ -136,6 +136,7 @@ export function Devices() {
 
 function PairDialog({ onClose }: { onClose: () => void }) {
   const { api } = useSession();
+  const { me } = useMe();
   const [type, setType] = useState<"guest" | "kitchen">("guest");
   const [roomId, setRoomId] = useState("");
   const [stationId, setStationId] = useState("");
@@ -160,12 +161,22 @@ function PairDialog({ onClose }: { onClose: () => void }) {
   const secondsLeft = code ? Math.max(0, Math.round((new Date(code.expires_at).getTime() - now) / 1000)) : 0;
 
   return (
-    <Dialog open onClose={onClose} title="Pair a device" description="Open the Diyneco app on the device and enter the code.">
+    <Dialog
+      open
+      onClose={onClose}
+      title="Set up a device"
+      description="Open the Diyneco app on the device and enter the Hotel ID, the setup code and your PIN."
+    >
       {code && secondsLeft > 0 ? (
         <div className="text-center">
-          <p className="font-mono text-5xl font-semibold tracking-[0.3em] text-ink">{code.code}</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">Hotel ID</p>
+          <p className="mt-1 font-mono text-2xl font-semibold tracking-wider text-ink">{code.hotel_code}</p>
+          <p className="mt-5 text-xs font-semibold uppercase tracking-[0.2em] text-muted">Setup code</p>
+          <p className="mt-1 font-mono text-5xl font-semibold tracking-[0.2em] text-ink">
+            {code.code.slice(0, 4)} {code.code.slice(4)}
+          </p>
           <p className="mt-3 text-sm text-muted">
-            Valid for {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, "0")}. It works once.
+            Valid for {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, "0")}. It works once, with your PIN.
           </p>
           <Button className="mt-5" variant="secondary" onClick={onClose}>
             Done
@@ -173,6 +184,15 @@ function PairDialog({ onClose }: { onClose: () => void }) {
         </div>
       ) : (
         <div className="flex flex-col gap-4">
+          {!me.has_pin ? (
+            <p className="rounded-lg border border-line bg-surface-2 px-3 py-2 text-sm text-ink">
+              You have no PIN yet. The device asks for your PIN, so set one in{" "}
+              <a className="text-blue hover:underline" href="/account">
+                My account
+              </a>{" "}
+              first.
+            </p>
+          ) : null}
           <Field label="Device">
             {(p) => (
               <Select {...p} value={type} onChange={(e) => setType(e.target.value as "guest" | "kitchen")}>
@@ -214,7 +234,7 @@ function PairDialog({ onClose }: { onClose: () => void }) {
             loading={create.isPending}
             onClick={() => create.mutate(undefined)}
           >
-            Create pairing code
+            Create setup code
           </Button>
         </div>
       )}

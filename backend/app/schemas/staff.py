@@ -29,6 +29,7 @@ class StaffMember(BaseModel):
     status: Literal["active", "deactivated"]
     roles: list[RoleRef]
     has_pin: bool
+    has_staff_code: bool
     mfa_enabled: bool
     last_sign_in_at: datetime | None
     joined_at: datetime
@@ -37,6 +38,11 @@ class StaffMember(BaseModel):
 class StaffList(BaseModel):
     data: list[StaffMember]
     next_cursor: str | None = None
+
+
+class StaffCodeOut(BaseModel):
+    staff_code: str = Field(description="Shown once. Issuing again replaces it.")
+    hotel_code: str
 
 
 class StaffPatch(StrictModel):

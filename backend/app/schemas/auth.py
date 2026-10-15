@@ -8,6 +8,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, StringConstraints, model_validator
 
+from app.core.hotel_code import HotelCode
 from app.schemas.common import Name, StrictModel
 
 Password = Annotated[str, StringConstraints(min_length=1, max_length=256, strip_whitespace=False)]
@@ -22,6 +23,14 @@ class LoginRequest(StrictModel):
     email: LoginEmail
     password: Password
     hotel_id: uuid.UUID | None = None  # pick one of the caller's hotels (DECISIONS G11)
+
+
+class StaffCodeLoginRequest(StrictModel):
+    """Room-service sign-in (D82): Hotel ID, the member's 8-digit staff code and their PIN."""
+
+    hotel_code: HotelCode
+    staff_code: Annotated[str, StringConstraints(pattern=r"^\d{8}$")]
+    pin: Pin
 
 
 class PlatformLoginRequest(StrictModel):
@@ -123,6 +132,7 @@ class MfaConfirmResponse(TokenResponse):
 class MeHotel(BaseModel):
     id: uuid.UUID
     name: str
+    code: str  # the Hotel ID staff type on tablets and in room service (D82)
     status: str
     currency: str
     locale: str  # BCP 47; apps format numbers, dates and money with it (D69)
@@ -141,6 +151,7 @@ class MeOut(BaseModel):
     permissions: list[str]
     mfa: bool
     mfa_pending: bool
+    has_pin: bool = False  # the signed-in member has a PIN at this hotel
 
 
 class StepUpResponse(BaseModel):

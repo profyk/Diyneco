@@ -8,7 +8,7 @@ from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import text
 
-from tests.factories import PIN
+from tests.factories import PIN, pair_body
 
 
 def idem() -> dict[str, str]:
@@ -20,14 +20,14 @@ def zar(n: int) -> dict:
 
 
 async def _display(client, gm, station_ids) -> dict[str, str]:
-    code = (
+    pairing = (
         await client.post(
             "/devices/pairings",
             json={"type": "kitchen", "station_ids": [str(s) for s in station_ids]},
             headers={**gm, **idem()},
         )
-    ).json()["code"]
-    cred = (await client.post("/devices/pair", json={"code": code}, headers=idem())).json()[
+    ).json()
+    cred = (await client.post("/devices/pair", json=pair_body(pairing), headers=idem())).json()[
         "device_credential"
     ]
     token = (await client.post("/devices/token", json={"device_credential": cred})).json()["access_token"]
@@ -185,8 +185,8 @@ async def test_sign_in_rules(client, factory):
             json={"type": "guest", "room_id": str(hotel.room_ids[0])},
             headers={**gm, **idem()},
         )
-    ).json()["code"]
-    gcred = (await client.post("/devices/pair", json={"code": guest_code}, headers=idem())).json()[
+    ).json()
+    gcred = (await client.post("/devices/pair", json=pair_body(guest_code), headers=idem())).json()[
         "device_credential"
     ]
     tablet = {
