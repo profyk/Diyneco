@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import uuid
-from datetime import date
-from typing import Annotated
+from datetime import date, datetime
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, Field, StringConstraints
 
@@ -72,6 +72,52 @@ class PortfolioTotals(BaseModel):
 class PortfolioOut(BaseModel):
     data: list[PortfolioHotel]
     totals: PortfolioTotals
+
+
+class StatementInvoice(BaseModel):
+    hotel_id: uuid.UUID
+    hotel_name: str
+    invoice_id: uuid.UUID
+    number: str | None
+    status: str
+    issued_at: datetime | None
+    due_on: date | None
+    currency: str
+    total: SignedMoney
+    balance: SignedMoney
+
+
+class GroupPaymentOut(BaseModel):
+    id: uuid.UUID
+    provider: str
+    test_mode: bool
+    amount: SignedMoney
+    paid: SignedMoney | None
+    unallocated: SignedMoney  # received beyond what the invoices still owed; refunded by Diyneco
+    status: Literal["pending", "succeeded", "failed", "cancelled", "expired"]
+    failure_reason: str | None
+    checkout_url: str | None
+    created_at: datetime
+    completed_at: datetime | None
+
+
+class GroupCheckoutOut(GroupPaymentOut):
+    invoices: int
+
+
+class GroupStatement(BaseModel):
+    """Every open invoice of the owner's properties, what is due per currency (D89)."""
+
+    invoices: list[StatementInvoice]
+    due: list[SignedMoney]
+    payments: list[GroupPaymentOut]
+    options: dict[str, Any]
+    group_discount_bp: int
+    group_discount_min_properties: int
+
+
+class GroupPayRequest(StrictModel):
+    currency: Annotated[str, StringConstraints(pattern=r"^[A-Z]{3}$")]
 
 
 class TrialGrant(StrictModel):

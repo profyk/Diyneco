@@ -1,10 +1,25 @@
 "use client";
 
 import { formatDate, formatMoney, ok } from "@diyneco/api-client";
-import { Badge, Button, Card, EmptyState, ErrorNotice, PageHeader, propertyTypeLabel, Skeleton, StatTile } from "@diyneco/shared-ui";
+import {
+  Badge,
+  Button,
+  Card,
+  CardHeader,
+  EmptyState,
+  ErrorNotice,
+  PageHeader,
+  propertyTypeLabel,
+  Skeleton,
+  StatTile,
+  Table,
+  Td,
+  Th,
+} from "@diyneco/shared-ui";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 
+import { useAction } from "../common";
 import { useSession } from "../session";
 
 // Every property the owner holds, side by side (D86). Each figure comes from that hotel's own
@@ -135,6 +150,106 @@ export function Properties() {
           )}
         </>
       ) : null}
+      <GroupBilling />
     </>
+  );
+}
+
+/** Every property's open invoices and one payment for them all (D89). */
+function GroupBilling() {
+  const { api } = useSession();
+  const q = useQuery({ queryKey: ["group-statement"], queryFn: () => ok(api.GET("/api/v1/portfolio/billing")) });
+  const pay = useAction(
+    (currency: string) => ok(api.POST("/api/v1/portfolio/payments", { body: { currency } })),
+    { onDone: (g) => window.location.assign(g.checkout_url ?? "/properties") },
+  );
+  if (!q.data) return q.error ? <ErrorNotice error={q.error} className="mt-6" /> : null;
+  const s = q.data;
+  const online = (s.options.online as { available?: boolean; label?: string } | undefined) ?? {};
+  const eft = (s.options.eft as { available?: boolean; bank?: Record<string, string>; instructions?: string | null } | undefined) ?? {};
+  return (
+    <Card className="mt-8">
+      <CardHeader
+        title="Billing for all properties"
+        description="Each property keeps its own tax invoice. Pay them together in one payment, split across the invoices."
+      />
+      {s.group_discount_bp > 0 ? (
+        <p className="mx-5 mt-4 rounded-lg bg-good-bg px-4 py-2 text-sm text-good">
+          Owners with {s.group_discount_min_properties} or more paid properties get {s.group_discount_bp / 100}% off each property&apos;s plan.
+        </p>
+      ) : null}
+      {s.invoices.length === 0 ? (
+        <EmptyState title="Nothing due" body="Every property's invoices are paid." />
+      ) : (
+        <>
+          <Table>
+            <thead>
+              <tr>
+                <Th>Property</Th>
+                <Th>Invoice</Th>
+                <Th>Due</Th>
+                <Th className="text-right">Balance</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {s.invoices.map((i) => (
+                <tr key={i.invoice_id}>
+                  <Td>{i.hotel_name}</Td>
+                  <Td className="font-mono text-xs">
+                    {i.number} {i.status === "overdue" ? <Badge tone="crit">Overdue</Badge> : null}
+                  </Td>
+                  <Td className="text-muted">{i.due_on ? formatDate(i.due_on) : "–"}</Td>
+                  <Td className="text-right tabular-nums">{formatMoney(i.balance)}</Td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+          <div className="flex flex-wrap items-center gap-3 p-5">
+            {s.due.map((d) => (
+              <Button key={d.currency} disabled={!online.available} loading={pay.isPending} onClick={() => pay.mutate(d.currency)}>
+                Pay {formatMoney(d)} for all
+              </Button>
+            ))}
+            {online.available ? (
+              <span className="text-xs text-muted">{online.label}</span>
+            ) : (
+              <span className="text-sm text-muted">Online payment is not available yet; pay by bank transfer.</span>
+            )}
+          </div>
+          {pay.error ? <ErrorNotice error={pay.error} className="mx-5 mb-4" /> : null}
+          {eft.available && eft.bank ? (
+            <div className="mx-5 mb-5 rounded-lg border border-line p-4 text-sm">
+              <p className="font-medium text-ink">Bank transfer (EFT)</p>
+              <p className="mt-1 text-muted">
+                {Object.entries(eft.bank)
+                  .map(([k, v]) => `${k.replace(/_/g, " ")}: ${v}`)
+                  .join(" · ")}
+              </p>
+              <p className="mt-1 text-muted">Pay each invoice with its own number as the reference, so each property is credited.</p>
+            </div>
+          ) : null}
+        </>
+      )}
+      {s.payments.length ? (
+        <div className="border-t border-line p-5">
+          <p className="mb-2 text-sm font-medium text-ink">Recent payments for all properties</p>
+          <ul className="flex flex-col gap-1 text-sm">
+            {s.payments.map((g) => (
+              <li key={g.id} className="flex flex-wrap items-center gap-2">
+                <span className="text-muted">{formatDate(g.created_at)}</span>
+                <span className="tabular-nums">{formatMoney(g.paid ?? g.amount)}</span>
+                <Badge tone={g.status === "succeeded" ? "good" : g.status === "pending" ? "info" : "crit"}>{g.status}</Badge>
+                {g.test_mode ? <Badge tone="warn">Test</Badge> : null}
+                {g.status === "pending" ? (
+                  <Link href={`/billing/return?group=${g.id}`} className="text-blue hover:underline">
+                    Check
+                  </Link>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </Card>
   );
 }

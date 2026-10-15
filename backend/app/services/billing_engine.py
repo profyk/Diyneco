@@ -514,15 +514,19 @@ async def _renew(
             )
         assert plan is not None  # noqa: S101
         ends = period_end(starts, interval, sub.anchor_day)
+        # The group discount (D89) as it stands when the renewal is invoiced.
+        group_bp = await sub_service.group_discount_bp(uow, ctx)
         draft = await sub_invoices.create_draft(
             uow,
             ctx,
             lines=[
                 {
                     "code": "subscription",
-                    "description": _line(plan, interval, starts, ends),
+                    "description": _line(plan, interval, starts, ends)
+                    + (f" (group discount {group_bp / 100:g}%)" if group_bp else ""),
                     "quantity": 1,
                     "unit_amount_minor": amount,
+                    "discount_minor": div_half_up(amount * group_bp, 10000) if group_bp else 0,
                 }
             ],
             currency=sub.currency,

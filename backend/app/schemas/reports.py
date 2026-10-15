@@ -342,6 +342,7 @@ class QuoteOut(BaseModel):
     renews_at_minor: int
     intro_periods: int | None
     trial_days: int
+    group_discount_bp: int = 0  # included in the subscription line's discount (D89)
 
 
 class CancelRequest(StrictModel):

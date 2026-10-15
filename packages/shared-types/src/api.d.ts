@@ -3376,6 +3376,87 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/portfolio/billing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Group Statement
+         * @description Every open invoice across the caller's properties and what is due per currency (D89).
+         */
+        get: operations["group_statement_api_v1_portfolio_billing_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/portfolio/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pay All
+         * @description One checkout for the balance of every open invoice in a currency across the caller's
+         *     properties. Each property keeps its own invoice and receives its own share.
+         */
+        post: operations["pay_all_api_v1_portfolio_payments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/portfolio/payments/{group_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Check Group Payment
+         * @description The group payment as the provider reports it now (asked on the server).
+         */
+        get: operations["check_group_payment_api_v1_portfolio_payments__group_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/portfolio/payments/{group_id}/sandbox": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Group Sandbox
+         * @description Test mode only (never in production): finishes a sandbox group checkout; no money moves.
+         */
+        post: operations["group_sandbox_api_v1_portfolio_payments__group_id__sandbox_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/reports/daily-close": {
         parameters: {
             query?: never;
@@ -5434,6 +5515,10 @@ export interface components {
             eft_enabled: boolean;
             /** Grace Days */
             grace_days: number;
+            /** Group Discount Bp */
+            group_discount_bp: number;
+            /** Group Discount Min Properties */
+            group_discount_min_properties: number;
             /** Price Change Notice Days */
             price_change_notice_days: number;
             /** Proration Enabled */
@@ -5468,6 +5553,10 @@ export interface components {
             eft_enabled?: boolean | null;
             /** Grace Days */
             grace_days?: number | null;
+            /** Group Discount Bp */
+            group_discount_bp?: number | null;
+            /** Group Discount Min Properties */
+            group_discount_min_properties?: number | null;
             /** Price Change Notice Days */
             price_change_notice_days: number;
             /** Proration Enabled */
@@ -6651,6 +6740,95 @@ export interface components {
             label: string;
             /** Step */
             step: string;
+        };
+        /** GroupCheckoutOut */
+        GroupCheckoutOut: {
+            amount: components["schemas"]["SignedMoney"];
+            /** Checkout Url */
+            checkout_url: string | null;
+            /** Completed At */
+            completed_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Failure Reason */
+            failure_reason: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Invoices */
+            invoices: number;
+            paid: components["schemas"]["SignedMoney"] | null;
+            /** Provider */
+            provider: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "succeeded" | "failed" | "cancelled" | "expired";
+            /** Test Mode */
+            test_mode: boolean;
+            unallocated: components["schemas"]["SignedMoney"];
+        };
+        /** GroupPayRequest */
+        GroupPayRequest: {
+            /** Currency */
+            currency: string;
+        };
+        /** GroupPaymentOut */
+        GroupPaymentOut: {
+            amount: components["schemas"]["SignedMoney"];
+            /** Checkout Url */
+            checkout_url: string | null;
+            /** Completed At */
+            completed_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Failure Reason */
+            failure_reason: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            paid: components["schemas"]["SignedMoney"] | null;
+            /** Provider */
+            provider: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "succeeded" | "failed" | "cancelled" | "expired";
+            /** Test Mode */
+            test_mode: boolean;
+            unallocated: components["schemas"]["SignedMoney"];
+        };
+        /**
+         * GroupStatement
+         * @description Every open invoice of the owner's properties, what is due per currency (D89).
+         */
+        GroupStatement: {
+            /** Due */
+            due: components["schemas"]["SignedMoney"][];
+            /** Group Discount Bp */
+            group_discount_bp: number;
+            /** Group Discount Min Properties */
+            group_discount_min_properties: number;
+            /** Invoices */
+            invoices: components["schemas"]["StatementInvoice"][];
+            /** Options */
+            options: {
+                [key: string]: unknown;
+            };
+            /** Payments */
+            payments: components["schemas"]["GroupPaymentOut"][];
         };
         /** GuestCreate */
         GuestCreate: {
@@ -9494,6 +9672,11 @@ export interface components {
             /** Currency */
             currency: string;
             /**
+             * Group Discount Bp
+             * @default 0
+             */
+            group_discount_bp: number;
+            /**
              * Interval
              * @enum {string}
              */
@@ -10434,6 +10617,33 @@ export interface components {
             label: string;
             /** Value */
             value: string;
+        };
+        /** StatementInvoice */
+        StatementInvoice: {
+            balance: components["schemas"]["SignedMoney"];
+            /** Currency */
+            currency: string;
+            /** Due On */
+            due_on: string | null;
+            /**
+             * Hotel Id
+             * Format: uuid
+             */
+            hotel_id: string;
+            /** Hotel Name */
+            hotel_name: string;
+            /**
+             * Invoice Id
+             * Format: uuid
+             */
+            invoice_id: string;
+            /** Issued At */
+            issued_at: string | null;
+            /** Number */
+            number: string | null;
+            /** Status */
+            status: string;
+            total: components["schemas"]["SignedMoney"];
         };
         /** StationCreate */
         StationCreate: {
@@ -18458,6 +18668,125 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PortfolioOut"];
+                };
+            };
+        };
+    };
+    group_statement_api_v1_portfolio_billing_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupStatement"];
+                };
+            };
+        };
+    };
+    pay_all_api_v1_portfolio_payments_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GroupPayRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupCheckoutOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    check_group_payment_api_v1_portfolio_payments__group_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                group_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupPaymentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    group_sandbox_api_v1_portfolio_payments__group_id__sandbox_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                group_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SandboxOutcome"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupPaymentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

@@ -539,6 +539,8 @@ function Collections() {
             proration_enabled: Boolean(v.proration_enabled),
             card_provider: v.card_provider as "none" | "sandbox" | "stitch",
             eft_enabled: Boolean(v.eft_enabled),
+            group_discount_bp: Math.round(Number(v.group_discount_pct) * 100),
+            group_discount_min_properties: Number(v.group_discount_min_properties),
           },
         }),
       );
@@ -603,6 +605,23 @@ function Collections() {
               <Input {...f} type="number" min={0} max={60} value={String(cur.renewal_lead_days)} onChange={(e) => set("renewal_lead_days", e.target.value)} />
             )}
           </Field>
+          <Field label="Group discount (%)" hint="Off at 0. On each property's plan, first and renewal invoices.">
+            {(f) => (
+              <Input {...f} type="number" min={0} max={50} step={0.5} value={String(cur.group_discount_pct)} onChange={(e) => set("group_discount_pct", e.target.value)} />
+            )}
+          </Field>
+          <Field label="… for owners with at least this many paid properties">
+            {(f) => (
+              <Input
+                {...f}
+                type="number"
+                min={2}
+                max={100}
+                value={String(cur.group_discount_min_properties)}
+                onChange={(e) => set("group_discount_min_properties", e.target.value)}
+              />
+            )}
+          </Field>
           <div className="flex flex-col gap-2 sm:col-span-2">
             {check("eft_enabled", "Offer bank transfer (EFT) with Diyneco's bank details")}
             {check("suspend_after_grace", "Suspend a subscription still unpaid after the grace period")}
@@ -633,8 +652,12 @@ function base(d: {
   proration_enabled: boolean;
   card_provider: string;
   eft_enabled: boolean;
+  group_discount_bp: number;
+  group_discount_min_properties: number;
 }): Record<string, string | boolean> {
   return {
+    group_discount_pct: String(d.group_discount_bp / 100),
+    group_discount_min_properties: String(d.group_discount_min_properties),
     reminder_offsets: d.reminder_offsets.join(", "),
     grace_days: String(d.grace_days),
     renewal_lead_days: String(d.renewal_lead_days),

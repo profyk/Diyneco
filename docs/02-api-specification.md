@@ -78,6 +78,10 @@ A new owner signs up, creates a hotel, and the onboarding wizard tracks which of
 | POST | `/signup` | none | — | Idem | Owner account + hotel in one call; sends verification email with a 6-digit code. Only operational countries; no currency asked (the country's); property type, rooms, website, address, the country's time zone and the owner's mobile (D84) |
 | GET | `/countries` | none | — | — | Countries open for signups (operational, D84) with currency, every time zone, dialling code and tax defaults |
 | POST | `/hotels` | staff | Hotel Owner of any hotel + Step-up | Idem | `{hotel, accepted_documents}`: an owner adds another property; it starts with no subscription (the trial is once per owner) (D86) |
+| GET | `/portfolio/billing` | staff | Hotel Owner | — | Open invoices of every owned property, due per currency, recent group payments, payment options, group discount (D89) |
+| POST | `/portfolio/payments` | staff | Hotel Owner | Idem | `{currency}`: one checkout for every open invoice in that currency; each property gets its own share (D89) |
+| GET | `/portfolio/payments/{id}` | staff | the owner who started it | — | Status as the provider reports it now (D89) |
+| POST | `/portfolio/payments/{id}/sandbox` | staff | the owner who started it | Idem | Test mode only: finish a sandbox group checkout (D89) |
 | GET | `/portfolio` | staff | Hotel Owner | — | Every hotel the caller owns: status, plan, occupancy, stays, orders, staff, revenue today and this month; totals per currency (D86) |
 | GET | `/admin/insights` | platform | `platform.metrics` | — | `?since&until` (≤ 1 year): adoption totals, signups per day, activation funnel, trial conversion, churn, MRR won/lost, cohorts, breakdowns by country/province/category, staff activity; aggregates only (D87) |
 | GET | `/admin/owners` | platform | `platform.tenants.read` | — | Every Hotel Owner with their properties, rooms, MRR and money processed (D87) |

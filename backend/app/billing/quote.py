@@ -45,9 +45,13 @@ def quote(
     first_subscription: bool,
     tax: dict[str, Any],
     start: date,
+    group_discount_bp: int = 0,
 ) -> dict[str, Any]:
     price = intro_amount_minor if intro_amount_minor is not None else amount_minor
+    # A live promotion and the group discount (D89) add up, each on the price, never past it.
     discount = div_half_up(price * promo_discount_bp, 10000) if promo_discount_bp else 0
+    discount += div_half_up(price * group_discount_bp, 10000) if group_discount_bp else 0
+    discount = min(discount, price)
     lines = [Line("subscription", f"{plan_name}, {INTERVAL_NAMES[interval]}", price, discount)]
     if first_subscription and setup_fee_minor:
         lines.append(Line("setup_fee", "One-time setup fee", setup_fee_minor))
@@ -83,4 +87,5 @@ def quote(
         "period_start": start,
         "period_end": period_end(start, interval, start.day),
         "renews_at_minor": amount_minor,
+        "group_discount_bp": group_discount_bp,
     }

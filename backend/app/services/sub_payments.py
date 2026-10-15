@@ -649,10 +649,15 @@ async def stitch_webhook(
         else None
     )
     if hotel_id is None:
+        # Perhaps one checkout for several invoices of an owner (D89).
+        from app.services import group_billing  # noqa: PLC0415 - group_billing imports this module
+
+        group_status = await group_billing.from_webhook(deps, uow, ref) if ref else None
+        outcome = f"group {group_status}" if group_status else "ignored: no matching payment"
         await uow.session.execute(
-            text("SELECT app.billing_webhook_done(:i, 'ignored: no matching payment', NULL)"), {"i": rec.id}
+            text("SELECT app.billing_webhook_done(:i, :o, NULL)"), {"i": rec.id, "o": outcome}
         )
-        return {"status": "ignored"}
+        return {"status": group_status or "ignored"}
     await set_tenant(uow.session, hotel_id)
     ctx = TenantContext(hotel_id=hotel_id, actor_type="system", actor_id=None, actor_label="Stitch webhook")
     attempt = (

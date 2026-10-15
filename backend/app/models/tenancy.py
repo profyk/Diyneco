@@ -99,6 +99,8 @@ class BillingSettings(Base):
     proration_enabled: Mapped[bool]
     card_provider: Mapped[str]
     eft_enabled: Mapped[bool]
+    group_discount_bp: Mapped[int] = mapped_column(Integer, server_default=text("0"))  # D89
+    group_discount_min_properties: Mapped[int] = mapped_column(Integer, server_default=text("3"))
     version: Mapped[int] = mapped_column(Integer, server_default=text("1"))
     updated_at: Mapped[datetime] = _updated()
     updated_by: Mapped[uuid.UUID | None]
@@ -559,6 +561,28 @@ class SubscriptionPaymentAttempt(Base):
     status: Mapped[str] = mapped_column(server_default=text("'pending'"))
     failure_reason: Mapped[str | None]
     created_by: Mapped[uuid.UUID | None]
+    created_at: Mapped[datetime] = _created()
+    updated_at: Mapped[datetime] = _updated()
+    completed_at: Mapped[datetime | None]
+    group_payment_id: Mapped[uuid.UUID | None]  # this invoice's share of a group payment (D89)
+
+
+class GroupPayment(Base):
+    """One provider checkout for several of an owner's open invoices (D89, control plane)."""
+
+    __tablename__ = "group_payments"
+    id: Mapped[uuid.UUID] = _pk()
+    owner_user_id: Mapped[uuid.UUID]
+    provider: Mapped[str]
+    test_mode: Mapped[bool]
+    currency: Mapped[str] = mapped_column(CHAR(3))
+    amount_minor: Mapped[int] = mapped_column(BigInteger)
+    paid_minor: Mapped[int | None] = mapped_column(BigInteger)
+    unallocated_minor: Mapped[int] = mapped_column(BigInteger, server_default=text("0"))
+    provider_ref: Mapped[str | None]
+    checkout_url: Mapped[str | None]
+    status: Mapped[str] = mapped_column(server_default=text("'pending'"))
+    failure_reason: Mapped[str | None]
     created_at: Mapped[datetime] = _created()
     updated_at: Mapped[datetime] = _updated()
     completed_at: Mapped[datetime | None]

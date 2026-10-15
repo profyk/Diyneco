@@ -17,7 +17,14 @@ from app.billing.quote import quote as compute_quote
 from app.core.countries import tax_id_ok
 from app.core.errors import AppError
 from app.db.session import TenantContext, UnitOfWork
-from app.models.tenancy import Plan, PlanPrice, Subscription, SubscriptionBillingContact, SubscriptionInvoice
+from app.models.tenancy import (
+    BillingSettings,
+    Plan,
+    PlanPrice,
+    Subscription,
+    SubscriptionBillingContact,
+    SubscriptionInvoice,
+)
 from app.realtime.outbox import emit
 from app.repositories.hotels import CURRENT_STATUSES, HotelRepository
 from app.services import catalogue, company, sub_invoices
@@ -132,6 +139,18 @@ async def _published(uow: UnitOfWork, code: str) -> Plan:
     return plan
 
 
+async def group_discount_bp(uow: UnitOfWork, ctx: TenantContext) -> int:
+    """The group discount for this hotel (D89): when an owner of it holds at least the set
+    number of paid properties (this one counted), the discount in Billing settings; else 0."""
+    s = (await uow.session.execute(select(BillingSettings))).scalar_one()
+    if not s.group_discount_bp:
+        return 0
+    size = (
+        await uow.session.execute(text("SELECT app.owner_portfolio_size(:h)"), {"h": ctx.hotel_id})
+    ).scalar_one()
+    return s.group_discount_bp if int(size) >= s.group_discount_min_properties else 0
+
+
 async def quote(uow: UnitOfWork, ctx: TenantContext, plan_code: str, interval: str) -> dict[str, Any]:
     """What the hotel would pay for a published plan today; nothing is stored or charged."""
     plan = await _published(uow, plan_code)
@@ -161,6 +180,7 @@ async def quote(uow: UnitOfWork, ctx: TenantContext, plan_code: str, interval: s
         first_subscription=paid_before is None,
         tax=await company.tax_on(uow, today, settings),
         start=today,
+        group_discount_bp=await group_discount_bp(uow, ctx),
     )
     return {
         **out,

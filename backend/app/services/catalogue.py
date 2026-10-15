@@ -490,6 +490,8 @@ SETTINGS_FIELDS = (
     "proration_enabled",
     "card_provider",
     "eft_enabled",
+    "group_discount_bp",
+    "group_discount_min_properties",
 )
 
 

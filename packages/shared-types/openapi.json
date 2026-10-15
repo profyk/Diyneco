@@ -2549,6 +2549,14 @@
             "title": "Grace Days",
             "type": "integer"
           },
+          "group_discount_bp": {
+            "title": "Group Discount Bp",
+            "type": "integer"
+          },
+          "group_discount_min_properties": {
+            "title": "Group Discount Min Properties",
+            "type": "integer"
+          },
           "price_change_notice_days": {
             "title": "Price Change Notice Days",
             "type": "integer"
@@ -2609,6 +2617,8 @@
           "proration_enabled",
           "card_provider",
           "eft_enabled",
+          "group_discount_bp",
+          "group_discount_min_properties",
           "version",
           "updated_at"
         ],
@@ -2657,6 +2667,32 @@
               }
             ],
             "title": "Grace Days"
+          },
+          "group_discount_bp": {
+            "anyOf": [
+              {
+                "maximum": 5000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Discount Bp"
+          },
+          "group_discount_min_properties": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 2.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Discount Min Properties"
           },
           "price_change_notice_days": {
             "maximum": 365.0,
@@ -6324,6 +6360,271 @@
           "hotels"
         ],
         "title": "FunnelStep",
+        "type": "object"
+      },
+      "GroupCheckoutOut": {
+        "properties": {
+          "amount": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "checkout_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checkout Url"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "failure_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Reason"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "invoices": {
+            "title": "Invoices",
+            "type": "integer"
+          },
+          "paid": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SignedMoney"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "succeeded",
+              "failed",
+              "cancelled",
+              "expired"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "test_mode": {
+            "title": "Test Mode",
+            "type": "boolean"
+          },
+          "unallocated": {
+            "$ref": "#/components/schemas/SignedMoney"
+          }
+        },
+        "required": [
+          "id",
+          "provider",
+          "test_mode",
+          "amount",
+          "paid",
+          "unallocated",
+          "status",
+          "failure_reason",
+          "checkout_url",
+          "created_at",
+          "completed_at",
+          "invoices"
+        ],
+        "title": "GroupCheckoutOut",
+        "type": "object"
+      },
+      "GroupPayRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "currency": {
+            "pattern": "^[A-Z]{3}$",
+            "title": "Currency",
+            "type": "string"
+          }
+        },
+        "required": [
+          "currency"
+        ],
+        "title": "GroupPayRequest",
+        "type": "object"
+      },
+      "GroupPaymentOut": {
+        "properties": {
+          "amount": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "checkout_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checkout Url"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "failure_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Reason"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "paid": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SignedMoney"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "succeeded",
+              "failed",
+              "cancelled",
+              "expired"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "test_mode": {
+            "title": "Test Mode",
+            "type": "boolean"
+          },
+          "unallocated": {
+            "$ref": "#/components/schemas/SignedMoney"
+          }
+        },
+        "required": [
+          "id",
+          "provider",
+          "test_mode",
+          "amount",
+          "paid",
+          "unallocated",
+          "status",
+          "failure_reason",
+          "checkout_url",
+          "created_at",
+          "completed_at"
+        ],
+        "title": "GroupPaymentOut",
+        "type": "object"
+      },
+      "GroupStatement": {
+        "description": "Every open invoice of the owner's properties, what is due per currency (D89).",
+        "properties": {
+          "due": {
+            "items": {
+              "$ref": "#/components/schemas/SignedMoney"
+            },
+            "title": "Due",
+            "type": "array"
+          },
+          "group_discount_bp": {
+            "title": "Group Discount Bp",
+            "type": "integer"
+          },
+          "group_discount_min_properties": {
+            "title": "Group Discount Min Properties",
+            "type": "integer"
+          },
+          "invoices": {
+            "items": {
+              "$ref": "#/components/schemas/StatementInvoice"
+            },
+            "title": "Invoices",
+            "type": "array"
+          },
+          "options": {
+            "additionalProperties": true,
+            "title": "Options",
+            "type": "object"
+          },
+          "payments": {
+            "items": {
+              "$ref": "#/components/schemas/GroupPaymentOut"
+            },
+            "title": "Payments",
+            "type": "array"
+          }
+        },
+        "required": [
+          "invoices",
+          "due",
+          "payments",
+          "options",
+          "group_discount_bp",
+          "group_discount_min_properties"
+        ],
+        "title": "GroupStatement",
         "type": "object"
       },
       "GuestCreate": {
@@ -15028,6 +15329,11 @@
             "title": "Currency",
             "type": "string"
           },
+          "group_discount_bp": {
+            "default": 0,
+            "title": "Group Discount Bp",
+            "type": "integer"
+          },
           "interval": {
             "enum": [
               "month",
@@ -17985,6 +18291,87 @@
           "label"
         ],
         "title": "StatItem",
+        "type": "object"
+      },
+      "StatementInvoice": {
+        "properties": {
+          "balance": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "due_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due On"
+          },
+          "hotel_id": {
+            "format": "uuid",
+            "title": "Hotel Id",
+            "type": "string"
+          },
+          "hotel_name": {
+            "title": "Hotel Name",
+            "type": "string"
+          },
+          "invoice_id": {
+            "format": "uuid",
+            "title": "Invoice Id",
+            "type": "string"
+          },
+          "issued_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Issued At"
+          },
+          "number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Number"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "total": {
+            "$ref": "#/components/schemas/SignedMoney"
+          }
+        },
+        "required": [
+          "hotel_id",
+          "hotel_name",
+          "invoice_id",
+          "number",
+          "status",
+          "issued_at",
+          "due_on",
+          "currency",
+          "total",
+          "balance"
+        ],
+        "title": "StatementInvoice",
         "type": "object"
       },
       "StationCreate": {
@@ -31662,6 +32049,168 @@
           }
         },
         "summary": "Portfolio",
+        "tags": [
+          "properties"
+        ]
+      }
+    },
+    "/api/v1/portfolio/billing": {
+      "get": {
+        "description": "Every open invoice across the caller's properties and what is due per currency (D89).",
+        "operationId": "group_statement_api_v1_portfolio_billing_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupStatement"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Group Statement",
+        "tags": [
+          "properties"
+        ]
+      }
+    },
+    "/api/v1/portfolio/payments": {
+      "post": {
+        "description": "One checkout for the balance of every open invoice in a currency across the caller's\nproperties. Each property keeps its own invoice and receives its own share.",
+        "operationId": "pay_all_api_v1_portfolio_payments_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupPayRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupCheckoutOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Pay All",
+        "tags": [
+          "properties"
+        ]
+      }
+    },
+    "/api/v1/portfolio/payments/{group_id}": {
+      "get": {
+        "description": "The group payment as the provider reports it now (asked on the server).",
+        "operationId": "check_group_payment_api_v1_portfolio_payments__group_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Group Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupPaymentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Check Group Payment",
+        "tags": [
+          "properties"
+        ]
+      }
+    },
+    "/api/v1/portfolio/payments/{group_id}/sandbox": {
+      "post": {
+        "description": "Test mode only (never in production): finishes a sandbox group checkout; no money moves.",
+        "operationId": "group_sandbox_api_v1_portfolio_payments__group_id__sandbox_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Group Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SandboxOutcome"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupPaymentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Group Sandbox",
         "tags": [
           "properties"
         ]

@@ -132,6 +132,9 @@ class BillingSettingsOut(BaseModel):
     proration_enabled: bool
     card_provider: Literal["none", "sandbox", "stitch"]
     eft_enabled: bool
+    # Owners with at least this many paid properties get this discount on each plan (D89).
+    group_discount_bp: int
+    group_discount_min_properties: int
     version: int
     updated_at: datetime
 
@@ -155,6 +158,8 @@ class BillingSettingsPut(StrictModel):
     proration_enabled: bool | None = None
     card_provider: Literal["none", "sandbox", "stitch"] | None = None
     eft_enabled: bool | None = None
+    group_discount_bp: Annotated[int, Field(ge=0, le=5000)] | None = None  # D89; 0 switches it off
+    group_discount_min_properties: Annotated[int, Field(ge=2, le=100)] | None = None
 
 
 class PublicPrice(BaseModel):
