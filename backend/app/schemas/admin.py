@@ -52,6 +52,16 @@ class AdminHotel(BaseModel):
     renews_on: date | None
     counts: HotelCounts
     last_activity: datetime | None
+    # Where and what it is, and how it is doing (D87).
+    country: str | None = None
+    province: str | None = None
+    city: str | None = None
+    property_type: str | None = None
+    plan_name: str | None = None
+    activated: bool = False
+    orders_30d: int = 0
+    mrr: SignedMoney | None = None
+    gmv_30d: SignedMoney | None = None
 
 
 class AdminHotelList(BaseModel):

@@ -13,7 +13,9 @@ import { useSession } from "./session";
 
 const NAV: { href: string; label: string; perm: string }[] = [
   { href: "/", label: "Overview", perm: "platform.metrics" },
+  { href: "/insights", label: "Insights", perm: "platform.metrics" },
   { href: "/hotels", label: "Hotels", perm: "platform.tenants.read" },
+  { href: "/owners", label: "Owners", perm: "platform.tenants.read" },
   { href: "/plans", label: "Plans & Pricing", perm: "platform.billing.manage" },
   { href: "/billing", label: "Billing & Invoices", perm: "platform.billing.manage" },
   { href: "/flags", label: "Feature flags", perm: "platform.flags.manage" },

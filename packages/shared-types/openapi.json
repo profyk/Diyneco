@@ -723,9 +723,36 @@
       },
       "AdminHotel": {
         "properties": {
+          "activated": {
+            "default": false,
+            "title": "Activated",
+            "type": "boolean"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
           "code": {
             "title": "Code",
             "type": "string"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
           },
           "counts": {
             "$ref": "#/components/schemas/HotelCounts"
@@ -734,6 +761,16 @@
             "format": "date-time",
             "title": "Created At",
             "type": "string"
+          },
+          "gmv_30d": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SignedMoney"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "id": {
             "format": "uuid",
@@ -752,9 +789,24 @@
             ],
             "title": "Last Activity"
           },
+          "mrr": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SignedMoney"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "orders_30d": {
+            "default": 0,
+            "title": "Orders 30D",
+            "type": "integer"
           },
           "plan": {
             "anyOf": [
@@ -766,6 +818,39 @@
               }
             ],
             "title": "Plan"
+          },
+          "plan_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plan Name"
+          },
+          "property_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Property Type"
+          },
+          "province": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Province"
           },
           "renews_on": {
             "anyOf": [
@@ -2634,6 +2719,75 @@
         "title": "BillingSummary",
         "type": "object"
       },
+      "Breakdown": {
+        "properties": {
+          "activated": {
+            "title": "Activated",
+            "type": "integer"
+          },
+          "active": {
+            "title": "Active",
+            "type": "integer"
+          },
+          "gmv_30d": {
+            "items": {
+              "$ref": "#/components/schemas/SignedMoney"
+            },
+            "title": "Gmv 30D",
+            "type": "array"
+          },
+          "hotels": {
+            "title": "Hotels",
+            "type": "integer"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "mrr": {
+            "items": {
+              "$ref": "#/components/schemas/SignedMoney"
+            },
+            "title": "Mrr",
+            "type": "array"
+          },
+          "orders_30d": {
+            "title": "Orders 30D",
+            "type": "integer"
+          },
+          "paying": {
+            "title": "Paying",
+            "type": "integer"
+          },
+          "rooms": {
+            "title": "Rooms",
+            "type": "integer"
+          },
+          "trials": {
+            "title": "Trials",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "hotels",
+          "active",
+          "activated",
+          "paying",
+          "trials",
+          "rooms",
+          "orders_30d",
+          "mrr",
+          "gmv_30d"
+        ],
+        "title": "Breakdown",
+        "type": "object"
+      },
       "BulkResult": {
         "properties": {
           "created": {
@@ -3529,6 +3683,44 @@
           "tips"
         ],
         "title": "CloseTips",
+        "type": "object"
+      },
+      "Cohort": {
+        "properties": {
+          "activated": {
+            "title": "Activated",
+            "type": "integer"
+          },
+          "closed": {
+            "title": "Closed",
+            "type": "integer"
+          },
+          "in_use_30d": {
+            "title": "In Use 30D",
+            "type": "integer"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          },
+          "paying": {
+            "title": "Paying",
+            "type": "integer"
+          },
+          "signups": {
+            "title": "Signups",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "month",
+          "signups",
+          "activated",
+          "in_use_30d",
+          "paying",
+          "closed"
+        ],
+        "title": "Cohort",
         "type": "object"
       },
       "CompanyLogoUpload": {
@@ -5189,6 +5381,29 @@
         "title": "ForgotPasswordRequest",
         "type": "object"
       },
+      "FunnelStep": {
+        "properties": {
+          "hotels": {
+            "title": "Hotels",
+            "type": "integer"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "step": {
+            "title": "Step",
+            "type": "string"
+          }
+        },
+        "required": [
+          "step",
+          "label",
+          "hotels"
+        ],
+        "title": "FunnelStep",
+        "type": "object"
+      },
       "GuestCreate": {
         "additionalProperties": false,
         "properties": {
@@ -6734,6 +6949,238 @@
           "body"
         ],
         "title": "InfoPage",
+        "type": "object"
+      },
+      "InsightPeriod": {
+        "properties": {
+          "activation_bp": {
+            "title": "Activation Bp",
+            "type": "integer"
+          },
+          "churn_bp": {
+            "title": "Churn Bp",
+            "type": "integer"
+          },
+          "churned": {
+            "title": "Churned",
+            "type": "integer"
+          },
+          "churned_mrr": {
+            "items": {
+              "$ref": "#/components/schemas/SignedMoney"
+            },
+            "title": "Churned Mrr",
+            "type": "array"
+          },
+          "new_mrr": {
+            "items": {
+              "$ref": "#/components/schemas/SignedMoney"
+            },
+            "title": "New Mrr",
+            "type": "array"
+          },
+          "paying_at_start": {
+            "title": "Paying At Start",
+            "type": "integer"
+          },
+          "signups": {
+            "title": "Signups",
+            "type": "integer"
+          },
+          "trial_conversion_bp": {
+            "title": "Trial Conversion Bp",
+            "type": "integer"
+          },
+          "trials_converted": {
+            "title": "Trials Converted",
+            "type": "integer"
+          },
+          "trials_ended": {
+            "title": "Trials Ended",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "signups",
+          "activation_bp",
+          "trials_ended",
+          "trials_converted",
+          "trial_conversion_bp",
+          "paying_at_start",
+          "churned",
+          "churn_bp",
+          "new_mrr",
+          "churned_mrr"
+        ],
+        "title": "InsightPeriod",
+        "type": "object"
+      },
+      "InsightTotals": {
+        "properties": {
+          "activated": {
+            "title": "Activated",
+            "type": "integer"
+          },
+          "active": {
+            "title": "Active",
+            "type": "integer"
+          },
+          "gmv_30d": {
+            "items": {
+              "$ref": "#/components/schemas/SignedMoney"
+            },
+            "title": "Gmv 30D",
+            "type": "array"
+          },
+          "hotels": {
+            "title": "Hotels",
+            "type": "integer"
+          },
+          "in_use_30d": {
+            "title": "In Use 30D",
+            "type": "integer"
+          },
+          "mrr": {
+            "items": {
+              "$ref": "#/components/schemas/SignedMoney"
+            },
+            "title": "Mrr",
+            "type": "array"
+          },
+          "multi_property_owners": {
+            "title": "Multi Property Owners",
+            "type": "integer"
+          },
+          "no_plan": {
+            "title": "No Plan",
+            "type": "integer"
+          },
+          "owners": {
+            "title": "Owners",
+            "type": "integer"
+          },
+          "paying": {
+            "title": "Paying",
+            "type": "integer"
+          },
+          "pending_approval": {
+            "title": "Pending Approval",
+            "type": "integer"
+          },
+          "rooms": {
+            "title": "Rooms",
+            "type": "integer"
+          },
+          "suspended": {
+            "title": "Suspended",
+            "type": "integer"
+          },
+          "trials": {
+            "title": "Trials",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "hotels",
+          "active",
+          "pending_approval",
+          "suspended",
+          "activated",
+          "in_use_30d",
+          "paying",
+          "trials",
+          "no_plan",
+          "rooms",
+          "owners",
+          "multi_property_owners",
+          "mrr",
+          "gmv_30d"
+        ],
+        "title": "InsightTotals",
+        "type": "object"
+      },
+      "InsightsOut": {
+        "properties": {
+          "by_country": {
+            "items": {
+              "$ref": "#/components/schemas/Breakdown"
+            },
+            "title": "By Country",
+            "type": "array"
+          },
+          "by_property_type": {
+            "items": {
+              "$ref": "#/components/schemas/Breakdown"
+            },
+            "title": "By Property Type",
+            "type": "array"
+          },
+          "by_region": {
+            "items": {
+              "$ref": "#/components/schemas/Breakdown"
+            },
+            "title": "By Region",
+            "type": "array"
+          },
+          "cohorts": {
+            "items": {
+              "$ref": "#/components/schemas/Cohort"
+            },
+            "title": "Cohorts",
+            "type": "array"
+          },
+          "days": {
+            "items": {
+              "$ref": "#/components/schemas/SignupDay"
+            },
+            "title": "Days",
+            "type": "array"
+          },
+          "funnel": {
+            "items": {
+              "$ref": "#/components/schemas/FunnelStep"
+            },
+            "title": "Funnel",
+            "type": "array"
+          },
+          "period": {
+            "$ref": "#/components/schemas/InsightPeriod"
+          },
+          "since": {
+            "format": "date",
+            "title": "Since",
+            "type": "string"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/InsightTotals"
+          },
+          "until": {
+            "format": "date",
+            "title": "Until",
+            "type": "string"
+          },
+          "users": {
+            "items": {
+              "$ref": "#/components/schemas/RoleActivity"
+            },
+            "title": "Users",
+            "type": "array"
+          }
+        },
+        "required": [
+          "since",
+          "until",
+          "totals",
+          "period",
+          "days",
+          "funnel",
+          "cohorts",
+          "by_country",
+          "by_region",
+          "by_property_type",
+          "users"
+        ],
+        "title": "InsightsOut",
         "type": "object"
       },
       "InvitationAcceptedResponse": {
@@ -10006,6 +10453,234 @@
         "title": "OutstandingInvoice",
         "type": "object"
       },
+      "OwnerHotel": {
+        "properties": {
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "country": {
+            "title": "Country",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "plan_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plan Name"
+          },
+          "property_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Property Type"
+          },
+          "province": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Province"
+          },
+          "rooms": {
+            "title": "Rooms",
+            "type": "integer"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "subscription_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subscription Status"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "code",
+          "status",
+          "country",
+          "city",
+          "province",
+          "property_type",
+          "rooms",
+          "subscription_status",
+          "plan_name"
+        ],
+        "title": "OwnerHotel",
+        "type": "object"
+      },
+      "OwnerList": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/OwnerOut"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "OwnerList",
+        "type": "object"
+      },
+      "OwnerOut": {
+        "properties": {
+          "countries": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Countries",
+            "type": "array"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "email_verified": {
+            "title": "Email Verified",
+            "type": "boolean"
+          },
+          "gmv_30d": {
+            "items": {
+              "$ref": "#/components/schemas/SignedMoney"
+            },
+            "title": "Gmv 30D",
+            "type": "array"
+          },
+          "hotels": {
+            "items": {
+              "$ref": "#/components/schemas/OwnerHotel"
+            },
+            "title": "Hotels",
+            "type": "array"
+          },
+          "last_login_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Login At"
+          },
+          "mrr": {
+            "items": {
+              "$ref": "#/components/schemas/SignedMoney"
+            },
+            "title": "Mrr",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "paying": {
+            "title": "Paying",
+            "type": "integer"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "rooms": {
+            "title": "Rooms",
+            "type": "integer"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "name",
+          "email",
+          "phone",
+          "created_at",
+          "last_login_at",
+          "email_verified",
+          "countries",
+          "rooms",
+          "paying",
+          "mrr",
+          "gmv_30d",
+          "hotels"
+        ],
+        "title": "OwnerOut",
+        "type": "object"
+      },
       "PairRequest": {
         "additionalProperties": false,
         "description": "Device setup (D82): the Hotel ID, the 8-digit setup code and the PIN of the manager who\ncreated the code.",
@@ -12862,6 +13537,34 @@
         "title": "RevenueRow",
         "type": "object"
       },
+      "RoleActivity": {
+        "properties": {
+          "active_30d": {
+            "title": "Active 30D",
+            "type": "integer"
+          },
+          "active_7d": {
+            "title": "Active 7D",
+            "type": "integer"
+          },
+          "members": {
+            "title": "Members",
+            "type": "integer"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "members",
+          "active_7d",
+          "active_30d"
+        ],
+        "title": "RoleActivity",
+        "type": "object"
+      },
       "RoleCreate": {
         "additionalProperties": false,
         "properties": {
@@ -14265,6 +14968,25 @@
           "expires_in"
         ],
         "title": "SignedUrl",
+        "type": "object"
+      },
+      "SignupDay": {
+        "properties": {
+          "day": {
+            "format": "date",
+            "title": "Day",
+            "type": "string"
+          },
+          "signups": {
+            "title": "Signups",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "day",
+          "signups"
+        ],
+        "title": "SignupDay",
         "type": "object"
       },
       "SignupHotel": {
@@ -20226,6 +20948,74 @@
         ]
       }
     },
+    "/api/v1/admin/insights": {
+      "get": {
+        "description": "Adoption, activation funnel, trial conversion, churn, cohorts, breakdowns by country,\nregion and property type, and staff activity (D87). Default period: the last 30 days.",
+        "operationId": "insights_api_v1_admin_insights_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "since",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Since"
+            }
+          },
+          {
+            "in": "query",
+            "name": "until",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Until"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InsightsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Insights",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/api/v1/admin/legal-documents": {
       "get": {
         "operationId": "admin_list_api_v1_admin_legal_documents_get",
@@ -20432,6 +21222,28 @@
           }
         },
         "summary": "Metrics",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/owners": {
+      "get": {
+        "description": "Every Hotel Owner with their properties, rooms, MRR and money processed (D87).",
+        "operationId": "owners_api_v1_admin_owners_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Owners",
         "tags": [
           "admin"
         ]

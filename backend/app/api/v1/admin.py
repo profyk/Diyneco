@@ -4,11 +4,13 @@ support access (/support-access)."""
 from __future__ import annotations
 
 import uuid
+from datetime import date
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Query, Request, Response
 
 from app.api.deps import IdemUser, Principal, StepUp, Uow, require_permission, state_of
+from app.core.errors import AppError
 from app.schemas.admin import (
     ActivityList,
     AdminHotelDetail,
@@ -26,8 +28,10 @@ from app.schemas.admin import (
     SupportRequest,
     SuspendRequest,
 )
+from app.schemas.insights import InsightsOut, OwnerList
 from app.schemas.properties import TrialGrant
 from app.services import admin as svc
+from app.services import insights as insights_svc
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 hotel_router = APIRouter(tags=["support-access"])
@@ -55,6 +59,24 @@ async def health(request: Request, uow: Uow, principal: PlatformMetrics) -> dict
 @router.get("/hotels", response_model=AdminHotelList)
 async def hotels(uow: Uow, principal: TenantsRead) -> dict[str, Any]:
     return {"data": await svc.hotels(uow), "next_cursor": None}
+
+
+@router.get("/insights", response_model=InsightsOut)
+async def insights(
+    uow: Uow, principal: PlatformMetrics, since: date | None = None, until: date | None = None
+) -> dict[str, Any]:
+    """Adoption, activation funnel, trial conversion, churn, cohorts, breakdowns by country,
+    region and property type, and staff activity (D87). Default period: the last 30 days."""
+    start, end = insights_svc.default_period(since, until)
+    if start > end or (end - start).days > 366:
+        raise AppError("VALIDATION_FAILED", "Choose a period of at most a year, oldest date first.")
+    return await insights_svc.overview(uow, start, end)
+
+
+@router.get("/owners", response_model=OwnerList)
+async def owners(uow: Uow, principal: TenantsRead) -> dict[str, Any]:
+    """Every Hotel Owner with their properties, rooms, MRR and money processed (D87)."""
+    return {"data": await insights_svc.owners(uow)}
 
 
 @router.get("/hotels/{hotel_id}", response_model=AdminHotelDetail)

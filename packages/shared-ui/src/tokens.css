@@ -12,6 +12,7 @@
   --color-on-brand: var(--dy-on-brand);
   --color-blue: var(--dy-blue);
   --color-teal: var(--dy-teal);
+  --color-chart: var(--dy-chart);
   --color-green: var(--dy-green);
   --color-tint: var(--dy-tint);
   --color-tint-teal: var(--dy-tint-teal);
@@ -37,6 +38,7 @@
   --dy-brand: #0b2350;
   --dy-on-brand: #ffffff;
   --dy-blue: #1e7fd8;
+  --dy-chart: #1e7fd8; /* single-series chart marks; validated on this surface (dataviz) */
   --dy-teal: #1fa9a1;
   --dy-green: #13965f;
   --dy-tint: #e8f1fb;
@@ -61,6 +63,7 @@
     --dy-brand: #2f7fd6;
     --dy-on-brand: #ffffff;
     --dy-blue: #5aa6f0;
+    --dy-chart: #4592de; /* validated on the dark surface (dataviz) */
     --dy-teal: #3cc7be;
     --dy-green: #3cc98a;
     --dy-tint: #132a47;
@@ -85,6 +88,7 @@
   --dy-brand: #2f7fd6;
   --dy-on-brand: #ffffff;
   --dy-blue: #5aa6f0;
+  --dy-chart: #4592de;
   --dy-teal: #3cc7be;
   --dy-green: #3cc98a;
   --dy-tint: #132a47;

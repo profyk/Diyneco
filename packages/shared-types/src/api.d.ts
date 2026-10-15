@@ -628,6 +628,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/insights": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Insights
+         * @description Adoption, activation funnel, trial conversion, churn, cohorts, breakdowns by country,
+         *     region and property type, and staff activity (D87). Default period: the last 30 days.
+         */
+        get: operations["insights_api_v1_admin_insights_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/legal-documents": {
         parameters: {
             query?: never;
@@ -690,6 +711,26 @@ export interface paths {
         };
         /** Metrics */
         get: operations["metrics_api_v1_admin_metrics_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/owners": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Owners
+         * @description Every Hotel Owner with their properties, rooms, MRR and money processed (D87).
+         */
+        get: operations["owners_api_v1_admin_owners_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4380,14 +4421,24 @@ export interface components {
         };
         /** AdminHotel */
         AdminHotel: {
+            /**
+             * Activated
+             * @default false
+             */
+            activated: boolean;
+            /** City */
+            city?: string | null;
             /** Code */
             code: string;
+            /** Country */
+            country?: string | null;
             counts: components["schemas"]["HotelCounts"];
             /**
              * Created At
              * Format: date-time
              */
             created_at: string;
+            gmv_30d?: components["schemas"]["SignedMoney"] | null;
             /**
              * Id
              * Format: uuid
@@ -4395,10 +4446,22 @@ export interface components {
             id: string;
             /** Last Activity */
             last_activity: string | null;
+            mrr?: components["schemas"]["SignedMoney"] | null;
             /** Name */
             name: string;
+            /**
+             * Orders 30D
+             * @default 0
+             */
+            orders_30d: number;
             /** Plan */
             plan: string | null;
+            /** Plan Name */
+            plan_name?: string | null;
+            /** Property Type */
+            property_type?: string | null;
+            /** Province */
+            province?: string | null;
             /** Renews On */
             renews_on: string | null;
             /** Slug */
@@ -4973,6 +5036,31 @@ export interface components {
             /** Trials */
             trials: number;
         };
+        /** Breakdown */
+        Breakdown: {
+            /** Activated */
+            activated: number;
+            /** Active */
+            active: number;
+            /** Gmv 30D */
+            gmv_30d: components["schemas"]["SignedMoney"][];
+            /** Hotels */
+            hotels: number;
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Mrr */
+            mrr: components["schemas"]["SignedMoney"][];
+            /** Orders 30D */
+            orders_30d: number;
+            /** Paying */
+            paying: number;
+            /** Rooms */
+            rooms: number;
+            /** Trials */
+            trials: number;
+        };
         /** BulkResult */
         BulkResult: {
             /** Created */
@@ -5276,6 +5364,21 @@ export interface components {
             /** Staff Id */
             staff_id: string | null;
             tips: components["schemas"]["SignedMoney"];
+        };
+        /** Cohort */
+        Cohort: {
+            /** Activated */
+            activated: number;
+            /** Closed */
+            closed: number;
+            /** In Use 30D */
+            in_use_30d: number;
+            /** Month */
+            month: string;
+            /** Paying */
+            paying: number;
+            /** Signups */
+            signups: number;
         };
         /** CompanyLogoUpload */
         CompanyLogoUpload: {
@@ -5814,6 +5917,15 @@ export interface components {
             /** Email */
             email: string;
         };
+        /** FunnelStep */
+        FunnelStep: {
+            /** Hotels */
+            hotels: number;
+            /** Label */
+            label: string;
+            /** Step */
+            step: string;
+        };
         /** GuestCreate */
         GuestCreate: {
             /** Email */
@@ -6280,6 +6392,89 @@ export interface components {
             body: string;
             /** Title */
             title: string;
+        };
+        /** InsightPeriod */
+        InsightPeriod: {
+            /** Activation Bp */
+            activation_bp: number;
+            /** Churn Bp */
+            churn_bp: number;
+            /** Churned */
+            churned: number;
+            /** Churned Mrr */
+            churned_mrr: components["schemas"]["SignedMoney"][];
+            /** New Mrr */
+            new_mrr: components["schemas"]["SignedMoney"][];
+            /** Paying At Start */
+            paying_at_start: number;
+            /** Signups */
+            signups: number;
+            /** Trial Conversion Bp */
+            trial_conversion_bp: number;
+            /** Trials Converted */
+            trials_converted: number;
+            /** Trials Ended */
+            trials_ended: number;
+        };
+        /** InsightTotals */
+        InsightTotals: {
+            /** Activated */
+            activated: number;
+            /** Active */
+            active: number;
+            /** Gmv 30D */
+            gmv_30d: components["schemas"]["SignedMoney"][];
+            /** Hotels */
+            hotels: number;
+            /** In Use 30D */
+            in_use_30d: number;
+            /** Mrr */
+            mrr: components["schemas"]["SignedMoney"][];
+            /** Multi Property Owners */
+            multi_property_owners: number;
+            /** No Plan */
+            no_plan: number;
+            /** Owners */
+            owners: number;
+            /** Paying */
+            paying: number;
+            /** Pending Approval */
+            pending_approval: number;
+            /** Rooms */
+            rooms: number;
+            /** Suspended */
+            suspended: number;
+            /** Trials */
+            trials: number;
+        };
+        /** InsightsOut */
+        InsightsOut: {
+            /** By Country */
+            by_country: components["schemas"]["Breakdown"][];
+            /** By Property Type */
+            by_property_type: components["schemas"]["Breakdown"][];
+            /** By Region */
+            by_region: components["schemas"]["Breakdown"][];
+            /** Cohorts */
+            cohorts: components["schemas"]["Cohort"][];
+            /** Days */
+            days: components["schemas"]["SignupDay"][];
+            /** Funnel */
+            funnel: components["schemas"]["FunnelStep"][];
+            period: components["schemas"]["InsightPeriod"];
+            /**
+             * Since
+             * Format: date
+             */
+            since: string;
+            totals: components["schemas"]["InsightTotals"];
+            /**
+             * Until
+             * Format: date
+             */
+            until: string;
+            /** Users */
+            users: components["schemas"]["RoleActivity"][];
         };
         /** InvitationAcceptedResponse */
         InvitationAcceptedResponse: {
@@ -7422,6 +7617,76 @@ export interface components {
             /** Status */
             status: string;
         };
+        /** OwnerHotel */
+        OwnerHotel: {
+            /** City */
+            city: string | null;
+            /** Code */
+            code: string;
+            /** Country */
+            country: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Plan Name */
+            plan_name: string | null;
+            /** Property Type */
+            property_type: string | null;
+            /** Province */
+            province: string | null;
+            /** Rooms */
+            rooms: number;
+            /** Status */
+            status: string;
+            /** Subscription Status */
+            subscription_status: string | null;
+        };
+        /** OwnerList */
+        OwnerList: {
+            /** Data */
+            data: components["schemas"]["OwnerOut"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+        };
+        /** OwnerOut */
+        OwnerOut: {
+            /** Countries */
+            countries: string[];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Email */
+            email: string;
+            /** Email Verified */
+            email_verified: boolean;
+            /** Gmv 30D */
+            gmv_30d: components["schemas"]["SignedMoney"][];
+            /** Hotels */
+            hotels: components["schemas"]["OwnerHotel"][];
+            /** Last Login At */
+            last_login_at: string | null;
+            /** Mrr */
+            mrr: components["schemas"]["SignedMoney"][];
+            /** Name */
+            name: string;
+            /** Paying */
+            paying: number;
+            /** Phone */
+            phone: string | null;
+            /** Rooms */
+            rooms: number;
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+        };
         /**
          * PairRequest
          * @description Device setup (D82): the Hotel ID, the 8-digit setup code and the PIN of the manager who
@@ -8306,6 +8571,17 @@ export interface components {
             tips: components["schemas"]["SignedMoney"];
             vat_included: components["schemas"]["SignedMoney"];
         };
+        /** RoleActivity */
+        RoleActivity: {
+            /** Active 30D */
+            active_30d: number;
+            /** Active 7D */
+            active_7d: number;
+            /** Members */
+            members: number;
+            /** Role */
+            role: string;
+        };
         /** RoleCreate */
         RoleCreate: {
             /** Name */
@@ -8738,6 +9014,16 @@ export interface components {
             expires_in: number;
             /** Url */
             url: string;
+        };
+        /** SignupDay */
+        SignupDay: {
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            /** Signups */
+            signups: number;
         };
         /** SignupHotel */
         SignupHotel: {
@@ -11287,6 +11573,38 @@ export interface operations {
             };
         };
     };
+    insights_api_v1_admin_insights_get: {
+        parameters: {
+            query?: {
+                since?: string | null;
+                until?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InsightsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     admin_list_api_v1_admin_legal_documents_get: {
         parameters: {
             query?: never;
@@ -11451,6 +11769,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Metrics"];
+                };
+            };
+        };
+    };
+    owners_api_v1_admin_owners_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwnerList"];
                 };
             };
         };

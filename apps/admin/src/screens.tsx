@@ -12,6 +12,8 @@ import {
   Field,
   Input,
   PageHeader,
+  propertyTypeGroups,
+  propertyTypeLabel,
   Select,
   Skeleton,
   StatTile,
@@ -21,10 +23,12 @@ import {
   Th,
   useToast,
 } from "@diyneco/shared-ui";
+import { Flag } from "@diyneco/shared-ui/countries";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useState } from "react";
 
+import { ColumnChart } from "./charts";
 import { label, useAction } from "./common";
 import { planPriceLabel } from "./Plans";
 import { useSession } from "./session";
@@ -45,7 +49,6 @@ export function Overview() {
   });
   const m = metrics.data;
   const days = analytics.data?.days ?? [];
-  const max = Math.max(1, ...days.map((d) => d.orders));
   return (
     <>
       <PageHeader title="Overview" description={m ? `As of ${new Date(m.as_of).toLocaleTimeString("en-ZA")}` : undefined} />
@@ -78,10 +81,18 @@ export function Overview() {
       <Activity />
       <Card className="mt-6">
         <CardHeader title="Orders per day" description="Last 30 days, all hotels" />
-        <div className="flex h-40 items-end gap-1 px-5 pb-5" role="img" aria-label="Orders per day for the last 30 days">
-          {days.map((d) => (
-            <div key={d.day} className="flex-1 rounded-t bg-blue" style={{ height: `${(d.orders / max) * 100}%` }} title={`${d.day}: ${d.orders} orders, ${d.checkins} check-ins, ${d.new_hotels} new hotels`} />
-          ))}
+        <div className="p-5">
+          <ColumnChart
+            title="Orders per day for the last 30 days"
+            points={days.map((d) => {
+              const day = new Date(`${d.day}T12:00:00Z`).toLocaleDateString(undefined, { day: "numeric", month: "short" });
+              return {
+                label: day,
+                value: d.orders,
+                tooltip: `${day}: ${d.orders} orders, ${d.checkins} check-ins, ${d.new_hotels} new hotels`,
+              };
+            })}
+          />
         </div>
       </Card>
     </>
@@ -95,22 +106,114 @@ export function Hotels() {
   const [open, setOpen] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("");
+  const [country, setCountry] = useState("");
+  const [province, setProvince] = useState("");
+  const [category, setCategory] = useState("");
+  const [billing, setBilling] = useState<"" | "paying" | "trial" | "none">("");
   const hotels = useQuery({ queryKey: ["hotels"], queryFn: () => ok(api.GET("/api/v1/admin/hotels")) });
   const approve = useAction(
     (id: string) => ok(api.POST("/api/v1/admin/hotels/{hotel_id}/approve", { params: { path: { hotel_id: id } } })),
     { success: "Approved. The owner was emailed." },
   );
+  const all = hotels.data?.data ?? [];
+  const countries = [...new Set(all.map((h) => h.country).filter(Boolean))].sort() as string[];
+  const provinces = [...new Set(all.filter((h) => !country || h.country === country).map((h) => h.province).filter(Boolean))].sort() as string[];
   const needle = q.trim().toLowerCase();
-  const list = (hotels.data?.data ?? []).filter(
+  const list = all.filter(
     (h) =>
-      (!needle || h.name.toLowerCase().includes(needle) || h.slug.includes(needle) || h.code.toLowerCase().includes(needle)) &&
-      (!status || h.status === status),
+      (!needle ||
+        h.name.toLowerCase().includes(needle) ||
+        h.slug.includes(needle) ||
+        h.code.toLowerCase().includes(needle) ||
+        (h.city ?? "").toLowerCase().includes(needle)) &&
+      (!status || h.status === status) &&
+      (!country || h.country === country) &&
+      (!province || h.province === province) &&
+      (!category || h.property_type === category) &&
+      (!billing ||
+        (billing === "paying" && h.mrr) ||
+        (billing === "trial" && h.subscription_status === "trial") ||
+        (billing === "none" && !h.subscription_status)),
   );
+  const exportCsv = () => {
+    const cell = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const head = ["Hotel", "Hotel ID", "Status", "Country", "Province", "City", "Category", "Plan", "Subscription", "Rooms", "Orders 30d", "MRR", "Processed 30d", "Joined"];
+    const lines = list.map((h) =>
+      [
+        h.name,
+        h.code,
+        h.status,
+        h.country,
+        h.province,
+        h.city,
+        propertyTypeLabel(h.property_type),
+        h.plan_name ?? h.plan,
+        h.subscription_status,
+        h.counts.rooms,
+        h.orders_30d,
+        h.mrr ? formatMoney(h.mrr) : "",
+        h.gmv_30d ? formatMoney(h.gmv_30d) : "",
+        h.created_at.slice(0, 10),
+      ]
+        .map(cell)
+        .join(","),
+    );
+    const blob = new Blob([[head.map(cell).join(","), ...lines].join("\n")], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `diyneco-hotels-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
   const count = (st: string) => (hotels.data?.data ?? []).filter((h) => !st || h.status === st).length;
   const selected = hotels.data?.data.find((h) => h.id === open);
   return (
     <>
-      <PageHeader title="Hotels" description="Counts only: guest records are never visible to Diyneco staff." />
+      <PageHeader
+        title="Hotels"
+        description="Counts only: guest records are never visible to Diyneco staff."
+        actions={
+          <Button variant="secondary" onClick={exportCsv} disabled={!list.length}>
+            Download CSV ({list.length})
+          </Button>
+        }
+      />
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <Select aria-label="Country" className="w-44" value={country} onChange={(e) => { setCountry(e.target.value); setProvince(""); }}>
+          <option value="">All countries</option>
+          {countries.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </Select>
+        <Select aria-label="Province or state" className="w-52" value={province} onChange={(e) => setProvince(e.target.value)}>
+          <option value="">All provinces and states</option>
+          {provinces.map((p) => (
+            <option key={p} value={p}>
+              {p}
+            </option>
+          ))}
+        </Select>
+        <Select aria-label="Category" className="w-52" value={category} onChange={(e) => setCategory(e.target.value)}>
+          <option value="">All categories</option>
+          {propertyTypeGroups().map((g) => (
+            <optgroup key={g.group} label={g.group}>
+              {g.items.map((t) => (
+                <option key={t.value} value={t.value}>
+                  {t.label}
+                </option>
+              ))}
+            </optgroup>
+          ))}
+        </Select>
+        <Select aria-label="Billing" className="w-44" value={billing} onChange={(e) => setBilling(e.target.value as typeof billing)}>
+          <option value="">Any billing</option>
+          <option value="paying">Paying</option>
+          <option value="trial">On trial</option>
+          <option value="none">No plan</option>
+        </Select>
+      </div>
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <Input type="search" aria-label="Search hotels" placeholder="Search by name or Hotel ID" className="max-w-sm" value={q} onChange={(e) => setQ(e.target.value)} />
         {["", "pending_approval", "active", "suspended"].map((st) => (
@@ -134,10 +237,13 @@ export function Hotels() {
             <thead>
               <tr>
                 <Th>Hotel</Th>
+                <Th>Location</Th>
                 <Th>Status</Th>
                 <Th>Plan</Th>
                 <Th className="text-right">Rooms</Th>
                 <Th className="text-right">Devices</Th>
+                <Th className="text-right">MRR</Th>
+                <Th className="text-right">Processed, 30 days</Th>
                 <Th>Last activity</Th>
                 <Th />
               </tr>
@@ -150,17 +256,32 @@ export function Hotels() {
                       {h.name}
                     </Link>
                     <p className="text-xs text-muted">
-                      <span className="font-mono">{h.code}</span> · Since {formatDate(h.created_at)}
+                      <span className="font-mono">{h.code}</span> · {propertyTypeLabel(h.property_type)} · Since {formatDate(h.created_at)}
                     </p>
                   </Td>
                   <Td>
-                    <Badge tone={h.status === "active" ? "good" : h.status === "pending_approval" ? "warn" : "crit"}>{label(h.status)}</Badge>
+                    <span className="flex items-center gap-2 text-sm">
+                      {h.country ? <Flag code={h.country} className="h-3.5 w-5" /> : null}
+                      <span>
+                        {h.city ?? "–"}
+                        <span className="block text-xs text-muted">{h.province ?? ""}</span>
+                      </span>
+                    </span>
                   </Td>
-                  <Td>{h.plan ?? "–"}</Td>
+                  <Td>
+                    <Badge tone={h.status === "active" ? "good" : h.status === "pending_approval" ? "warn" : "crit"}>{label(h.status)}</Badge>
+                    {h.activated ? null : h.status === "active" ? <span className="mt-1 block text-xs text-muted">Not set up yet</span> : null}
+                  </Td>
+                  <Td>
+                    {h.plan_name ?? h.plan ?? "–"}
+                    {h.subscription_status ? <span className="block text-xs text-muted">{label(h.subscription_status)}</span> : null}
+                  </Td>
                   <Td className="text-right">{h.counts.rooms}</Td>
                   <Td className="text-right">
                     {h.counts.connected_devices}/{h.counts.devices}
                   </Td>
+                  <Td className="text-right tabular-nums">{h.mrr ? formatMoney(h.mrr) : "–"}</Td>
+                  <Td className="text-right tabular-nums">{h.gmv_30d ? formatMoney(h.gmv_30d) : "–"}</Td>
                   <Td className="text-muted">{h.last_activity ? formatDate(h.last_activity) : "–"}</Td>
                   <Td className="whitespace-nowrap text-right">
                     {h.status === "pending_approval" && can("platform.tenants.manage") ? (

@@ -23,7 +23,7 @@ from app.db.session import TenantContext, UnitOfWork, set_tenant
 from app.models.tenancy import BillingSettings, Hotel, Plan, Subscription, SupportGrant
 from app.realtime.outbox import emit, hotel_channel
 from app.repositories.hotels import CURRENT_STATUSES, HotelRepository
-from app.services import catalogue
+from app.services import catalogue, insights
 from app.services.pricing import money
 
 PLATFORM_TZ = zoneinfo.ZoneInfo("Africa/Johannesburg")
@@ -80,8 +80,27 @@ async def metrics(uow: UnitOfWork) -> dict[str, Any]:
 
 async def hotels(uow: UnitOfWork) -> list[dict[str, Any]]:
     rows = (await uow.session.execute(text("SELECT * FROM app.admin_hotels()"))).mappings().all()
+    facts = {f["id"]: f for f in await insights.hotel_facts(uow)}
+
+    def extra(hotel_id: Any) -> dict[str, Any]:
+        f = facts.get(hotel_id)
+        if f is None:
+            return {}
+        return {
+            "country": f["country"],
+            "province": f["province"],
+            "city": f["city"],
+            "property_type": f["property_type"],
+            "plan_name": f["plan_name"],
+            "activated": f["activated"],
+            "orders_30d": f["orders_30d"],
+            "mrr": money(f["mrr_minor"], f["sub_currency"]) if f["mrr_minor"] and f["sub_currency"] else None,
+            "gmv_30d": money(f["gmv_30d_minor"], f["currency"]),
+        }
+
     return [
         {
+            **extra(r["id"]),
             "id": r["id"],
             "name": r["name"],
             "slug": r["slug"],
