@@ -4,7 +4,7 @@ import { notFound, permanentRedirect, redirect } from "next/navigation";
 import { countries, entry, type Entry, posts, redirects, type Settings, settings } from "@/api";
 import { Blocks, PostGrid } from "@/blocks";
 import { EntryView } from "@/EntryView";
-import { DEFAULT_PAGES } from "@/defaults";
+import { DEFAULT_MEDIA, DEFAULT_PAGES } from "@/defaults";
 
 // Every content address (D83): pages and posts published in Admin > Website, the blog, and
 // built-in pages until the same address is published. /pricing and /legal have their own
@@ -99,7 +99,7 @@ export default async function Page({ params, searchParams }: Params) {
   const e = await load(r);
   if (!e) {
     const d = r.kind === "page" && r.locale === s.default_locale ? DEFAULT_PAGES[r.slug] : undefined;
-    if (d) return <Blocks blocks={d.blocks} ctx={{ media: {}, locale: r.locale, posts: [], countries: list }} />;
+    if (d) return <Blocks blocks={d.blocks} ctx={{ media: DEFAULT_MEDIA, locale: r.locale, posts: [], countries: list }} />;
     await followRedirect(path);
     notFound();
   }

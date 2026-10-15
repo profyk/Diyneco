@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-labelledby="t"><title id="t">Illustration of a hotel restaurant at dinner time</title>
+<defs>
+<linearGradient id="wall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#14306A"/><stop offset="1" stop-color="#0B2350"/></linearGradient>
+<linearGradient id="dusk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F6B26B"/><stop offset="1" stop-color="#E9806B"/></linearGradient>
+<radialGradient id="glow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFE9B8" stop-opacity=".7"/><stop offset="1" stop-color="#FFE9B8" stop-opacity="0"/></radialGradient>
+</defs>
+<rect width="1200" height="800" fill="url(#wall)"/>
+<rect y="620" width="1200" height="180" fill="#6B4423"/>
+<g opacity=".25" stroke="#3E2713" stroke-width="3"><path d="M0 670H1200M0 730H1200"/></g>
+<!-- windows -->
+<g><rect x="80" y="90" width="300" height="360" rx="150" fill="url(#dusk)"/><rect x="460" y="90" width="300" height="360" rx="150" fill="url(#dusk)"/><rect x="840" y="90" width="300" height="360" rx="150" fill="url(#dusk)"/>
+<g fill="#C9644E" opacity=".7"><path d="M80 380l70-60 60 40 80-70 90 90v70H80z"/><path d="M460 380l90-80 70 50 60-40 80 70v70H460z"/><path d="M840 380l60-50 80 60 70-50 90 60v70H840z"/></g>
+<g stroke="#0B2350" stroke-width="10" fill="none"><rect x="80" y="90" width="300" height="360" rx="150"/><rect x="460" y="90" width="300" height="360" rx="150"/><rect x="840" y="90" width="300" height="360" rx="150"/><path d="M230 90v360M610 90v360M990 90v360M80 270h300M460 270h300M840 270h300"/></g></g>
+<!-- pendant lamps -->
+<g><path d="M300 0v170M900 0v170" stroke="#000" stroke-opacity=".4" stroke-width="4"/>
+<circle cx="300" cy="320" r="160" fill="url(#glow)"/><circle cx="900" cy="320" r="160" fill="url(#glow)"/>
+<path d="M260 210h80l-20-40h-40z" fill="#F6B26B"/><path d="M860 210h80l-20-40h-40z" fill="#F6B26B"/></g>
+<!-- tables -->
+<g>
+<ellipse cx="300" cy="560" rx="180" ry="34" fill="#fff"/><rect x="290" y="560" width="20" height="100" fill="#3E2713"/><rect x="240" y="650" width="120" height="14" rx="7" fill="#3E2713"/>
+<path d="M150 560v-110a10 10 0 0 1 20 0v110zM190 640v-80h-60v80" fill="#1E7FD8"/><path d="M430 560v-110a10 10 0 0 1 20 0v110zM410 640v-80h60v80" fill="#1E7FD8"/>
+<circle cx="250" cy="548" r="22" fill="#EEF4FB" stroke="#C9D9EC" stroke-width="4"/><circle cx="350" cy="548" r="22" fill="#EEF4FB" stroke="#C9D9EC" stroke-width="4"/>
+<path d="M300 500c-10 0-14 10-14 20s6 18 14 18 14-8 14-18-4-20-14-20zM300 538v14" fill="none" stroke="#E2574C" stroke-width="4"/><circle cx="300" cy="520" r="8" fill="#FFE9B8"/>
+</g>
+<g>
+<ellipse cx="900" cy="560" rx="180" ry="34" fill="#fff"/><rect x="890" y="560" width="20" height="100" fill="#3E2713"/><rect x="840" y="650" width="120" height="14" rx="7" fill="#3E2713"/>
+<path d="M750 560v-110a10 10 0 0 1 20 0v110zM790 640v-80h-60v80" fill="#2CC9C0"/><path d="M1030 560v-110a10 10 0 0 1 20 0v110zM1010 640v-80h60v80" fill="#2CC9C0"/>
+<circle cx="850" cy="548" r="22" fill="#EEF4FB" stroke="#C9D9EC" stroke-width="4"/><circle cx="950" cy="548" r="22" fill="#EEF4FB" stroke="#C9D9EC" stroke-width="4"/>
+<path d="M880 506h12l-2 28h-8zM908 506h12l-2 28h-8z" fill="#fff" opacity=".8"/><circle cx="900" cy="524" r="8" fill="#FFE9B8"/>
+</g>
+<!-- plant -->
+<g><rect x="560" y="560" width="80" height="80" rx="10" fill="#B7804B"/><path d="M600 560c-40-40-30-120 0-160 30 40 40 120 0 160z" fill="#16B57A"/><path d="M600 560c-60-20-70-90-50-120 30 20 60 60 50 120zM600 560c60-20 70-90 50-120-30 20-60 60-50 120z" fill="#139A68"/></g>
+</svg>

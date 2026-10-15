@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-labelledby="t"><title id="t">Illustration of a guest room with a tablet on the bedside table</title>
+<defs>
+<linearGradient id="wall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#EEF4FB"/><stop offset="1" stop-color="#DCE8F5"/></linearGradient>
+<linearGradient id="night" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0B2350"/><stop offset="1" stop-color="#1E4F8F"/></linearGradient>
+<linearGradient id="floor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C9955F"/><stop offset="1" stop-color="#A9743F"/></linearGradient>
+<radialGradient id="lamp" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFE9B8" stop-opacity=".9"/><stop offset="1" stop-color="#FFE9B8" stop-opacity="0"/></radialGradient>
+</defs>
+<rect width="1200" height="800" fill="url(#wall)"/>
+<rect y="600" width="1200" height="200" fill="url(#floor)"/>
+<g opacity=".18" stroke="#7A4E25" stroke-width="3"><path d="M0 650H1200M0 710H1200M0 770H1200"/></g>
+<!-- window -->
+<rect x="760" y="110" width="340" height="300" rx="10" fill="#fff"/>
+<rect x="776" y="126" width="308" height="268" rx="4" fill="url(#night)"/>
+<g fill="#2CC9C0" opacity=".85"><rect x="800" y="300" width="40" height="94"/><rect x="850" y="260" width="55" height="134"/><rect x="915" y="320" width="35" height="74"/><rect x="960" y="240" width="60" height="154"/><rect x="1030" y="290" width="40" height="104"/></g>
+<g fill="#FFE9B8"><rect x="862" y="275" width="8" height="8"/><rect x="882" y="300" width="8" height="8"/><rect x="975" y="260" width="8" height="8"/><rect x="995" y="290" width="8" height="8"/><rect x="975" y="330" width="8" height="8"/><rect x="1042" y="310" width="8" height="8"/></g>
+<circle cx="1040" cy="170" r="22" fill="#FFE9B8"/>
+<rect x="926" y="126" width="8" height="268" fill="#fff"/>
+<!-- curtains -->
+<path d="M740 95h70c-10 110 0 230 20 330h-90z" fill="#1E7FD8"/><path d="M1120 95h-70c10 110 0 230-20 330h90z" fill="#1E7FD8"/>
+<rect x="730" y="88" width="400" height="12" rx="6" fill="#0B2350"/>
+<!-- art -->
+<rect x="250" y="150" width="200" height="130" rx="6" fill="#fff" stroke="#0B2350" stroke-width="6"/>
+<path d="M262 268l60-60 40 36 30-24 46 48z" fill="#16B57A"/><circle cx="410" cy="190" r="16" fill="#F6B26B"/>
+<!-- bed -->
+<rect x="110" y="330" width="520" height="190" rx="22" fill="#0B2350"/>
+<rect x="90" y="470" width="580" height="150" rx="20" fill="#fff"/>
+<rect x="90" y="520" width="580" height="100" rx="20" fill="#2CC9C0"/>
+<rect x="90" y="520" width="580" height="18" fill="#22B3AB"/>
+<rect x="140" y="420" width="200" height="80" rx="30" fill="#fff" stroke="#DCE8F5" stroke-width="4"/>
+<rect x="380" y="420" width="200" height="80" rx="30" fill="#fff" stroke="#DCE8F5" stroke-width="4"/>
+<rect x="100" y="610" width="30" height="40" rx="6" fill="#6B4423"/><rect x="630" y="610" width="30" height="40" rx="6" fill="#6B4423"/>
+<!-- bedside -->
+<rect x="690" y="500" width="140" height="130" rx="12" fill="#B7804B"/><rect x="705" y="560" width="110" height="8" rx="4" fill="#8F5F31"/>
+<circle cx="740" cy="380" r="120" fill="url(#lamp)"/>
+<path d="M710 400h60l-15-60h-30z" fill="#F6B26B"/><rect x="736" y="400" width="8" height="70" fill="#0B2350"/><rect x="715" y="468" width="50" height="12" rx="6" fill="#0B2350"/>
+<!-- tablet -->
+<g transform="rotate(-8 790 470)"><rect x="760" y="420" width="62" height="88" rx="8" fill="#0B2350"/><rect x="766" y="428" width="50" height="70" rx="4" fill="#fff"/><rect x="771" y="434" width="40" height="8" rx="3" fill="#1E7FD8"/><rect x="771" y="448" width="40" height="6" rx="3" fill="#DCE8F5"/><rect x="771" y="459" width="30" height="6" rx="3" fill="#DCE8F5"/><rect x="771" y="476" width="40" height="14" rx="4" fill="#16B57A"/></g>
+<rect x="690" y="496" width="140" height="10" rx="5" fill="#9C6A39"/>
+</svg>

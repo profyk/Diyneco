@@ -5,6 +5,23 @@
 
 type Block = { type: string; [k: string]: unknown };
 
+const art = (name: string, alt: string) => ({ url: `/images/hotel/${name}.svg`, alt, width: 1200, height: 800 });
+
+/**
+ * Illustrations bundled with the site (public/images/hotel), used by the built-in pages under
+ * ids that cannot clash with uploaded images. They are drawings, not photos of real hotels;
+ * real photos are uploaded and published from Admin > Website.
+ */
+export const DEFAULT_MEDIA: Record<string, { url: string; alt: string; width: number; height: number }> = {
+  "builtin-devices": art("devices", "A guest tablet, a kitchen display and a staff phone showing the same room-service order"),
+  "builtin-rooms": art("rooms", "A guest room with a tablet on the bedside table"),
+  "builtin-reception": art("reception", "A hotel reception desk"),
+  "builtin-kitchen": art("kitchen", "A hotel kitchen with an order display on the wall"),
+  "builtin-restaurant": art("restaurant", "A hotel restaurant set for dinner"),
+  "builtin-outside": art("outside", "A hotel building on a sunny day"),
+  "builtin-pool": art("pool", "A hotel pool with loungers"),
+};
+
 export const DEFAULT_PAGES: Record<string, { title: string; description: string; blocks: Block[] }> = {
   "": {
     title: "Hotel operations in one place",
@@ -19,18 +36,33 @@ export const DEFAULT_PAGES: Record<string, { title: string; description: string;
           "Guests order from the tablet in their room. The kitchen sees it at once, room service delivers it, and it lands on the guest's bill without anyone re-typing a thing.",
         primary: { label: "Start free trial", href: "/signup" },
         secondary: { label: "Book a demo", href: "/demo" },
+        image_id: "builtin-devices",
       },
       {
         type: "features",
         heading: "Everything your team uses, connected",
         intro: "One system behind every screen, so nothing gets lost between reception, the kitchen and the guest.",
         items: [
-          { title: "Guest room tablets", body: "Menus, ordering and hotel information in every room. Each new guest starts fresh: checkout clears the tablet." },
-          { title: "Kitchen display", body: "Orders arrive the moment they are placed, by station, with large touch targets and a high-visibility mode." },
-          { title: "Room service", body: "Runners see what is ready, pick it up and confirm delivery from their phone." },
+          { title: "Guest room tablets", body: "Menus, ordering, requests for towels or cleaning, and hotel information in every room. Each new guest starts fresh: checkout clears the tablet.", image_id: "builtin-rooms" },
+          { title: "Kitchen display", body: "Orders arrive the moment they are placed, by station, with a sound, large touch targets and a high-visibility mode.", image_id: "builtin-kitchen" },
+          { title: "Reception and room service", body: "Reception checks guests in and out; runners see what is ready, pick it up and confirm delivery from their phone.", image_id: "builtin-reception" },
           { title: "Bills that add up", body: "Orders post to the room's bill automatically. Payments, tips and invoices reconcile to the cent." },
           { title: "Roles and approvals", body: "Owners, managers and staff each see what they need. Sensitive actions need a PIN, and adjustments need a second person." },
           { title: "Reports and daily close", body: "Revenue, payments, occupancy and kitchen times, ready for the end of each day." },
+        ],
+      },
+      {
+        type: "gallery",
+        heading: "Made for every part of your property",
+        intro: "From the rooms to the kitchen, the restaurant and the pool, every team works from the same system.",
+        show_filters: true,
+        items: [
+          { image_id: "builtin-rooms", caption: "Guest rooms: order and ask from the tablet", category: "rooms" },
+          { image_id: "builtin-reception", caption: "Reception: check-in, bills and requests", category: "reception" },
+          { image_id: "builtin-kitchen", caption: "Kitchen: orders on the display, by station", category: "kitchen" },
+          { image_id: "builtin-restaurant", caption: "Restaurant: charge meals to the room", category: "restaurant" },
+          { image_id: "builtin-pool", caption: "Poolside: room service where guests are", category: "pool" },
+          { image_id: "builtin-outside", caption: "Hotels, lodges and guest houses", category: "outside" },
         ],
       },
       {

@@ -119,7 +119,12 @@ async def media(media_id: uuid.UUID, width: int, request: Request, uow: Uow) -> 
     return Response(
         content=data,
         media_type="image/webp",
-        headers={"Cache-Control": "public, max-age=31536000, immutable"},
+        headers={
+            "Cache-Control": "public, max-age=31536000, immutable",
+            # The website is on another site (Vercel) than the API; the default same-site policy
+            # would make browsers drop every image. These are public, published images.
+            "Cross-Origin-Resource-Policy": "cross-origin",
+        },
     )
 
 

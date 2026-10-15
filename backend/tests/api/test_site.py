@@ -144,6 +144,8 @@ async def test_images_are_re_encoded_and_served_at_fixed_addresses(client, facto
     r = await client.get(f"/site/media/{media['id']}/480.webp")
     assert r.status_code == 200 and r.headers["content-type"] == "image/webp"
     assert "immutable" in r.headers["cache-control"]
+    # The website lives on another site than the API: the image must be embeddable there.
+    assert r.headers["cross-origin-resource-policy"] == "cross-origin"
     assert (await client.get(f"/site/media/{media['id']}/123.webp")).status_code == 404
 
 
