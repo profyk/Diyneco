@@ -192,6 +192,19 @@ async def test_eleven_logins_in_a_minute_from_one_ip_are_rate_limited(client, fa
     assert r.headers["RateLimit-Limit"] == "10"
 
 
+async def test_refresh_has_its_own_higher_limit_and_does_not_use_up_sign_ins(client, factory, monkeypatch):
+    # A hotel's staff share one address and every page load refreshes (D92).
+    frozen = (time.time() // 60) * 60 + 30
+    monkeypatch.setattr(ratelimit, "time", SimpleNamespace(time=lambda: frozen))
+    hotel = await factory.hotel(roles=("receptionist",))
+    user = hotel.users["receptionist"]
+    for _ in range(15):
+        r = await client.post("/auth/refresh", json={"refresh_token": "not-a-real-token"})
+        assert r.status_code == 401, r.text
+    assert r.headers["RateLimit-Limit"] == "120"
+    assert (await login(client, user)).status_code == 200
+
+
 async def test_login_into_a_specific_hotel(client, factory, owner_engine):
     a = await factory.hotel(roles=("receptionist",))
     b = await factory.hotel(roles=())

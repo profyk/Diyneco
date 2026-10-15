@@ -16,6 +16,9 @@ from redis.asyncio import Redis
 LIMITS: dict[str, tuple[int, int]] = {
     # bucket: (requests, window seconds)
     "auth_ip": (10, 60),
+    # Session refresh per IP (D92): every page load refreshes, and a hotel's staff share one
+    # public address. A refresh token is a long random secret, so this guards load, not guessing.
+    "auth_refresh_ip": (120, 60),
     "staff": (600, 60),
     "device": (120, 60),
     # Failed pairing codes per IP: 5 in 15 minutes locks pairing from that IP (security spec).

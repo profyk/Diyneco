@@ -174,6 +174,10 @@ async def limit_auth_ip(request: Request) -> None:
     await _limit(request, "auth_ip", client_ip(request) or "unknown")
 
 
+async def limit_auth_refresh_ip(request: Request) -> None:
+    await _limit(request, "auth_refresh_ip", client_ip(request) or "unknown")
+
+
 # --- Principals ----------------------------------------------------------------------------
 
 

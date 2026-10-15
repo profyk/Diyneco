@@ -22,7 +22,7 @@ Every rule here applies to every endpoint unless the endpoint says otherwise.
 | Idempotency | `Idempotency-Key: <uuid>` is required on every endpoint marked Idem. Same key + same body within 24 h returns the original status and body with `Idempotent-Replayed: true`. Same key + different body returns `409 IDEMPOTENCY_CONFLICT`. A request still in flight with that key returns `409 IDEMPOTENCY_IN_PROGRESS`. |
 | Concurrency | Mutable resources return `ETag`. Updates (`PATCH`) require `If-Match`; a stale tag returns `412 PRECONDITION_FAILED`. |
 | Step-up | Endpoints marked Step-up need header `X-Step-Up: <token>` from `POST /auth/step-up`, valid 5 minutes and bound to the user. |
-| Rate limits | Per principal and per IP. Headers: `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset`. Excess returns `429 RATE_LIMITED` with `Retry-After`. Defaults: staff 600/min, device 120/min, api\_key per plan, auth endpoints 10/min per IP. |
+| Rate limits | Per principal and per IP. Headers: `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset`. Excess returns `429 RATE_LIMITED` with `Retry-After`. Defaults: staff 600/min, device 120/min, api\_key per plan, auth endpoints 10/min per IP, except session refresh at 120/min per IP (DECISIONS D92). |
 | Request id | Server sets `X-Request-Id` on every response and in every error body. Clients may send their own for tracing. |
 | Errors | Non-2xx bodies are always `{"error": {"code": "ROOM_CHARGE_LIMIT", "message": "Orders over R500.00 need manager approval", "request_id": "...", "details": {...}}}`. Messages are safe to show users; `details` holds field errors. Stack traces and SQL never appear. |
 

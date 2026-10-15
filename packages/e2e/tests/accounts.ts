@@ -68,8 +68,8 @@ export async function signIn(page: Page, email: string, password: string): Promi
 
 /**
  * The two-step code, sent once more after waiting out the per-address limit if the API says
- * "Too many requests" (the code step counts toward the same 10-a-minute limit as the password;
- * a test that also reloads pages, which refreshes the session, can reach it).
+ * "Too many requests" (the code step counts toward the same 10-a-minute limit as the password,
+ * and the whole suite signs in from one address).
  */
 async function verifyCode(page: Page, secret: string, signedIn: Locator): Promise<void> {
   for (let attempt = 0; attempt < 2; attempt++) {

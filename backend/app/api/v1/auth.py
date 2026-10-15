@@ -20,6 +20,7 @@ from app.api.deps import (
     client_ip,
     get_principal_allow_mfa_pending,
     limit_auth_ip,
+    limit_auth_refresh_ip,
     state_of,
 )
 from app.core.errors import AppError
@@ -167,7 +168,7 @@ async def mfa_enroll(request: Request, uow: Uow, principal: PendingPrincipal) ->
     return await auth_service.enroll_mfa(state_of(request), uow, principal.uid)
 
 
-@router.post("/refresh", dependencies=AuthLimited, response_model=TokenResponse)
+@router.post("/refresh", dependencies=[Depends(limit_auth_refresh_ip)], response_model=TokenResponse)
 async def refresh(body: RefreshRequest, request: Request, uow: Uow) -> Response:
     client = _client(request)
     token = body.refresh_token
