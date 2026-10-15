@@ -531,6 +531,48 @@ async def test_plan_changes_wait_for_renewal_unless_an_upgrade_is_prorated(
             await conn.execute(text("UPDATE app.billing_settings SET proration_enabled = false"))
 
 
+async def test_a_prorated_upgrade_carries_the_group_discount(
+    client, factory, owner_engine, worker_engine, app_state, monkeypatch
+):
+    """D89 gap closed: the upgrade's charge gets the group discount like renewals do."""
+    from app.services import subscription as sub_service
+
+    await _vat(owner_engine, on=False)
+    admin = await platform(factory)
+    _plan_now, hotel, _sub = await _active(client, factory, owner_engine, admin)
+    big = await _plan(client, factory, admin)
+    from tests.api.test_plans import price
+
+    assert (await price(client, factory, admin, big["id"], "month", 99900)).status_code == 201
+    owner = await _owner(factory, hotel)
+
+    async def ten_percent(_uow, _ctx) -> int:
+        return 1000
+
+    monkeypatch.setattr(sub_service, "group_discount_bp", ten_percent)
+    async with owner_engine.begin() as conn:
+        await conn.execute(text("UPDATE app.billing_settings SET proration_enabled = true"))
+        await conn.execute(
+            text(
+                "UPDATE app.subscriptions SET current_period_start = :s, renews_on = :r, anchor_day = :d "
+                "WHERE hotel_id = :h AND status = 'active'"
+            ),
+            {"h": hotel.id, "s": TODAY - timedelta(days=10), "r": TODAY + timedelta(days=20), "d": TODAY.day},
+        )
+    try:
+        up = await client.post(
+            "/subscription/change",
+            json={"plan_code": big["code"], "interval": "month"},
+            headers={**owner, **idem()},
+        )
+        assert up.status_code == 200, up.text
+        # 333.33 for the rest of the period, less 10% (33.33) = 300.00
+        assert up.json()["invoice"]["total"]["amount_minor"] == 30000
+    finally:
+        async with owner_engine.begin() as conn:
+            await conn.execute(text("UPDATE app.billing_settings SET proration_enabled = false"))
+
+
 async def test_price_changes_reach_existing_subscribers_only_at_renewal_after_notice(
     client, factory, owner_engine, worker_engine, app_state
 ):

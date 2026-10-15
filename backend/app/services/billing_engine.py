@@ -259,6 +259,8 @@ async def change_plan(
         left = (sub.renews_on - today).days
         charge = div_half_up((price.amount_minor - sub.amount_minor) * left, days) if days > 0 else 0
         if charge > 0:
+            # The group discount (D89) applies to the upgrade's charge as it does to renewals.
+            group_bp = await sub_service.group_discount_bp(uow, ctx)
             draft = await sub_invoices.create_draft(
                 uow,
                 ctx,
@@ -267,9 +269,11 @@ async def change_plan(
                         "code": "proration",
                         "description": (
                             f"Upgrade from {current_plan.name} to {target.name} for {left} of {days} days"
+                            + (f" (group discount {group_bp / 100:g}%)" if group_bp else "")
                         ),
                         "quantity": 1,
                         "unit_amount_minor": charge,
+                        "discount_minor": div_half_up(charge * group_bp, 10000) if group_bp else 0,
                     }
                 ],
                 currency=sub.currency,
