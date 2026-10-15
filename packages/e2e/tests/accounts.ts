@@ -66,20 +66,39 @@ export async function signIn(page: Page, email: string, password: string): Promi
   }
 }
 
+/**
+ * The two-step code, sent once more after waiting out the per-address limit if the API says
+ * "Too many requests" (the code step counts toward the same 10-a-minute limit as the password;
+ * a test that also reloads pages, which refreshes the session, can reach it).
+ */
+async function verifyCode(page: Page, secret: string, signedIn: Locator): Promise<void> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    await page.getByLabel("Code").fill(await freshTotp(secret));
+    await page.getByRole("button", { name: "Verify" }).click();
+    const limited = page.getByText(/Too many requests/);
+    const outcome = await Promise.race([
+      signedIn.waitFor({ state: "attached", timeout: 30_000 }).then(() => "in" as const),
+      limited.waitFor({ state: "visible", timeout: 30_000 }).then(() => "limited" as const),
+    ]).catch(() => "unknown" as const);
+    if (outcome !== "limited") return;
+    await page.waitForTimeout(61_000);
+  }
+}
+
 export async function signInAdmin(page: Page): Promise<void> {
   await page.goto(ADMIN_URL);
   await signIn(page, accounts.admin.email, accounts.admin.password);
-  await page.getByLabel("Code").fill(await freshTotp(accounts.admin.totp_secret));
-  await page.getByRole("button", { name: "Verify" }).click();
-  await page.getByRole("link", { name: "Plans & Pricing" }).first().waitFor();
+  const nav = page.getByRole("link", { name: "Plans & Pricing" }).first();
+  await verifyCode(page, accounts.admin.totp_secret, nav);
+  await nav.waitFor();
 }
 
 export async function signInOwner(page: Page): Promise<void> {
   await page.goto(MERCHANT_URL);
   await signIn(page, accounts.owner.email, accounts.owner.password);
-  await page.getByLabel("Code").fill(await freshTotp(accounts.owner.totp_secret));
-  await page.getByRole("button", { name: "Verify" }).click();
-  await page.getByRole("button", { name: "Sign out" }).first().waitFor({ state: "attached" });
+  const signOut = page.getByRole("button", { name: "Sign out" }).first();
+  await verifyCode(page, accounts.owner.totp_secret, signOut);
+  await signOut.waitFor({ state: "attached" });
 }
 
 /** Answers the confirmation dialog if it appears. */

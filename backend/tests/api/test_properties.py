@@ -137,6 +137,85 @@ async def test_a_property_without_a_plan_cannot_grow_until_a_trial_or_plan(clien
     assert on_plan.status_code == 409
 
 
+async def test_one_person_is_invited_to_several_properties_and_sees_them_all(
+    client, factory, owner_engine, mailbox, app_state
+):
+    hotel = await factory.hotel(roles=("hotel_owner",))
+    second = uuid.UUID((await _add(client, factory, hotel)).json()["hotel_id"])
+    owner_headers = await factory.step_up(hotel, "hotel_owner", await factory.auth(hotel, "hotel_owner"))
+    email = f"gm.{uuid.uuid4().hex[:6]}@example.com"
+    # Without a plan the new property cannot add staff; the whole invitation is refused, none sent.
+    early = {
+        "name": "Group Manager",
+        "email": email,
+        "assignments": [
+            {"hotel_id": str(hotel.id), "role_codes": ["general_manager"]},
+            {"hotel_id": str(second), "role_codes": ["general_manager"]},
+        ],
+    }
+    refused = await client.post("/portfolio/invitations", json=early, headers={**owner_headers, **idem()})
+    assert refused.status_code == 422 and refused.json()["error"]["code"] == "PLAN_LIMIT_REACHED"
+    assert not [m for m in mailbox.sent if m.to == email]
+    admin = await platform(factory)
+    granted = await client.post(
+        f"/admin/hotels/{second}/trial",
+        json={"days": 14, "reason": "Group test"},
+        headers=step_up(factory, admin),
+    )
+    assert granted.status_code == 200, granted.text
+    body = {
+        "name": "Group Manager",
+        "email": email,
+        "assignments": [
+            {"hotel_id": str(hotel.id), "role_codes": ["general_manager"]},
+            {"hotel_id": str(second), "role_codes": ["general_manager"]},
+        ],
+    }
+    stranger = await factory.hotel(roles=("hotel_owner",))
+    foreign = {**body, "assignments": [{"hotel_id": str(stranger.id), "role_codes": ["receptionist"]}]}
+    assert (
+        await client.post("/portfolio/invitations", json=foreign, headers={**owner_headers, **idem()})
+    ).status_code == 404
+
+    r = await client.post("/portfolio/invitations", json=body, headers={**owner_headers, **idem()})
+    assert r.status_code == 201, r.text
+    assert {x["hotel_id"] for x in r.json()["data"]} == {str(hotel.id), str(second)}
+
+    tokens = [
+        next(w for w in m.body.split() if w.startswith("inv_"))
+        for m in mailbox.sent
+        if m.to == email and m.template == "staff_invitation"
+    ]
+    assert len(tokens) == 2
+    password = f"Manager-Password-{uuid.uuid4().hex[:6]}"
+    await app_state.limiter.reset()
+    for t in tokens:
+        ok_ = await client.post(
+            f"/auth/invitations/{t}/accept",
+            json={"name": "Group Manager", "password": password, "pin": "4321"},
+            headers=idem(),
+        )
+        assert ok_.status_code == 201, ok_.text
+
+    async with owner_engine.connect() as conn:
+        uid = (
+            await conn.execute(text("SELECT id FROM app.users WHERE email = :e"), {"e": email})
+        ).scalar_one()
+        hu = (
+            await conn.execute(
+                text("SELECT id FROM app.hotel_users WHERE hotel_id = :h AND user_id = :u"),
+                {"h": hotel.id, "u": uid},
+            )
+        ).scalar_one()
+    gm = SeededUser("general_manager", email, password, uid, hu, "Group Manager")
+    token, _ = await factory.token(hotel, gm)
+    gm_headers = {"Authorization": f"Bearer {token}"}
+    names = {h["hotel_id"] for h in (await client.get("/portfolio", headers=gm_headers)).json()["data"]}
+    assert names == {str(hotel.id), str(second)}
+    # Managing is not owning: no group billing and no inviting across properties.
+    assert (await client.get("/portfolio/billing", headers=gm_headers)).status_code == 403
+
+
 async def test_the_portfolio_shows_only_the_owners_hotels(client, factory, owner_engine):
     hotel = await factory.hotel(roles=("hotel_owner", "receptionist"))
     other = await factory.hotel(roles=("hotel_owner",))  # someone else's hotel

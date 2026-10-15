@@ -24,7 +24,9 @@ from app.core.state import AppState
 from app.db.session import TenantContext, UnitOfWork, set_tenant
 from app.models.tenancy import Hotel, HotelSettings, Plan, Subscription, User
 from app.repositories.hotels import CURRENT_STATUSES
-from app.services import reports
+from app.repositories.roles import RoleRepository
+from app.repositories.staff import StaffRepository
+from app.services import reports, staff
 from app.services.auth import ClientInfo, Membership, memberships
 from app.services.pricing import money
 from app.services.signup import create_hotel, prepare_hotel
@@ -46,6 +48,63 @@ SELECT
 
 async def owned(uow: UnitOfWork, user_id: uuid.UUID) -> list[Membership]:
     return [m for m in await memberships(uow.session, user_id) if OWNER in m.role_codes]
+
+
+# Roles that see the portfolio of the hotels where they hold them (D90): owners, and the
+# managers an owner put over several properties.
+PORTFOLIO_ROLES = {OWNER, "hotel_admin", "general_manager"}
+
+
+async def managed(uow: UnitOfWork, user_id: uuid.UUID) -> list[Membership]:
+    return [m for m in await memberships(uow.session, user_id) if PORTFOLIO_ROLES & set(m.role_codes)]
+
+
+async def invite_to_properties(
+    st: AppState,
+    uow: UnitOfWork,
+    *,
+    user_id: uuid.UUID,
+    current: TenantContext,
+    name: str,
+    email: str,
+    department: str | None,
+    assignments: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """One person invited to several of the caller's properties at once, with a role at each
+    (D90). Each invitation is the hotel's own, made under its context by the ordinary staff
+    invitation (permission check, staff limit, audit, email), so each hotel stays separate."""
+    mine = {m.hotel_id: m for m in await owned(uow, user_id)}
+    if not mine:
+        raise AppError("PERMISSION_DENIED", "Only a hotel owner can invite to several properties.")
+    if any(a["hotel_id"] not in mine for a in assignments):
+        raise AppError("NOT_FOUND", "One of the properties is not yours.")
+    out = []
+    try:
+        for a in assignments:
+            m = mine[a["hotel_id"]]
+            await set_tenant(uow.session, m.hotel_id, user_id)
+            ctx = TenantContext(
+                hotel_id=m.hotel_id,
+                actor_type="user",
+                actor_id=user_id,
+                actor_label=current.actor_label,
+                ip=current.ip,
+                request_id=current.request_id,
+            )
+            roles = RoleRepository(uow.session, ctx)
+            role_ids = [await roles.system_role_id(code) for code in a["role_codes"]]
+            perms = frozenset(await StaffRepository(uow.session, ctx).member_permissions(m.hotel_user_id))
+            inv = await staff.invite(
+                st,
+                uow,
+                ctx,
+                {"name": name, "email": email, "department": department, "role_ids": role_ids},
+                perms,
+            )
+            out.append({"hotel_id": m.hotel_id, "hotel_name": m.hotel_name, **inv})
+    finally:
+        await set_tenant(uow.session, current.hotel_id, user_id)
+    return out
 
 
 async def add_property(
@@ -127,10 +186,10 @@ async def _hotel_summary(uow: UnitOfWork, ctx: TenantContext) -> dict[str, Any]:
 
 
 async def portfolio(uow: UnitOfWork, user_id: uuid.UUID, current: TenantContext) -> dict[str, Any]:
-    """Every hotel the caller owns, side by side, with totals per currency."""
-    hotels = await owned(uow, user_id)
+    """Every hotel the caller owns or manages, side by side, with totals per currency."""
+    hotels = await managed(uow, user_id)
     if not hotels:
-        raise AppError("PERMISSION_DENIED", "Only a hotel owner sees the portfolio.")
+        raise AppError("PERMISSION_DENIED", "Only owners and general managers see the portfolio.")
     out = []
     try:
         for m in sorted(hotels, key=lambda m: m.hotel_name.lower()):

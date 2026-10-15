@@ -1,5 +1,45 @@
 # Progress
 
+## 2026-10-15: Deployment, onboarding, owners with several properties, insights, website (D84 to D90)
+
+### Done
+
+- Deployed: API and worker on Railway (staging settings: local KMS, console email), Redis on
+  Railway, Postgres on Supabase (session pooler, least-privilege roles; the Supabase bootstrap
+  no longer names NOSUPERUSER, which Postgres 16+ refuses to non-superusers). Supabase is
+  migrated to 0036.
+- Onboarding (D84, D85): every inhabited country with currency, dialling code, language, zones
+  and first-level regions; operational countries chosen in Admin > Countries; a guided
+  signup (property, location with province dropdown, account, review) with no currency
+  question and a 6-digit emailed confirmation code; 15 property categories.
+- Owners with several properties (D86, D89, D90): Add a property (no second free trial;
+  Admin can grant one), All properties overview, one payment for every property's invoices
+  with an optional group discount, and invitations to several properties at once.
+- Admin insights (D87): adoption, activation funnel, trial conversion, churn, MRR won/lost,
+  cohorts, breakdowns by country, province and category, staff activity, an Owners page, and
+  hotel filters with CSV.
+- Website (D83, D88): the website API is connected (two bugs fixed: leads crashed on a
+  missing rate limit; unpublishing wrote JSON null), `apps/website` for Vercel with pricing
+  from Plans & Pricing and legal pages from Legal documents, and Admin > Website to edit
+  pages, posts, images, leads, redirects, settings and see visitors.
+- CI fixes: website code formatting, tests always on local storage, exact sign-in buttons in
+  browser tests, a longer timeout for the two-sign-in subscription test.
+
+### Next
+
+- Production readiness: AWS KMS and an SMTP provider, then `APP_ENV=production` on Railway;
+  a separate Supabase project for production (staging and production never share a database).
+- Custom domain for the API and web apps (staff sign-in needs the same site).
+- Vercel projects for the six web apps (the website is new: Root Directory `apps/website`).
+- Migrations are applied to Supabase by hand from a trusted machine until the GitHub Migrate
+  workflow has its secrets.
+
+### Known gaps
+
+- The browser tests in CI were last seen failing on timeouts in the subscription journey;
+  the timeout was raised and needs confirming on the next run.
+- Prorated upgrade invoices do not carry the group discount (D89).
+
 ## 2026-10-12: Worldwide hotels (D69), legal documents (D70), locale formatting
 
 ### Done

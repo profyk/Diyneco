@@ -82,7 +82,8 @@ A new owner signs up, creates a hotel, and the onboarding wizard tracks which of
 | POST | `/portfolio/payments` | staff | Hotel Owner | Idem | `{currency}`: one checkout for every open invoice in that currency; each property gets its own share (D89) |
 | GET | `/portfolio/payments/{id}` | staff | the owner who started it | — | Status as the provider reports it now (D89) |
 | POST | `/portfolio/payments/{id}/sandbox` | staff | the owner who started it | Idem | Test mode only: finish a sandbox group checkout (D89) |
-| GET | `/portfolio` | staff | Hotel Owner | — | Every hotel the caller owns: status, plan, occupancy, stays, orders, staff, revenue today and this month; totals per currency (D86) |
+| GET | `/portfolio` | staff | Hotel Owner, Hotel Admin or General Manager | — | Every hotel the caller owns or manages: status, plan, occupancy, stays, orders, staff, revenue today and this month; totals per currency (D86, D90) |
+| POST | `/portfolio/invitations` | staff | Hotel Owner of each property + Step-up | Idem | `{name, email, assignments: [{hotel_id, role_codes}]}`: one person invited to several properties, one ordinary invitation each, all or none (D90) |
 | GET | `/admin/insights` | platform | `platform.metrics` | — | `?since&until` (≤ 1 year): adoption totals, signups per day, activation funnel, trial conversion, churn, MRR won/lost, cohorts, breakdowns by country/province/category, staff activity; aggregates only (D87) |
 | GET | `/admin/owners` | platform | `platform.tenants.read` | — | Every Hotel Owner with their properties, rooms, MRR and money processed (D87) |
 | POST | `/admin/hotels/{id}/trial` | platform | `platform.billing.manage` + Step-up | — | `{days, reason}`: grant a trial to a hotel without a subscription or change a running trial's end; audited (D86) |

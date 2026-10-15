@@ -87,10 +87,12 @@ function Shell({ children }: { children: ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
   if (state.status !== "signed-in") return null;
   const { me, hotels } = state;
-  // Owners see every property they own side by side and can add more (D86).
+  // Owners and the managers they put over several properties see them side by side (D86, D90).
+  const PORTFOLIO = ["hotel_owner", "hotel_admin", "general_manager"];
+  const portfolio = me.roles.some((r) => PORTFOLIO.includes(r)) || hotels.some((h) => h.roles.some((r) => PORTFOLIO.includes(r)));
   const owner = me.roles.includes("hotel_owner") || hotels.some((h) => h.roles.includes("hotel_owner"));
   const nav = NAV.filter((n) =>
-    n.owner ? owner : n.perm ? can(n.perm) : n.any ? n.any.some(can) : true,
+    n.owner ? portfolio : n.perm ? can(n.perm) : n.any ? n.any.some(can) : true,
   );
   const suspended = me.hotel?.status === "suspended";
   const pending = me.hotel?.status === "pending_approval";

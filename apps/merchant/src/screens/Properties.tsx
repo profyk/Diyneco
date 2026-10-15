@@ -6,10 +6,14 @@ import {
   Button,
   Card,
   CardHeader,
+  Dialog,
   EmptyState,
   ErrorNotice,
+  Field,
+  Input,
   PageHeader,
   propertyTypeLabel,
+  Select,
   Skeleton,
   StatTile,
   Table,
@@ -18,6 +22,7 @@ import {
 } from "@diyneco/shared-ui";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
+import { useState } from "react";
 
 import { useAction } from "../common";
 import { useSession } from "../session";
@@ -42,6 +47,11 @@ export function Properties() {
   const { api, state, switchHotel } = useSession();
   const q = useQuery({ queryKey: ["portfolio"], queryFn: () => ok(api.GET("/api/v1/portfolio")), refetchInterval: 60_000 });
   const currentId = state.status === "signed-in" ? state.me.hotel?.id : undefined;
+  const memberships = state.status === "signed-in" ? state.hotels : [];
+  const ownedIds = new Set(memberships.filter((h) => h.roles.includes("hotel_owner")).map((h) => String(h.id)));
+  if (state.status === "signed-in" && state.me.roles.includes("hotel_owner") && currentId) ownedIds.add(currentId);
+  const isOwner = ownedIds.size > 0;
+  const [inviting, setInviting] = useState(false);
 
   const open = async (hotelId: string, path = "/") => {
     if (hotelId !== currentId) await switchHotel(hotelId);
@@ -52,13 +62,26 @@ export function Properties() {
     <>
       <PageHeader
         title="All properties"
-        description="Every property you own, live. Open one to manage it."
+        description="Every property you own or manage, live. Open one to manage it."
         actions={
-          <Link href="/properties/new" className="inline-flex h-10 items-center rounded-[10px] bg-brand px-4 text-sm font-medium text-on-brand hover:opacity-90">
-            Add a property
-          </Link>
+          isOwner ? (
+            <>
+              <Button variant="secondary" onClick={() => setInviting(true)}>
+                Invite to several properties
+              </Button>
+              <Link href="/properties/new" className="inline-flex h-10 items-center rounded-[10px] bg-brand px-4 text-sm font-medium text-on-brand hover:opacity-90">
+                Add a property
+              </Link>
+            </>
+          ) : undefined
         }
       />
+      {inviting && q.data ? (
+        <InviteDialog
+          hotels={q.data.data.filter((h) => ownedIds.has(String(h.hotel_id))).map((h) => ({ id: String(h.hotel_id), name: h.name }))}
+          onClose={() => setInviting(false)}
+        />
+      ) : null}
       {q.isLoading ? <Skeleton className="h-64" /> : null}
       {q.error ? <ErrorNotice error={q.error} /> : null}
       {q.data ? (
@@ -150,8 +173,87 @@ export function Properties() {
           )}
         </>
       ) : null}
-      <GroupBilling />
+      {isOwner ? <GroupBilling /> : null}
     </>
+  );
+}
+
+const ROLES = [
+  ["general_manager", "General manager"],
+  ["hotel_admin", "Hotel admin"],
+  ["finance_manager", "Finance manager"],
+  ["reception_manager", "Reception manager"],
+  ["receptionist", "Receptionist"],
+  ["kitchen_manager", "Kitchen manager"],
+  ["kitchen_staff", "Kitchen staff"],
+  ["room_service_manager", "Room-service manager"],
+  ["room_service_staff", "Room-service staff"],
+  ["hotel_owner", "Co-owner"],
+] as const;
+
+type RoleCode = (typeof ROLES)[number][0];
+
+/** One person, several properties, a role at each (D90). Each property sends its own invitation. */
+function InviteDialog({ hotels, onClose }: { hotels: { id: string; name: string }[]; onClose: () => void }) {
+  const { api } = useSession();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [picked, setPicked] = useState<Record<string, RoleCode | "">>({});
+  const assignments = Object.entries(picked).filter(([, r]) => r) as [string, RoleCode][];
+  const send = useAction(
+    () =>
+      ok(
+        api.POST("/api/v1/portfolio/invitations", {
+          body: { name, email, assignments: assignments.map(([hotel_id, role]) => ({ hotel_id, role_codes: [role] })) },
+        }),
+      ),
+    { success: (r) => `Invited to ${r.data.length} properties. Each sends its own email.`, onDone: onClose },
+  );
+  return (
+    <Dialog
+      open
+      onClose={onClose}
+      size="lg"
+      title="Invite to several properties"
+      description="The person signs in once and switches between the properties you choose. Each property keeps its own staff list and permissions."
+      footer={
+        <Button disabled={!name.trim() || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || !assignments.length} loading={send.isPending} onClick={() => send.mutate(undefined)}>
+          Send {assignments.length || ""} invitation{assignments.length === 1 ? "" : "s"}
+        </Button>
+      }
+    >
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Name">{(p) => <Input {...p} value={name} onChange={(e) => setName(e.target.value)} />}</Field>
+        <Field label="Email">{(p) => <Input {...p} type="email" value={email} onChange={(e) => setEmail(e.target.value)} />}</Field>
+      </div>
+      <Table className="mt-4">
+        <thead>
+          <tr>
+            <Th>Property</Th>
+            <Th>Role there</Th>
+          </tr>
+        </thead>
+        <tbody>
+          {hotels.map((h) => (
+            <tr key={h.id}>
+              <Td>{h.name}</Td>
+              <Td>
+                <Select aria-label={`Role at ${h.name}`} value={picked[h.id] ?? ""} onChange={(e) => setPicked({ ...picked, [h.id]: e.target.value as RoleCode | "" })}>
+                  <option value="">Not invited</option>
+                  {ROLES.map(([code, label]) => (
+                    <option key={code} value={code}>
+                      {label}
+                    </option>
+                  ))}
+                </Select>
+              </Td>
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+      <p className="mt-3 text-xs text-muted">General managers and hotel admins also see the All properties overview for their properties.</p>
+      {send.error ? <ErrorNotice error={send.error} className="mt-3" /> : null}
+    </Dialog>
   );
 }
 

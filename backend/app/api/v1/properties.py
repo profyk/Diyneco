@@ -17,6 +17,8 @@ from app.schemas.properties import (
     GroupPaymentOut,
     GroupPayRequest,
     GroupStatement,
+    MultiInvite,
+    MultiInviteList,
     PortfolioOut,
 )
 from app.schemas.sub_payments import SandboxOutcome
@@ -98,6 +100,27 @@ async def group_sandbox(
         state_of(request), uow, _user(principal), principal.tenant(request), group_id, body.outcome
     )
     return await idem.complete(uow, 200, GroupPaymentOut.model_validate(out).model_dump(mode="json"))
+
+
+@router.post("/portfolio/invitations", status_code=201, response_model=MultiInviteList)
+async def invite_to_properties(
+    idem: IdemUser, body: MultiInvite, request: Request, uow: Uow, principal: StepUp
+) -> Response:
+    """Invites one person to several of the caller's properties at once, with a role at each
+    (D90). Each property gets its own invitation, checked and audited as usual."""
+    rows = await svc.invite_to_properties(
+        state_of(request),
+        uow,
+        user_id=_user(principal),
+        current=principal.tenant(request),
+        name=body.name,
+        email=body.email,
+        department=body.department,
+        assignments=[a.model_dump() for a in body.assignments],
+    )
+    return await idem.complete(
+        uow, 201, MultiInviteList.model_validate({"data": rows}).model_dump(mode="json")
+    )
 
 
 @router.get("/portfolio", response_model=PortfolioOut)

@@ -3396,6 +3396,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/portfolio/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Invite To Properties
+         * @description Invites one person to several of the caller's properties at once, with a role at each
+         *     (D90). Each property gets its own invitation, checked and audited as usual.
+         */
+        post: operations["invite_to_properties_api_v1_portfolio_invitations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/portfolio/payments": {
         parameters: {
             query?: never;
@@ -8462,6 +8483,51 @@ export interface components {
             /** Currency */
             currency: string;
         };
+        /**
+         * MultiInvite
+         * @description One person invited to several of the owner's properties, with a role at each (D90).
+         */
+        MultiInvite: {
+            /** Assignments */
+            assignments: components["schemas"]["PropertyAssignment"][];
+            /** Department */
+            department?: string | null;
+            /** Email */
+            email: string;
+            /** Name */
+            name: string;
+        };
+        /** MultiInviteList */
+        MultiInviteList: {
+            /** Data */
+            data: components["schemas"]["MultiInviteResult"][];
+        };
+        /** MultiInviteResult */
+        MultiInviteResult: {
+            /** Email */
+            email: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /**
+             * Hotel Id
+             * Format: uuid
+             */
+            hotel_id: string;
+            /** Hotel Name */
+            hotel_name: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Roles */
+            roles: {
+                [key: string]: unknown;
+            }[];
+        };
         /** NavLink */
         NavLink: {
             /** Href */
@@ -9473,6 +9539,16 @@ export interface components {
              * @enum {string}
              */
             type: "pricing";
+        };
+        /** PropertyAssignment */
+        PropertyAssignment: {
+            /**
+             * Hotel Id
+             * Format: uuid
+             */
+            hotel_id: string;
+            /** Role Codes */
+            role_codes: ("hotel_owner" | "hotel_admin" | "general_manager" | "reception_manager" | "receptionist" | "finance_manager" | "kitchen_manager" | "kitchen_staff" | "room_service_manager" | "room_service_staff")[];
         };
         /** ProviderStatusOut */
         ProviderStatusOut: {
@@ -18688,6 +18764,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GroupStatement"];
+                };
+            };
+        };
+    };
+    invite_to_properties_api_v1_portfolio_invitations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MultiInvite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MultiInviteList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

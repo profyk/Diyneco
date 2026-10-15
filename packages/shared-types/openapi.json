@@ -11667,6 +11667,113 @@
         "title": "Money",
         "type": "object"
       },
+      "MultiInvite": {
+        "additionalProperties": false,
+        "description": "One person invited to several of the owner's properties, with a role at each (D90).",
+        "properties": {
+          "assignments": {
+            "items": {
+              "$ref": "#/components/schemas/PropertyAssignment"
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Assignments",
+            "type": "array"
+          },
+          "department": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Department"
+          },
+          "email": {
+            "maxLength": 320,
+            "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
+            "title": "Email",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "email",
+          "assignments"
+        ],
+        "title": "MultiInvite",
+        "type": "object"
+      },
+      "MultiInviteList": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/MultiInviteResult"
+            },
+            "title": "Data",
+            "type": "array"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "MultiInviteList",
+        "type": "object"
+      },
+      "MultiInviteResult": {
+        "properties": {
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "hotel_id": {
+            "format": "uuid",
+            "title": "Hotel Id",
+            "type": "string"
+          },
+          "hotel_name": {
+            "title": "Hotel Name",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "roles": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Roles",
+            "type": "array"
+          }
+        },
+        "required": [
+          "hotel_id",
+          "hotel_name",
+          "id",
+          "email",
+          "roles",
+          "expires_at"
+        ],
+        "title": "MultiInviteResult",
+        "type": "object"
+      },
       "NavLink": {
         "additionalProperties": false,
         "properties": {
@@ -14791,6 +14898,43 @@
           "type"
         ],
         "title": "Pricing",
+        "type": "object"
+      },
+      "PropertyAssignment": {
+        "additionalProperties": false,
+        "properties": {
+          "hotel_id": {
+            "format": "uuid",
+            "title": "Hotel Id",
+            "type": "string"
+          },
+          "role_codes": {
+            "items": {
+              "enum": [
+                "hotel_owner",
+                "hotel_admin",
+                "general_manager",
+                "reception_manager",
+                "receptionist",
+                "finance_manager",
+                "kitchen_manager",
+                "kitchen_staff",
+                "room_service_manager",
+                "room_service_staff"
+              ],
+              "type": "string"
+            },
+            "maxItems": 5,
+            "minItems": 1,
+            "title": "Role Codes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "hotel_id",
+          "role_codes"
+        ],
+        "title": "PropertyAssignment",
         "type": "object"
       },
       "ProviderStatusOut": {
@@ -32071,6 +32215,48 @@
           }
         },
         "summary": "Group Statement",
+        "tags": [
+          "properties"
+        ]
+      }
+    },
+    "/api/v1/portfolio/invitations": {
+      "post": {
+        "description": "Invites one person to several of the caller's properties at once, with a role at each\n(D90). Each property gets its own invitation, checked and audited as usual.",
+        "operationId": "invite_to_properties_api_v1_portfolio_invitations_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MultiInvite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MultiInviteList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Invite To Properties",
         "tags": [
           "properties"
         ]

@@ -120,6 +120,47 @@ class GroupPayRequest(StrictModel):
     currency: Annotated[str, StringConstraints(pattern=r"^[A-Z]{3}$")]
 
 
+HotelRole = Literal[
+    "hotel_owner",
+    "hotel_admin",
+    "general_manager",
+    "reception_manager",
+    "receptionist",
+    "finance_manager",
+    "kitchen_manager",
+    "kitchen_staff",
+    "room_service_manager",
+    "room_service_staff",
+]
+
+
+class PropertyAssignment(StrictModel):
+    hotel_id: uuid.UUID
+    role_codes: Annotated[list[HotelRole], Field(min_length=1, max_length=5)]
+
+
+class MultiInvite(StrictModel):
+    """One person invited to several of the owner's properties, with a role at each (D90)."""
+
+    name: Annotated[str, StringConstraints(min_length=1, max_length=120, strip_whitespace=True)]
+    email: Annotated[str, StringConstraints(pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$", max_length=320)]
+    department: Annotated[str, StringConstraints(max_length=80)] | None = None
+    assignments: Annotated[list[PropertyAssignment], Field(min_length=1, max_length=50)]
+
+
+class MultiInviteResult(BaseModel):
+    hotel_id: uuid.UUID
+    hotel_name: str
+    id: uuid.UUID
+    email: str
+    roles: list[dict[str, Any]]
+    expires_at: datetime
+
+
+class MultiInviteList(BaseModel):
+    data: list[MultiInviteResult]
+
+
 class TrialGrant(StrictModel):
     days: Annotated[int, Field(ge=1, le=90)]
     reason: Annotated[str, StringConstraints(strip_whitespace=True, min_length=3, max_length=500)]
