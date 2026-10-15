@@ -515,7 +515,8 @@ async def restore_version(
 
 def preview_link(st: AppState, base_url: str, entry_id: uuid.UUID) -> dict[str, Any]:
     token, _ = st.jwt.sign("site_preview", {"sub": str(entry_id)}, PREVIEW_TTL_S)
-    return {"url": f"{base_url.rstrip('/')}/api/preview?token={token}", "expires_in": PREVIEW_TTL_S}
+    # The website's /preview page (apps/website) renders the draft behind the token (D88).
+    return {"url": f"{base_url.rstrip('/')}/preview?token={token}", "expires_in": PREVIEW_TTL_S}
 
 
 async def preview(st: AppState, uow: UnitOfWork, entry_id: uuid.UUID) -> dict[str, Any]:
