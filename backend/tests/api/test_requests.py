@@ -67,6 +67,28 @@ async def test_a_guest_asks_and_staff_take_it_to_done(client, factory, owner_eng
     assert audit == 3
 
 
+async def test_the_requests_report_counts_by_kind_and_by_who_finished(client, factory, owner_engine):
+    hotel, gm, tablet, _items, _stay = await setup(client, factory, owner_engine)
+    ids = []
+    for kind in ("towels", "towels", "maintenance"):
+        r = await client.post("/guest/requests", json={"kind": kind}, headers={**tablet, **idem()})
+        ids.append(r.json()["id"])
+    rec = await factory.auth(hotel, "receptionist")
+    await client.post(f"/requests/{ids[0]}/done", headers={**rec, **idem()})
+    await client.post(f"/requests/{ids[2]}/cancel", json={}, headers={**rec, **idem()})
+    today = datetime.now(UTC).date()
+    span = {"from": str(today - timedelta(days=1)), "to": str(today + timedelta(days=1))}
+    report = await client.get("/reports/requests", params=span, headers=gm)
+    assert report.status_code == 200, report.text
+    kinds = {k["kind"]: k for k in report.json()["kinds"]}
+    assert kinds["towels"]["requests"] == 2 and kinds["towels"]["done"] == 1
+    assert kinds["towels"]["from_guests"] == 2 and kinds["towels"]["median_minutes_to_done"] == 0
+    assert kinds["maintenance"]["cancelled"] == 1 and kinds["maintenance"]["median_minutes_to_done"] is None
+    assert [s["done"] for s in report.json()["staff"]] == [1]
+    kitchen = await factory.auth(hotel, "kitchen_staff")
+    assert (await client.get("/reports/requests", params=span, headers=kitchen)).status_code == 403
+
+
 async def test_guest_rules_wake_up_time_cancel_and_no_stay(client, factory, owner_engine):
     _hotel, _gm, tablet, _items, _stay = await setup(client, factory, owner_engine)
     no_time = await client.post("/guest/requests", json={"kind": "wake_up"}, headers={**tablet, **idem()})

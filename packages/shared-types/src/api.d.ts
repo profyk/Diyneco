@@ -3652,6 +3652,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/reports/requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Service Requests
+         * @description Guest service requests (D93): by kind and by the person who finished them.
+         */
+        get: operations["service_requests_api_v1_reports_requests_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/reports/revenue": {
         parameters: {
             query?: never;
@@ -10189,6 +10209,23 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /** RequestKindRow */
+        RequestKindRow: {
+            /** Cancelled */
+            cancelled: number;
+            /** Done */
+            done: number;
+            /** From Guests */
+            from_guests: number;
+            /** Kind */
+            kind: string;
+            /** Median Minutes To Done */
+            median_minutes_to_done: number | null;
+            /** Median Minutes To Seen */
+            median_minutes_to_seen: number | null;
+            /** Requests */
+            requests: number;
+        };
         /** RequestList */
         RequestList: {
             /** Data */
@@ -10254,6 +10291,17 @@ export interface components {
             /** Waiting Minutes */
             waiting_minutes: number;
         };
+        /** RequestStaffRow */
+        RequestStaffRow: {
+            /** Done */
+            done: number;
+            /** Median Minutes To Done */
+            median_minutes_to_done: number | null;
+            /** Name */
+            name: string;
+            /** Staff Id */
+            staff_id: string | null;
+        };
         /** RequestSummary */
         RequestSummary: {
             /** Done Today */
@@ -10264,6 +10312,26 @@ export interface components {
             median_minutes_to_done: number | null;
             /** Open */
             open: number;
+        };
+        /**
+         * RequestsReport
+         * @description Guest service requests (D93) by kind and by who finished them.
+         */
+        RequestsReport: {
+            /**
+             * From
+             * Format: date
+             */
+            from: string;
+            /** Kinds */
+            kinds: components["schemas"]["RequestKindRow"][];
+            /** Staff */
+            staff: components["schemas"]["RequestStaffRow"][];
+            /**
+             * To
+             * Format: date
+             */
+            to: string;
         };
         /** ResendEmailCodeRequest */
         ResendEmailCodeRequest: {
@@ -19579,6 +19647,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PaymentsReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    service_requests_api_v1_reports_requests_get: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestsReport"];
                 };
             };
             /** @description Validation Error */

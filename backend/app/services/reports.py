@@ -326,6 +326,67 @@ async def room_service(uow: UnitOfWork, ctx: TenantContext, date_from: date, dat
     }
 
 
+async def requests(uow: UnitOfWork, ctx: TenantContext, date_from: date, date_to: date) -> dict[str, Any]:
+    """Guest service requests (D93) by kind and by the person who finished them: how many,
+    how many were cancelled, and the median minutes to being seen and to being done."""
+    _range(date_from, date_to)
+    p = {"h": ctx.hotel_id, "f": date_from, "t": date_to}
+    window = (
+        "FROM app.service_requests r JOIN app.hotel_settings hs ON hs.hotel_id = r.hotel_id "
+        "WHERE r.hotel_id = :h AND (r.created_at AT TIME ZONE hs.timezone)::date BETWEEN :f AND :t "
+    )
+    minutes = "percentile_cont(0.5) WITHIN GROUP (ORDER BY extract(epoch FROM {end} - r.created_at) / 60)"
+    kinds = await _rows(
+        uow,
+        "SELECT r.kind, count(*) AS n, "
+        "count(*) FILTER (WHERE r.status = 'done') AS done, "
+        "count(*) FILTER (WHERE r.status = 'cancelled') AS cancelled, "
+        "count(*) FILTER (WHERE r.source = 'guest') AS from_guests, "
+        f"{minutes.format(end='r.acknowledged_at')} "
+        "FILTER (WHERE r.acknowledged_at IS NOT NULL) AS p50_seen, "
+        f"{minutes.format(end='r.completed_at')} FILTER (WHERE r.status = 'done') AS p50_done "
+        f"{window}GROUP BY 1 ORDER BY 2 DESC, 1",
+        p,
+    )
+    staff = await _rows(
+        uow,
+        "SELECT r.assigned_to AS staff_id, u.name, count(*) AS n, "
+        f"{minutes.format(end='r.completed_at')} AS p50_done "
+        f"{window.replace('WHERE', 'LEFT JOIN app.users u ON u.id = r.assigned_to WHERE')}"
+        "AND r.status = 'done' AND r.assigned_to IS NOT NULL GROUP BY 1, 2 ORDER BY 3 DESC, 2",
+        p,
+    )
+
+    def mins(v: Any) -> int | None:
+        return round(float(v)) if v is not None else None
+
+    return {
+        "from": date_from,
+        "to": date_to,
+        "kinds": [
+            {
+                "kind": r["kind"],
+                "requests": int(r["n"]),
+                "done": int(r["done"]),
+                "cancelled": int(r["cancelled"]),
+                "from_guests": int(r["from_guests"]),
+                "median_minutes_to_seen": mins(r["p50_seen"]),
+                "median_minutes_to_done": mins(r["p50_done"]),
+            }
+            for r in kinds
+        ],
+        "staff": [
+            {
+                "staff_id": r["staff_id"],
+                "name": r["name"] or "",
+                "done": int(r["n"]),
+                "median_minutes_to_done": mins(r["p50_done"]),
+            }
+            for r in staff
+        ],
+    }
+
+
 async def occupancy(uow: UnitOfWork, ctx: TenantContext, date_from: date, date_to: date) -> dict[str, Any]:
     """Room-nights per night: occupied (a checked-in stay covers the night), out of service
     (rooms currently out of service; room status history is not kept), and available."""

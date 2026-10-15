@@ -330,6 +330,7 @@ The kitchen moves orders and items through preparation; room service moves deliv
 | POST | `/requests/{id}/acknowledge` \| `start` \| `done` | staff | `requests.update` | Idem | `open` → `acknowledged` → `in_progress` → `done` (steps may be skipped, never reversed) |
 | POST | `/requests/{id}/assign` | staff | `requests.update` | Idem | To a staff member who holds `requests.update` |
 | POST | `/requests/{id}/cancel` | staff | `requests.update` | Idem | `{reason?}`; before done |
+| GET | `/reports/requests` | staff | `reports.read` | — | `?from&to` (hotel days): requests by kind (count, done, cancelled, from tablets, median minutes to seen and to done) and by who finished them |
 
 Each transition writes one `order_status_history` row with actor, device and timestamp, then publishes its realtime event after commit. Calls that would skip a state or repeat one return `409 INVALID_TRANSITION` with the current status.
 

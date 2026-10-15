@@ -26,7 +26,7 @@ import { useState } from "react";
 import { isoDay, label, useAction } from "../common";
 import { useCurrency, useSession } from "../session";
 
-type Tab = "revenue" | "payments" | "operations" | "occupancy" | "close" | "receivable";
+type Tab = "revenue" | "payments" | "operations" | "requests" | "occupancy" | "close" | "receivable";
 
 const TABS: { key: Tab; title: string; perm: string }[] = [
   { key: "revenue", title: "Revenue", perm: "reports.finance" },
@@ -34,6 +34,7 @@ const TABS: { key: Tab; title: string; perm: string }[] = [
   { key: "close", title: "Daily close", perm: "reports.finance" },
   { key: "receivable", title: "Open balances", perm: "reports.finance" },
   { key: "operations", title: "Orders & kitchen", perm: "reports.read" },
+  { key: "requests", title: "Guest requests", perm: "reports.read" },
   { key: "occupancy", title: "Occupancy", perm: "reports.read" },
 ];
 
@@ -82,6 +83,7 @@ export function Reports() {
       {tab === "revenue" ? <Revenue from={from} to={to} /> : null}
       {tab === "payments" ? <PaymentsReport from={from} to={to} /> : null}
       {tab === "operations" ? <Operations from={from} to={to} /> : null}
+      {tab === "requests" ? <RequestsReport from={from} to={to} /> : null}
       {tab === "occupancy" ? <Occupancy from={from} to={to} /> : null}
       {tab === "close" ? <DailyClose /> : null}
       {tab === "receivable" ? <Receivable /> : null}
@@ -208,6 +210,87 @@ function PaymentsReport({ from, to }: { from: string; to: string }) {
           </tbody>
         </Table>
       </Card>
+    </div>
+  );
+}
+
+/** Guest service requests (D93): what guests ask for most and how fast the team answers. */
+function RequestsReport({ from, to }: { from: string; to: string }) {
+  const { api } = useSession();
+  const r = useQuery({
+    queryKey: ["reports", "requests", from, to],
+    queryFn: () => ok(api.GET("/api/v1/reports/requests", { params: { query: { from, to } } })),
+  });
+  if (r.isLoading) return <Skeleton className="h-40" />;
+  if (!r.data) return <ErrorNotice error={r.error} />;
+  const { kinds, staff } = r.data;
+  const total = kinds.reduce((n, k) => n + k.requests, 0);
+  const done = kinds.reduce((n, k) => n + k.done, 0);
+  const cancelled = kinds.reduce((n, k) => n + k.cancelled, 0);
+  const fromGuests = kinds.reduce((n, k) => n + k.from_guests, 0);
+  const max = Math.max(1, ...kinds.map((k) => k.requests));
+  const mins = (v: number | null) => (v === null ? "–" : `${v} min`);
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatTile label="Requests" value={total} hint={`${fromGuests} from room tablets`} />
+        <StatTile label="Done" value={done} />
+        <StatTile label="Cancelled" value={cancelled} tone={cancelled ? "warn" : "neutral"} />
+        <StatTile label="Still open" value={Math.max(0, total - done - cancelled)} />
+      </div>
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+          <CardHeader title="By kind" description="Median minutes from the request to being seen and to being done." />
+          {kinds.length ? (
+            <Table>
+              <thead>
+                <tr>
+                  <Th>Kind</Th>
+                  <Th className="w-1/4" />
+                  <Th className="text-right">Requests</Th>
+                  <Th className="text-right">Seen in</Th>
+                  <Th className="text-right">Done in</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {kinds.map((k) => (
+                  <tr key={k.kind}>
+                    <Td>{label(k.kind)}</Td>
+                    <Td>
+                      <div className="h-2 rounded-full bg-surface-2" aria-hidden>
+                        <div className="h-2 rounded-full bg-blue" style={{ width: `${(k.requests / max) * 100}%` }} />
+                      </div>
+                    </Td>
+                    <Td className="text-right tabular-nums">{k.requests}</Td>
+                    <Td className="text-right tabular-nums">{mins(k.median_minutes_to_seen)}</Td>
+                    <Td className="text-right tabular-nums">{mins(k.median_minutes_to_done)}</Td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          ) : (
+            <EmptyState title="No requests in this period" />
+          )}
+        </Card>
+        <Card>
+          <CardHeader title="Finished by" />
+          {staff.length ? (
+            <Table>
+              <tbody>
+                {staff.map((s) => (
+                  <tr key={s.staff_id ?? s.name}>
+                    <Td>{s.name || "Unknown"}</Td>
+                    <Td className="text-right tabular-nums">{s.done}</Td>
+                    <Td className="text-right tabular-nums text-muted">{mins(s.median_minutes_to_done)}</Td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          ) : (
+            <EmptyState title="Nobody has finished a request yet" />
+          )}
+        </Card>
+      </div>
     </div>
   );
 }

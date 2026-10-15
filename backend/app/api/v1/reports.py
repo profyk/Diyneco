@@ -33,6 +33,7 @@ from app.schemas.reports import (
     PaymentsReport,
     QuoteOut,
     QuoteRequest,
+    RequestsReport,
     RevenueReport,
     RoomServiceReport,
     WebhookCreate,
@@ -92,6 +93,14 @@ async def room_service(
     request: Request, uow: Uow, principal: ReportsRead, from_: From, to: To
 ) -> dict[str, Any]:
     return await reports.room_service(uow, principal.tenant(request), from_, to)
+
+
+@router.get("/reports/requests", response_model=RequestsReport)
+async def service_requests(
+    request: Request, uow: Uow, principal: ReportsRead, from_: From, to: To
+) -> dict[str, Any]:
+    """Guest service requests (D93): by kind and by the person who finished them."""
+    return await reports.requests(uow, principal.tenant(request), from_, to)
 
 
 @router.get("/reports/occupancy", response_model=OccupancyReport)

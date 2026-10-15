@@ -122,6 +122,33 @@ class RoomServiceReport(BaseModel):
     model_config = {"populate_by_name": True, "serialize_by_alias": True}
 
 
+class RequestKindRow(BaseModel):
+    kind: str
+    requests: int
+    done: int
+    cancelled: int
+    from_guests: int
+    median_minutes_to_seen: int | None
+    median_minutes_to_done: int | None
+
+
+class RequestStaffRow(BaseModel):
+    staff_id: uuid.UUID | None
+    name: str
+    done: int
+    median_minutes_to_done: int | None
+
+
+class RequestsReport(BaseModel):
+    """Guest service requests (D93) by kind and by who finished them."""
+
+    from_: Day = Field(alias="from")
+    to: Day
+    kinds: list[RequestKindRow]
+    staff: list[RequestStaffRow]
+    model_config = {"populate_by_name": True, "serialize_by_alias": True}
+
+
 class OccupancyNight(BaseModel):
     date: Day
     rooms: int

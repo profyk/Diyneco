@@ -16280,6 +16280,63 @@
         "title": "RejectRequest",
         "type": "object"
       },
+      "RequestKindRow": {
+        "properties": {
+          "cancelled": {
+            "title": "Cancelled",
+            "type": "integer"
+          },
+          "done": {
+            "title": "Done",
+            "type": "integer"
+          },
+          "from_guests": {
+            "title": "From Guests",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "median_minutes_to_done": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median Minutes To Done"
+          },
+          "median_minutes_to_seen": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median Minutes To Seen"
+          },
+          "requests": {
+            "title": "Requests",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "kind",
+          "requests",
+          "done",
+          "cancelled",
+          "from_guests",
+          "median_minutes_to_seen",
+          "median_minutes_to_done"
+        ],
+        "title": "RequestKindRow",
+        "type": "object"
+      },
       "RequestList": {
         "properties": {
           "data": {
@@ -16525,6 +16582,49 @@
         "title": "RequestOut",
         "type": "object"
       },
+      "RequestStaffRow": {
+        "properties": {
+          "done": {
+            "title": "Done",
+            "type": "integer"
+          },
+          "median_minutes_to_done": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median Minutes To Done"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "staff_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Staff Id"
+          }
+        },
+        "required": [
+          "staff_id",
+          "name",
+          "done",
+          "median_minutes_to_done"
+        ],
+        "title": "RequestStaffRow",
+        "type": "object"
+      },
       "RequestSummary": {
         "properties": {
           "done_today": {
@@ -16558,6 +16658,43 @@
           "median_minutes_to_done"
         ],
         "title": "RequestSummary",
+        "type": "object"
+      },
+      "RequestsReport": {
+        "description": "Guest service requests (D93) by kind and by who finished them.",
+        "properties": {
+          "from": {
+            "format": "date",
+            "title": "From",
+            "type": "string"
+          },
+          "kinds": {
+            "items": {
+              "$ref": "#/components/schemas/RequestKindRow"
+            },
+            "title": "Kinds",
+            "type": "array"
+          },
+          "staff": {
+            "items": {
+              "$ref": "#/components/schemas/RequestStaffRow"
+            },
+            "title": "Staff",
+            "type": "array"
+          },
+          "to": {
+            "format": "date",
+            "title": "To",
+            "type": "string"
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "kinds",
+          "staff"
+        ],
+        "title": "RequestsReport",
         "type": "object"
       },
       "ResendEmailCodeRequest": {
@@ -33588,6 +33725,60 @@
           }
         },
         "summary": "Payments",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
+    "/api/v1/reports/requests": {
+      "get": {
+        "description": "Guest service requests (D93): by kind and by the person who finished them.",
+        "operationId": "service_requests_api_v1_reports_requests_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "title": "From",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "title": "To",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestsReport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Service Requests",
         "tags": [
           "reports"
         ]
