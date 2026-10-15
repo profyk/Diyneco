@@ -21,10 +21,12 @@ SELECT format('CREATE ROLE %I', r) FROM unnest(ARRAY['diyneco_owner','diyneco_ap
 WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = r)
 \gexec
 
-ALTER ROLE diyneco_owner    LOGIN NOSUPERUSER NOCREATEROLE NOCREATEDB BYPASSRLS   PASSWORD :'owner_password';
-ALTER ROLE diyneco_api      LOGIN NOSUPERUSER NOCREATEROLE NOCREATEDB NOBYPASSRLS PASSWORD :'api_password';
-ALTER ROLE diyneco_worker   LOGIN NOSUPERUSER NOCREATEROLE NOCREATEDB NOBYPASSRLS PASSWORD :'worker_password';
-ALTER ROLE diyneco_platform NOLOGIN NOSUPERUSER NOCREATEROLE NOCREATEDB NOBYPASSRLS;
+-- No NOSUPERUSER here: from Postgres 16 only a superuser may name that attribute, and Supabase's
+-- postgres role is not one. Roles it creates can never be superusers anyway.
+ALTER ROLE diyneco_owner    LOGIN NOCREATEROLE NOCREATEDB BYPASSRLS   PASSWORD :'owner_password';
+ALTER ROLE diyneco_api      LOGIN NOCREATEROLE NOCREATEDB NOBYPASSRLS PASSWORD :'api_password';
+ALTER ROLE diyneco_worker   LOGIN NOCREATEROLE NOCREATEDB NOBYPASSRLS PASSWORD :'worker_password';
+ALTER ROLE diyneco_platform NOLOGIN NOCREATEROLE NOCREATEDB NOBYPASSRLS;
 
 ALTER ROLE diyneco_owner  SET search_path = app, extensions;
 ALTER ROLE diyneco_api    SET search_path = app, extensions;
