@@ -50,7 +50,7 @@ jobs:
     outputs:
       image: ${{ steps.image.outputs.image }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: The commit is on main
@@ -154,7 +154,7 @@ jobs:
       # Vercel installs with the pnpm version pinned in package.json (packageManager).
       ENABLE_EXPERIMENTAL_COREPACK: "1"
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.sha }}
       - uses: pnpm/action-setup@v4
@@ -188,7 +188,7 @@ jobs:
         ${{ vars.WEB_URL_ADMIN }} ${{ vars.WEB_URL_MERCHANT }} ${{ vars.WEB_URL_KITCHEN }}
         ${{ vars.WEB_URL_GUEST }} ${{ vars.WEB_URL_ROOM_SERVICE }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.sha }}
       - name: Check the API and web apps
