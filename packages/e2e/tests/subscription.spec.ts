@@ -6,6 +6,8 @@ import { accounts, ADMIN_URL, confirmIfAsked, MERCHANT_URL, signInAdmin, signInO
 // sees the server's total, accepts the terms, gets its first invoice, pays it through the
 // clearly labelled sandbox (no money moves) and is active; Diyneco's billing dashboard lists it.
 test("a hotel subscribes, pays its first invoice in the sandbox and becomes active", async ({ page }) => {
+  // Two sign-ins (owner, then admin), each of which may wait out the 10-a-minute limit (61 s).
+  test.setTimeout(300_000);
   await signInOwner(page);
   await page.goto(`${MERCHANT_URL}/settings?tab=plan`);
   await expect(page.getByText("Free trial").first()).toBeVisible();
