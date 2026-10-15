@@ -1,0 +1,11 @@
+@import "tailwindcss";
+@import "@diyneco/shared-ui/tokens.css";
+@source "../../../packages/shared-ui/src";
+@source "../src";
+
+body {
+  font-family: var(--font-sans);
+  background: var(--color-bg);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+}
