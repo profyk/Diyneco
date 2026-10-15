@@ -45,8 +45,11 @@ export function setDisplayLocale(locale: string | null | undefined, timeZone?: s
 
 // Must match the API's currency catalogue (backend/app/core/currencies.py): amounts are integers
 // of 10^-decimals of the currency. Everything not listed has 2.
-const ZERO_DECIMALS = new Set(["JPY", "CLP", "ISK", "VND", "UGX", "RWF", "IDR"]);
-const THREE_DECIMALS = new Set(["BHD", "OMR", "JOD"]);
+const ZERO_DECIMALS = new Set([
+  "JPY", "CLP", "ISK", "VND", "UGX", "RWF", "IDR",
+  "BIF", "DJF", "GNF", "KMF", "KRW", "PYG", "VUV", "XAF", "XOF", "XPF",
+]);
+const THREE_DECIMALS = new Set(["BHD", "OMR", "JOD", "IQD", "KWD", "LYD", "TND"]);
 
 /** Decimal places of a currency's minor unit: 2 for most, 0 for yen, 3 for dinars. */
 export function currencyDecimals(currency: string): number {

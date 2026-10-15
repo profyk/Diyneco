@@ -1,6 +1,6 @@
-"""Countries Diyneco serves, with the defaults a hotel starts from (DECISIONS D69).
+"""Every country a hotel can be in, with the defaults a hotel starts from (DECISIONS D69, D84).
 
-Each entry suggests the currency, time zone, language, tax name and rate, and how a tax
+The detailed entries below suggest the currency, time zone, language, tax name and rate, and how a tax
 registration number looks. Hotels confirm or change everything at signup and in settings: tax
 rates change and some countries tax by region (the rate is then left empty). `region` is the
 regional data cell that stores the hotel's data (docs/ARCHITECTURE-GLOBAL.md).
@@ -9,7 +9,9 @@ regional data cell that stores the hotel's data (docs/ARCHITECTURE-GLOBAL.md).
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+
+from app.core.world import WORLD
 
 REGIONS = ("af-south", "eu-west", "me-central", "ap-southeast", "us-east")
 
@@ -33,6 +35,7 @@ class Country:
     tax_id_pattern: str | None = None
     tax_rate_bp: int | None = None
     abridged_invoice_max_minor: int = 0  # simplified invoices below this amount (0: never)
+    timezones: tuple[str, ...] = ()  # every zone in the country, `timezone` first (D84)
 
     def tax_id_ok(self, value: str) -> bool:
         return bool(re.fullmatch(self.tax_id_pattern or GENERIC_TAX_ID, value.strip().upper()))
@@ -397,7 +400,26 @@ _COUNTRIES = (
     Country("JM", "Jamaica", "JMD", "America/Jamaica", "en-JM", "+1", "us-east", "GCT", "TRN"),
 )
 
-COUNTRIES: dict[str, Country] = {c.code: c for c in _COUNTRIES}
+
+def _world() -> dict[str, Country]:
+    """Every inhabited country (D84): the detailed entries above where they exist, otherwise
+    the country's currency, main zone and language with a general tax name and no rate."""
+    profiles = {c.code: c for c in _COUNTRIES}
+    out: dict[str, Country] = {}
+    for code, name, currency, dial, locale, region, zones in WORLD:
+        p = profiles.get(code)
+        if p is not None:
+            out[code] = replace(p, timezones=(p.timezone, *(z for z in zones if z != p.timezone)))
+        else:
+            out[code] = Country(
+                code, name, currency, zones[0], locale, dial, region, "Tax", "Tax number", timezones=zones
+            )
+    return out
+
+
+# Every country Diyneco knows. Which ones take new hotels is the platform's choice
+# (operational countries, D84): app.services.countries.
+COUNTRIES: dict[str, Country] = _world()
 
 
 def country(code: str | None) -> Country | None:

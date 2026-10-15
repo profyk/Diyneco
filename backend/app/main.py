@@ -14,6 +14,7 @@ from app.api.v1 import (
     auth,
     billing,
     company,
+    countries,
     dev_storage,
     devices,
     guest,
@@ -124,6 +125,7 @@ def create_app(settings: Settings | None = None, state: AppState | None = None) 
     api.include_router(legal.admin_router)
     api.include_router(platform_staff.router)
     api.include_router(company.router)
+    api.include_router(countries.router)
     api.include_router(plans.router)
     api.include_router(plans.public_router)
     for billing_router in (

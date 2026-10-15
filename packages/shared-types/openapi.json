@@ -529,6 +529,135 @@
         "title": "AdjustmentRequest",
         "type": "object"
       },
+      "AdminCountryList": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/AdminCountryOut"
+            },
+            "title": "Data",
+            "type": "array"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "AdminCountryList",
+        "type": "object"
+      },
+      "AdminCountryOut": {
+        "properties": {
+          "active_hotels": {
+            "title": "Active Hotels",
+            "type": "integer"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "dial": {
+            "title": "Dial",
+            "type": "string"
+          },
+          "enabled_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled At"
+          },
+          "hotels": {
+            "title": "Hotels",
+            "type": "integer"
+          },
+          "locale": {
+            "title": "Locale",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "operational": {
+            "title": "Operational",
+            "type": "boolean"
+          },
+          "region": {
+            "title": "Region",
+            "type": "string"
+          },
+          "tax_id_label": {
+            "title": "Tax Id Label",
+            "type": "string"
+          },
+          "tax_id_pattern": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Id Pattern"
+          },
+          "tax_label": {
+            "title": "Tax Label",
+            "type": "string"
+          },
+          "tax_rate_bp": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Rate Bp"
+          },
+          "timezone": {
+            "title": "Timezone",
+            "type": "string"
+          },
+          "timezones": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Timezones",
+            "type": "array"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "currency",
+          "timezone",
+          "timezones",
+          "locale",
+          "dial",
+          "region",
+          "tax_label",
+          "tax_id_label",
+          "tax_id_pattern",
+          "tax_rate_bp",
+          "operational",
+          "enabled_at",
+          "hotels",
+          "active_hotels"
+        ],
+        "title": "AdminCountryOut",
+        "type": "object"
+      },
       "AdminHotel": {
         "properties": {
           "code": {
@@ -3866,6 +3995,13 @@
           "timezone": {
             "title": "Timezone",
             "type": "string"
+          },
+          "timezones": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Timezones",
+            "type": "array"
           }
         },
         "required": [
@@ -3873,6 +4009,7 @@
           "name",
           "currency",
           "timezone",
+          "timezones",
           "locale",
           "dial",
           "region",
@@ -3882,6 +4019,27 @@
           "tax_rate_bp"
         ],
         "title": "CountryOut",
+        "type": "object"
+      },
+      "CountryPut": {
+        "additionalProperties": false,
+        "properties": {
+          "operational": {
+            "title": "Operational",
+            "type": "boolean"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 3,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "operational",
+          "reason"
+        ],
+        "title": "CountryPut",
         "type": "object"
       },
       "CreditNoteRequest": {
@@ -5897,6 +6055,28 @@
               }
             ]
           },
+          "property_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Property Type"
+          },
+          "room_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Room Count"
+          },
           "slug": {
             "title": "Slug",
             "type": "string"
@@ -5908,6 +6088,17 @@
           "version": {
             "title": "Version",
             "type": "integer"
+          },
+          "website": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Website"
           }
         },
         "required": [
@@ -5923,6 +6114,9 @@
           "logo_url",
           "country",
           "data_region",
+          "property_type",
+          "room_count",
+          "website",
           "plan",
           "created_at",
           "version"
@@ -6011,6 +6205,54 @@
               }
             ],
             "title": "Phone"
+          },
+          "property_type": {
+            "anyOf": [
+              {
+                "enum": [
+                  "hotel",
+                  "boutique_hotel",
+                  "resort",
+                  "lodge",
+                  "guest_house",
+                  "bed_and_breakfast",
+                  "serviced_apartments",
+                  "hostel",
+                  "other"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Property Type"
+          },
+          "room_count": {
+            "anyOf": [
+              {
+                "maximum": 5000.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Room Count"
+          },
+          "website": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "pattern": "^https?://[^\\s]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Website"
           }
         },
         "title": "HotelPatch",
@@ -12121,6 +12363,22 @@
         "title": "RejectRequest",
         "type": "object"
       },
+      "ResendEmailCodeRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "maxLength": 320,
+            "minLength": 3,
+            "title": "Email",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "title": "ResendEmailCodeRequest",
+        "type": "object"
+      },
       "ResetPasswordRequest": {
         "additionalProperties": false,
         "properties": {
@@ -13731,6 +13989,41 @@
             ],
             "title": "Phone"
           },
+          "property_type": {
+            "anyOf": [
+              {
+                "enum": [
+                  "hotel",
+                  "boutique_hotel",
+                  "resort",
+                  "lodge",
+                  "guest_house",
+                  "bed_and_breakfast",
+                  "serviced_apartments",
+                  "hostel",
+                  "other"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Property Type"
+          },
+          "room_count": {
+            "anyOf": [
+              {
+                "maximum": 5000.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Room Count"
+          },
           "timezone": {
             "anyOf": [
               {
@@ -13742,6 +14035,19 @@
               }
             ],
             "title": "Timezone"
+          },
+          "website": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "pattern": "^https?://[^\\s]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Website"
           }
         },
         "required": [
@@ -13770,6 +14076,18 @@
             "minLength": 1,
             "title": "Password",
             "type": "string"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "pattern": "^\\+[0-9]{6,15}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
           }
         },
         "required": [
@@ -15749,6 +16067,29 @@
           "type"
         ],
         "title": "ValidationError",
+        "type": "object"
+      },
+      "VerifyEmailCodeRequest": {
+        "additionalProperties": false,
+        "description": "The 6-digit code emailed at sign-up (D84).",
+        "properties": {
+          "code": {
+            "pattern": "^\\d{6}$",
+            "title": "Code",
+            "type": "string"
+          },
+          "email": {
+            "maxLength": 320,
+            "minLength": 3,
+            "title": "Email",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "code"
+        ],
+        "title": "VerifyEmailCodeRequest",
         "type": "object"
       },
       "VerifyEmailRequest": {
@@ -18355,6 +18696,82 @@
         ]
       }
     },
+    "/api/v1/admin/countries": {
+      "get": {
+        "description": "Every country Diyneco knows, whether it takes signups, and how many hotels it has.",
+        "operationId": "list_countries_api_v1_admin_countries_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminCountryList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Countries",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/countries/{code}": {
+      "put": {
+        "description": "Switches signups on or off for a country. Existing hotels are never affected.",
+        "operationId": "put_country_api_v1_admin_countries__code__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Z]{2}$",
+              "title": "Code",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CountryPut"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminCountryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Put Country",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/api/v1/admin/feature-flags": {
       "get": {
         "operationId": "flags_api_v1_admin_feature_flags_get",
@@ -20597,6 +21014,48 @@
         ]
       }
     },
+    "/api/v1/auth/email/resend": {
+      "post": {
+        "description": "Sends a new code to an unconfirmed address (at most once a minute); same answer for any address.",
+        "operationId": "resend_email_code_api_v1_auth_email_resend_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResendEmailCodeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptedResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Resend Email Code",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/api/v1/auth/email/verify": {
       "post": {
         "operationId": "verify_email_api_v1_auth_email_verify_post",
@@ -20626,6 +21085,41 @@
           }
         },
         "summary": "Verify Email",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/email/verify-code": {
+      "post": {
+        "description": "Confirms the address with the 6-digit code from the sign-up email (D84).",
+        "operationId": "verify_email_code_api_v1_auth_email_verify_code_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyEmailCodeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Verify Email Code",
         "tags": [
           "auth"
         ]
@@ -21399,7 +21893,7 @@
     },
     "/api/v1/countries": {
       "get": {
-        "description": "Countries Diyneco serves and the defaults each suggests (public: signup needs it).",
+        "description": "Countries where new hotels can sign up, with the defaults each suggests (public: the\nsignup form needs it). The platform chooses them (operational countries, D84).",
         "operationId": "countries_api_v1_countries_get",
         "responses": {
           "200": {

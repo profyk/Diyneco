@@ -46,6 +46,8 @@ Staff sign in with email and password, platform admins always add TOTP, and sens
 | POST | `/auth/password/forgot` | none | — | — | Always returns 202, whether or not the email exists |
 | POST | `/auth/password/reset` | none | — | — | One-time token (30 min) + new password; revokes all sessions |
 | POST | `/auth/email/verify` | none | — | — | One-time token from email |
+| POST | `/auth/email/verify-code` | none | — | — | `{email, code}`: the 6-digit code from the sign-up email (15 min, 5 tries, newest code only); same error for unknown addresses (D84) |
+| POST | `/auth/email/resend` | none | — | — | `{email}` → 202 always; a new code for an unconfirmed account, at most once a minute (D84) |
 | POST | `/auth/invitations/{token}/accept` | none | — | Idem | Staff sets name, password, PIN; joins the hotel with invited roles |
 | POST | `/auth/kitchen/sign-in` | device (kitchen) | — | — | Staff PIN on a kitchen display → 8-hour staff session bound to that device |
 | POST | `/auth/staff-code/login` | none | — | — | `{hotel_code, staff_code, pin}` → tokens like `/auth/login` (`amr` code, pin). Room-service sign-in (D82); refused for roles that need MFA (`details.reason = use_email`) |
@@ -73,7 +75,10 @@ A new owner signs up, creates a hotel, and the onboarding wizard tracks which of
 
 | Method | Path | Principal | Perm | Idem | Purpose |
 | --- | --- | --- | --- | --- | --- |
-| POST | `/signup` | none | — | Idem | Owner account + hotel in one call; sends verification email |
+| POST | `/signup` | none | — | Idem | Owner account + hotel in one call; sends verification email with a 6-digit code. Only operational countries; no currency asked (the country's); property type, rooms, website, address, the country's time zone and the owner's mobile (D84) |
+| GET | `/countries` | none | — | — | Countries open for signups (operational, D84) with currency, every time zone, dialling code and tax defaults |
+| GET | `/admin/countries` | platform | `platform.countries.manage` | — | Every country with whether it takes signups and its hotel counts (D84) |
+| PUT | `/admin/countries/{code}` | platform | `platform.countries.manage` + Step-up | — | `{operational, reason}`: open or pause signups in a country; audited; existing hotels unaffected (D84) |
 | GET | `/hotel` | staff | `hotel.read` | — | Name, address, contacts, logo URL, status, plan |
 | PATCH | `/hotel` | staff | `hotel.update` | — | Profile fields; audited |
 | POST | `/hotel/logo` | staff | `hotel.update` | — | Returns a signed upload URL (PNG/SVG/JPEG, max 2 MB) |

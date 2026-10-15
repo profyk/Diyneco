@@ -9,6 +9,8 @@ transaction, because the request that reports the failure rolls back.
 
 from __future__ import annotations
 
+import hmac
+import secrets
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -45,6 +47,9 @@ WEB_IDLE = timedelta(hours=12)
 MAX_ACTIVE_SESSIONS = 10
 RESET_TOKEN_TTL = timedelta(minutes=30)
 VERIFY_TOKEN_TTL = timedelta(hours=24)
+EMAIL_CODE_TTL = timedelta(minutes=15)  # D84
+EMAIL_CODE_ATTEMPTS = 5
+EMAIL_CODE_RESEND_AFTER = timedelta(seconds=60)
 
 # Hotel roles that must use MFA (security spec, MFA policy). Platform accounts always must.
 MFA_REQUIRED_ROLES = frozenset({"hotel_owner", "hotel_admin", "general_manager", "finance_manager"})
@@ -760,19 +765,129 @@ async def verify_email(uow: UnitOfWork, token: str) -> None:
     )
 
 
+def _email_code_hash(st: AppState, user_id: uuid.UUID, code: str) -> bytes:
+    return crypto.sha256(f"email:{user_id}:{code}:{st.settings.pairing_code_pepper}")
+
+
 async def send_verification_email(
     st: AppState, uow: UnitOfWork, user: User, hotel_id: uuid.UUID | None
 ) -> None:
-    token = await create_one_time_token(uow.session, user.id, "email_verify", VERIFY_TOKEN_TTL)
+    """A 6-digit code to type into the sign-up form (D84) and, as before, a link that also
+    confirms the address. Only the newest code works: sending one ends the earlier ones."""
+    s = uow.session
+    await s.execute(
+        update(OneTimeToken)
+        .where(
+            OneTimeToken.user_id == user.id,
+            OneTimeToken.purpose == "email_code",
+            OneTimeToken.used_at.is_(None),
+        )
+        .values(used_at=_now())
+    )
+    code = f"{secrets.randbelow(1_000_000):06d}"
+    await s.execute(
+        insert(OneTimeToken).values(
+            token_hash=_email_code_hash(st, user.id, code),
+            user_id=user.id,
+            purpose="email_code",
+            expires_at=_now() + EMAIL_CODE_TTL,
+        )
+    )
+    token = await create_one_time_token(s, user.id, "email_verify", VERIFY_TOKEN_TTL)
+    link = st.settings.merchant_link("/verify-email", token)
     await st.mailer.queue(
         uow,
         hotel_id=hotel_id,
         template="email_verify",
         to=user.email,
-        subject="Confirm your email for Diyneco",
-        body=st.settings.merchant_link("/verify-email", token)
-        + f" this code within 24 hours to confirm your email address:\n\n{token}\n",
+        subject=f"{code} is your Diyneco confirmation code",
+        body=(
+            f"Your confirmation code is {code}\n\n"
+            "Enter it on the sign-up page within 15 minutes. Never share it: Diyneco will never ask "
+            "you for it.\n\n"
+            f"{link} this longer code within 24 hours instead:\n\n{token}\n\n"
+            "If you did not sign up for Diyneco, ignore this email."
+        ),
     )
+
+
+def _wrong_code() -> AppError:
+    return AppError(
+        "VALIDATION_FAILED",
+        "That code is not right or has expired. Use the code in the newest email, or send a new one.",
+        details={"fields": [{"field": "code", "problem": "Invalid or expired.", "type": "token"}]},
+    )
+
+
+async def _count_wrong_code(st: AppState, token_hash: bytes) -> None:
+    """In its own transaction, so the attempt counts although the request fails."""
+    async with st.db.sessionmaker() as s, s.begin():
+        row = (
+            await s.execute(
+                select(OneTimeToken).where(OneTimeToken.token_hash == token_hash).with_for_update()
+            )
+        ).scalar_one_or_none()
+        if row is not None and row.used_at is None:
+            row.attempts += 1
+            if row.attempts >= EMAIL_CODE_ATTEMPTS:
+                row.used_at = _now()
+
+
+async def verify_email_code(st: AppState, uow: UnitOfWork, email: str, code: str) -> None:
+    """Confirms the address with the emailed 6-digit code. Unknown addresses, wrong codes and
+    expired codes give the same answer; 5 wrong tries end a code."""
+    s = uow.session
+    user = (await s.execute(select(User).where(User.email == email.strip()))).scalar_one_or_none()
+    if user is None:
+        raise _wrong_code()
+    row = (
+        await s.execute(
+            select(OneTimeToken)
+            .where(
+                OneTimeToken.user_id == user.id,
+                OneTimeToken.purpose == "email_code",
+                OneTimeToken.used_at.is_(None),
+                OneTimeToken.expires_at > _now(),
+            )
+            .order_by(OneTimeToken.created_at.desc())
+            .limit(1)
+        )
+    ).scalar_one_or_none()
+    if row is None:
+        raise _wrong_code()
+    if not hmac.compare_digest(row.token_hash, _email_code_hash(st, user.id, code)):
+        # Not locked here: the attempt is counted in its own transaction.
+        await _count_wrong_code(st, row.token_hash)
+        raise _wrong_code()
+    # Spend the code atomically: of two requests with the right code, only one succeeds.
+    spent = await s.execute(
+        update(OneTimeToken)
+        .where(OneTimeToken.token_hash == row.token_hash, OneTimeToken.used_at.is_(None))
+        .values(used_at=_now())
+    )
+    if spent.rowcount != 1:  # type: ignore[attr-defined]
+        raise _wrong_code()
+    if user.email_verified_at is None:
+        user.email_verified_at = _now()
+
+
+async def resend_email_code(st: AppState, uow: UnitOfWork, email: str) -> None:
+    """Sends a new code to an unconfirmed address, at most once a minute. The answer is the
+    same whether or not the address has an account."""
+    s = uow.session
+    user = (await s.execute(select(User).where(User.email == email.strip()))).scalar_one_or_none()
+    if user is None or user.email_verified_at is not None or user.status != "active":
+        return
+    last = (
+        await s.execute(
+            select(func.max(OneTimeToken.created_at)).where(
+                OneTimeToken.user_id == user.id, OneTimeToken.purpose == "email_code"
+            )
+        )
+    ).scalar_one()
+    if last is not None and last > _now() - EMAIL_CODE_RESEND_AFTER:
+        return
+    await send_verification_email(st, uow, user, None)
 
 
 async def me(

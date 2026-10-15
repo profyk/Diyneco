@@ -23,10 +23,27 @@ class Address(StrictModel):
     country: Annotated[str, StringConstraints(pattern=r"^[A-Z]{2}$")] | None = None
 
 
+# International format (E.164): "+" and 7 to 15 digits, e.g. +27821234567 (D84).
+MobilePhone = Annotated[str, StringConstraints(pattern=r"^\+[0-9]{6,15}$")]
+PropertyType = Literal[
+    "hotel",
+    "boutique_hotel",
+    "resort",
+    "lodge",
+    "guest_house",
+    "bed_and_breakfast",
+    "serviced_apartments",
+    "hostel",
+    "other",
+]
+Website = Annotated[str, StringConstraints(max_length=200, pattern=r"^https?://[^\s]+$")]
+
+
 class SignupOwner(StrictModel):
     name: Name
     email: EmailStr
     password: Password
+    phone: MobilePhone | None = None  # the owner's mobile, for account and billing contact
 
 
 class CountryOut(BaseModel):
@@ -34,6 +51,7 @@ class CountryOut(BaseModel):
     name: str
     currency: str
     timezone: str
+    timezones: list[str]  # every zone in the country, the main one first (D84)
     locale: str
     dial: str
     region: str
@@ -66,14 +84,19 @@ class SignupHotel(StrictModel):
     name: Name
     # Where the hotel is (ISO 3166-1); it sets the data region and suggests the rest (D69).
     country: Annotated[str, StringConstraints(pattern=r"^[A-Z]{2}$")]
-    # Operating currency (ISO 4217). Left out, it is the country's currency (user decision, D69).
+    # Operating currency (ISO 4217). Left out, it is the country's currency (user decision, D69);
+    # the sign-up form no longer asks (D84): it changes in settings until the first check-in.
     currency: Annotated[str, StringConstraints(pattern=r"^[A-Z]{3}$")] | None = None
-    timezone: Annotated[str, StringConstraints(max_length=64)] | None = None  # default: the country's
+    # One of the country's zones (GET /countries); default: its main zone.
+    timezone: Annotated[str, StringConstraints(max_length=64)] | None = None
     locale: Locale | None = None  # default: the country's
     legal_name: Name | None = None
     phone: Phone | None = None
     email: EmailStr | None = None
     address: Address | None = None
+    property_type: PropertyType | None = None  # D84
+    room_count: Annotated[int, Field(ge=1, le=5000)] | None = None
+    website: Website | None = None
 
 
 class SignupRequest(StrictModel):
@@ -109,6 +132,9 @@ class HotelOut(BaseModel):
     logo_url: str | None
     country: str
     data_region: str
+    property_type: str | None
+    room_count: int | None
+    website: str | None
     plan: PlanOut | None
     created_at: datetime
     version: int
@@ -120,6 +146,9 @@ class HotelPatch(StrictModel):
     phone: Phone | None = None
     email: EmailStr | None = None
     address: Address | None = None
+    property_type: PropertyType | None = None
+    room_count: Annotated[int, Field(ge=1, le=5000)] | None = None
+    website: Website | None = None
 
 
 class InfoPage(StrictModel):

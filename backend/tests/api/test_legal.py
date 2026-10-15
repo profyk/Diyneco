@@ -104,6 +104,19 @@ async def test_signup_requires_current_documents_and_records_them(client, factor
 
     body = signup_body(f"kiwi.{secrets.token_hex(3)}@example.com")
     body["hotel"] = {"name": "Kiwi Lodge", "country": NZ}
+    async with owner_engine.begin() as conn:  # New Zealand takes signups here only (D84)
+        await conn.execute(
+            text("INSERT INTO app.operational_countries (country) VALUES (:c) ON CONFLICT DO NOTHING"),
+            {"c": NZ},
+        )
+    try:
+        await _signup_with_documents(client, owner_engine, body, terms, current)
+    finally:
+        async with owner_engine.begin() as conn:
+            await conn.execute(text("DELETE FROM app.operational_countries WHERE country = :c"), {"c": NZ})
+
+
+async def _signup_with_documents(client, owner_engine, body, terms, current):
     missing = await client.post("/signup", json=body, headers=idem())
     assert missing.json()["error"]["details"]["fields"][0]["field"] == "accepted_documents"
     partial = await client.post("/signup", json={**body, "accepted_documents": [terms["id"]]}, headers=idem())

@@ -11,7 +11,6 @@ from __future__ import annotations
 import re
 import secrets
 import uuid
-import zoneinfo
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -30,7 +29,7 @@ from app.models.events import EventSeq
 from app.models.tenancy import BillingSettings, Hotel, HotelSettings, HotelUser, Subscription, User, UserRole
 from app.realtime.outbox import emit
 from app.repositories.roles import RoleRepository
-from app.services import legal
+from app.services import countries, legal
 from app.services.auth import ClientInfo, send_verification_email
 
 SIGNUP_RESPONSE = {
@@ -63,13 +62,15 @@ async def signup(
     hotel: dict[str, Any],
     client: ClientInfo,
     accepted_documents: list[uuid.UUID] | None = None,
+    owner_phone: str | None = None,
 ) -> dict[str, Any]:
     s = uow.session
     email = email.strip()
     check_password(password, email=email, field="owner.password")
 
     place = country_of(hotel["country"])
-    if place is None:
+    # Only countries the platform has switched on take new hotels (D84).
+    if place is None or not await countries.is_operational(uow, place.code):
         raise AppError(
             "VALIDATION_FAILED",
             "Diyneco is not available in that country yet.",
@@ -78,14 +79,12 @@ async def signup(
             },
         )
     tz = hotel.get("timezone") or place.timezone
-    try:
-        zoneinfo.ZoneInfo(tz)
-    except (zoneinfo.ZoneInfoNotFoundError, ValueError) as exc:
+    if tz not in place.timezones:
         raise AppError(
             "VALIDATION_FAILED",
-            "Unknown time zone.",
+            "Choose one of the country's time zones.",
             details={"fields": [{"field": "hotel.timezone", "problem": "Unknown.", "type": "value_error"}]},
-        ) from exc
+        )
     hotel = {**hotel, "currency": hotel.get("currency") or place.currency}
     if not is_supported(hotel["currency"]):
         raise AppError(
@@ -118,7 +117,11 @@ async def signup(
 
     await s.execute(
         insert(User).values(
-            id=user_id, email=email, name=owner_name.strip(), password_hash=crypto.hash_secret(password)
+            id=user_id,
+            email=email,
+            name=owner_name.strip(),
+            password_hash=crypto.hash_secret(password),
+            phone=owner_phone,
         )
     )
     await s.execute(
@@ -132,6 +135,9 @@ async def signup(
             email=hotel.get("email"),
             country=place.code,
             data_region=place.region,
+            property_type=hotel.get("property_type"),
+            room_count=hotel.get("room_count"),
+            website=hotel.get("website"),
         )
     )
     await s.execute(

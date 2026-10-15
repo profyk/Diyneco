@@ -85,6 +85,17 @@ class VerifyEmailRequest(StrictModel):
     token: Token
 
 
+class VerifyEmailCodeRequest(StrictModel):
+    """The 6-digit code emailed at sign-up (D84)."""
+
+    email: LoginEmail
+    code: Annotated[str, StringConstraints(pattern=r"^\d{6}$")]
+
+
+class ResendEmailCodeRequest(StrictModel):
+    email: LoginEmail
+
+
 class AcceptInvitationRequest(StrictModel):
     name: Name
     password: Password

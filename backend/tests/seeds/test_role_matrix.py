@@ -98,6 +98,7 @@ async def test_platform_roles(owner_engine):
         "platform.company.manage",  # D72
         "platform.website.manage",  # D83
         "platform.leads.read",  # D83
+        "platform.countries.manage",  # D84
     }
     assert roles["platform_website_editor"] == {"platform.website.manage", "platform.leads.read"}
     # Neither platform role holds any hotel permission.

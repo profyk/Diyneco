@@ -37,6 +37,7 @@ from app.schemas.auth import (
     MfaVerifyRequest,
     PlatformLoginRequest,
     RefreshRequest,
+    ResendEmailCodeRequest,
     ResetPasswordRequest,
     SessionList,
     SetPinRequest,
@@ -44,6 +45,7 @@ from app.schemas.auth import (
     StepUpRequest,
     StepUpResponse,
     TokenResponse,
+    VerifyEmailCodeRequest,
     VerifyEmailRequest,
 )
 from app.services import auth as auth_service
@@ -255,6 +257,20 @@ async def reset_password(body: ResetPasswordRequest, request: Request, uow: Uow)
 async def verify_email(body: VerifyEmailRequest, uow: Uow) -> Response:
     await auth_service.verify_email(uow, body.token)
     return Response(status_code=204)
+
+
+@router.post("/email/verify-code", dependencies=AuthLimited, status_code=204)
+async def verify_email_code(body: VerifyEmailCodeRequest, request: Request, uow: Uow) -> Response:
+    """Confirms the address with the 6-digit code from the sign-up email (D84)."""
+    await auth_service.verify_email_code(state_of(request), uow, body.email, body.code)
+    return Response(status_code=204)
+
+
+@router.post("/email/resend", dependencies=AuthLimited, status_code=202, response_model=AcceptedResponse)
+async def resend_email_code(body: ResendEmailCodeRequest, request: Request, uow: Uow) -> dict[str, str]:
+    """Sends a new code to an unconfirmed address (at most once a minute); same answer for any address."""
+    await auth_service.resend_email_code(state_of(request), uow, body.email)
+    return {"status": "accepted"}
 
 
 @router.post(

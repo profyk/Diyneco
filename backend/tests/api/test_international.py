@@ -67,6 +67,18 @@ async def test_countries_endpoint_is_public(client):
 
 
 async def test_signup_takes_country_defaults(client, factory, owner_engine):
+    async with owner_engine.begin() as conn:  # Japan takes signups for this test only (D84)
+        await conn.execute(
+            text("INSERT INTO app.operational_countries (country) VALUES ('JP') ON CONFLICT DO NOTHING")
+        )
+    try:
+        await _signup_in_japan(client, owner_engine)
+    finally:
+        async with owner_engine.begin() as conn:
+            await conn.execute(text("DELETE FROM app.operational_countries WHERE country = 'JP'"))
+
+
+async def _signup_in_japan(client, owner_engine):
     email = f"owner.{secrets.token_hex(3)}@example.com"
     body = {
         "owner": {"name": "Aiko Owner", "email": email, "password": f"Owner-Password-{secrets.token_hex(4)}"},

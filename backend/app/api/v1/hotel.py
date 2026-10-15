@@ -18,7 +18,6 @@ from app.api.deps import (
     require_permission,
     state_of,
 )
-from app.core.countries import COUNTRIES
 from app.core.currencies import CURRENCIES
 from app.core.errors import AppError
 from app.core.logging import request_id_var
@@ -38,6 +37,7 @@ from app.schemas.hotel import (
     SignupRequest,
     SignupResponse,
 )
+from app.services import countries as countries_service
 from app.services import hotel as hotel_service
 from app.services.auth import ClientInfo
 from app.services.signup import signup as signup_service
@@ -89,6 +89,7 @@ async def signup(idem: IdemAnon, body: SignupRequest, request: Request, uow: Uow
         hotel=body.hotel.model_dump(mode="json", exclude_none=True),
         client=client,
         accepted_documents=body.accepted_documents,
+        owner_phone=body.owner.phone,
     )
     return await idem.complete(uow, 201, result)
 
@@ -159,9 +160,10 @@ async def currencies() -> dict[str, Any]:
 
 
 @router.get("/countries", response_model=CountryList)
-async def countries() -> dict[str, Any]:
-    """Countries Diyneco serves and the defaults each suggests (public: signup needs it)."""
-    return {"data": [c.__dict__ for c in sorted(COUNTRIES.values(), key=lambda c: c.name)]}
+async def countries(uow: Uow) -> dict[str, Any]:
+    """Countries where new hotels can sign up, with the defaults each suggests (public: the
+    signup form needs it). The platform chooses them (operational countries, D84)."""
+    return {"data": await countries_service.public_list(uow)}
 
 
 @router.get("/permissions", response_model=PermissionList)

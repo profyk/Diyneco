@@ -240,6 +240,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/countries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Countries
+         * @description Every country Diyneco knows, whether it takes signups, and how many hotels it has.
+         */
+        get: operations["list_countries_api_v1_admin_countries_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/countries/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Put Country
+         * @description Switches signups on or off for a country. Existing hotels are never affected.
+         */
+        put: operations["put_country_api_v1_admin_countries__code__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/feature-flags": {
         parameters: {
             query?: never;
@@ -983,6 +1023,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/email/resend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resend Email Code
+         * @description Sends a new code to an unconfirmed address (at most once a minute); same answer for any address.
+         */
+        post: operations["resend_email_code_api_v1_auth_email_resend_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/email/verify": {
         parameters: {
             query?: never;
@@ -994,6 +1054,26 @@ export interface paths {
         put?: never;
         /** Verify Email */
         post: operations["verify_email_api_v1_auth_email_verify_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/email/verify-code": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Verify Email Code
+         * @description Confirms the address with the 6-digit code from the sign-up email (D84).
+         */
+        post: operations["verify_email_code_api_v1_auth_email_verify_code_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1366,7 +1446,8 @@ export interface paths {
         };
         /**
          * Countries
-         * @description Countries Diyneco serves and the defaults each suggests (public: signup needs it).
+         * @description Countries where new hotels can sign up, with the defaults each suggests (public: the
+         *     signup form needs it). The platform chooses them (operational countries, D84).
          */
         get: operations["countries_api_v1_countries_get"];
         put?: never;
@@ -4150,6 +4231,46 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /** AdminCountryList */
+        AdminCountryList: {
+            /** Data */
+            data: components["schemas"]["AdminCountryOut"][];
+        };
+        /** AdminCountryOut */
+        AdminCountryOut: {
+            /** Active Hotels */
+            active_hotels: number;
+            /** Code */
+            code: string;
+            /** Currency */
+            currency: string;
+            /** Dial */
+            dial: string;
+            /** Enabled At */
+            enabled_at: string | null;
+            /** Hotels */
+            hotels: number;
+            /** Locale */
+            locale: string;
+            /** Name */
+            name: string;
+            /** Operational */
+            operational: boolean;
+            /** Region */
+            region: string;
+            /** Tax Id Label */
+            tax_id_label: string;
+            /** Tax Id Pattern */
+            tax_id_pattern: string | null;
+            /** Tax Label */
+            tax_label: string;
+            /** Tax Rate Bp */
+            tax_rate_bp: number | null;
+            /** Timezone */
+            timezone: string;
+            /** Timezones */
+            timezones: string[];
+        };
         /** AdminHotel */
         AdminHotel: {
             /** Code */
@@ -5217,6 +5338,15 @@ export interface components {
             tax_rate_bp: number | null;
             /** Timezone */
             timezone: string;
+            /** Timezones */
+            timezones: string[];
+        };
+        /** CountryPut */
+        CountryPut: {
+            /** Operational */
+            operational: boolean;
+            /** Reason */
+            reason: string;
         };
         /** CreditNoteRequest */
         CreditNoteRequest: {
@@ -5880,12 +6010,18 @@ export interface components {
             /** Phone */
             phone: string | null;
             plan: components["schemas"]["app__schemas__hotel__PlanOut"] | null;
+            /** Property Type */
+            property_type: string | null;
+            /** Room Count */
+            room_count: number | null;
             /** Slug */
             slug: string;
             /** Status */
             status: string;
             /** Version */
             version: number;
+            /** Website */
+            website: string | null;
         };
         /** HotelOwner */
         HotelOwner: {
@@ -5905,6 +6041,12 @@ export interface components {
             name?: string | null;
             /** Phone */
             phone?: string | null;
+            /** Property Type */
+            property_type?: ("hotel" | "boutique_hotel" | "resort" | "lodge" | "guest_house" | "bed_and_breakfast" | "serviced_apartments" | "hostel" | "other") | null;
+            /** Room Count */
+            room_count?: number | null;
+            /** Website */
+            website?: string | null;
         };
         /** HotelStatusOut */
         HotelStatusOut: {
@@ -7916,6 +8058,11 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /** ResendEmailCodeRequest */
+        ResendEmailCodeRequest: {
+            /** Email */
+            email: string;
+        };
         /** ResetPasswordRequest */
         ResetPasswordRequest: {
             /** New Password */
@@ -8405,8 +8552,14 @@ export interface components {
             name: string;
             /** Phone */
             phone?: string | null;
+            /** Property Type */
+            property_type?: ("hotel" | "boutique_hotel" | "resort" | "lodge" | "guest_house" | "bed_and_breakfast" | "serviced_apartments" | "hostel" | "other") | null;
+            /** Room Count */
+            room_count?: number | null;
             /** Timezone */
             timezone?: string | null;
+            /** Website */
+            website?: string | null;
         };
         /** SignupOwner */
         SignupOwner: {
@@ -8419,6 +8572,8 @@ export interface components {
             name: string;
             /** Password */
             password: string;
+            /** Phone */
+            phone?: string | null;
         };
         /** SignupRequest */
         SignupRequest: {
@@ -9107,6 +9262,16 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+        };
+        /**
+         * VerifyEmailCodeRequest
+         * @description The 6-digit code emailed at sign-up (D84).
+         */
+        VerifyEmailCodeRequest: {
+            /** Code */
+            code: string;
+            /** Email */
+            email: string;
         };
         /** VerifyEmailRequest */
         VerifyEmailRequest: {
@@ -10143,6 +10308,61 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LogoUploadOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_countries_api_v1_admin_countries_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCountryList"];
+                };
+            };
+        };
+    };
+    put_country_api_v1_admin_countries__code__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CountryPut"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCountryOut"];
                 };
             };
             /** @description Validation Error */
@@ -11682,6 +11902,39 @@ export interface operations {
             };
         };
     };
+    resend_email_code_api_v1_auth_email_resend_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResendEmailCodeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcceptedResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     verify_email_api_v1_auth_email_verify_post: {
         parameters: {
             query?: never;
@@ -11692,6 +11945,37 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["VerifyEmailRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    verify_email_code_api_v1_auth_email_verify_code_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerifyEmailCodeRequest"];
             };
         };
         responses: {

@@ -92,7 +92,8 @@ async def test_signup_to_rooms_and_staff_without_manual_db_work(client, owner_en
     )
     assert signup.status_code == 201, signup.text
     verify = next(m for m in reversed(mailbox.sent) if m.to == email and m.template == "email_verify")
-    code = verify.body.strip().rsplit("\n", 1)[-1].strip()
+    # The long link code (the email also carries the 6-digit code, D84).
+    code = next(w for w in verify.body.split() if len(w) > 30 and "://" not in w)
     assert (await client.post("/auth/email/verify", json={"token": code})).status_code == 204
 
     # The owner must enrol MFA (D12) before doing anything else.

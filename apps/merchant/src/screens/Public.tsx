@@ -1,14 +1,13 @@
 "use client";
 
 import { ApiError, formatDate, newIdempotencyKey, ok } from "@diyneco/api-client";
-import { Badge, BrandLogo, Button, Card, CardHeader, ErrorNotice, Field, Input, PageHeader, Select, Table, Td } from "@diyneco/shared-ui";
+import { Badge, BrandLogo, Button, Card, CardHeader, ErrorNotice, Field, Input, PageHeader, Table, Td } from "@diyneco/shared-ui";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { type FormEvent, type ReactNode, useState } from "react";
 
 import { useAction } from "../common";
 import { API_URL } from "../config";
-import { type LegalDoc, LegalText } from "../Legal";
 import { useSession } from "../session";
 
 async function publicPost(path: string, body: unknown): Promise<unknown> {
@@ -56,126 +55,6 @@ function useSubmit(fn: () => Promise<unknown>) {
     }
   };
   return { error, busy, done, submit };
-}
-
-export function Signup() {
-  const [f, setF] = useState({ hotel: "", legal: "", phone: "", country: "", currency: "", name: "", email: "", password: "" });
-  const countries = useQuery({
-    queryKey: ["countries"],
-    queryFn: async () =>
-      (await (await fetch(`${API_URL}/api/v1/countries`)).json()) as { data: { code: string; name: string; currency: string }[] },
-  });
-  const [agreed, setAgreed] = useState(false);
-  const legal = useQuery({
-    queryKey: ["legal-signup", f.country],
-    enabled: Boolean(f.country),
-    queryFn: async () =>
-      (await (await fetch(`${API_URL}/api/v1/legal/documents?audience=merchant&country=${f.country}`)).json()) as {
-        data: LegalDoc[];
-      },
-  });
-  const docs = legal.data?.data ?? [];
-  const currencies = useQuery({
-    queryKey: ["currencies"],
-    queryFn: async () => (await (await fetch(`${API_URL}/api/v1/currencies`)).json()) as { data: { code: string; name: string }[] },
-  });
-  const s = useSubmit(() =>
-    publicPost("/signup", {
-      hotel: {
-        name: f.hotel,
-        legal_name: f.legal || null,
-        phone: f.phone || null,
-        country: f.country,
-        currency: f.currency || null,
-      },
-      owner: { name: f.name, email: f.email, password: f.password },
-      accepted_documents: agreed ? docs.map((d) => d.id) : [],
-    }),
-  );
-  if (s.done) {
-    return (
-      <Panel title="Check your email" subtitle="We sent a link to confirm your address.">
-        <p className="text-sm text-ink">
-          After you confirm, sign in to set up rooms, staff and your menu. Diyneco reviews new hotels before tablets
-          can take orders, usually within one working day.
-        </p>
-        <a className="mt-4 inline-block text-sm text-blue hover:underline" href="/">
-          Go to sign in
-        </a>
-      </Panel>
-    );
-  }
-  const field = (k: keyof typeof f, label: string, type = "text", hint?: string) => (
-    <Field label={label} hint={hint}>
-      {(p) => <Input {...p} type={type} value={f[k]} onChange={(e) => setF({ ...f, [k]: e.target.value })} />}
-    </Field>
-  );
-  return (
-    <Panel title="Register your hotel" subtitle="Guest tablets, kitchen displays, room service and billing in one place.">
-      <form onSubmit={s.submit} className="flex flex-col gap-4">
-        {field("hotel", "Hotel name")}
-        {field("legal", "Registered company name (optional)")}
-        {field("phone", "Hotel phone (optional)", "tel")}
-        <Field label="Country" hint="Where the hotel is. It sets where your data is stored and suggests your currency, time zone and tax.">
-          {(p) => (
-            <Select
-              {...p}
-              value={f.country}
-              onChange={(e) => {
-                const c = countries.data?.data.find((x) => x.code === e.target.value);
-                setF({ ...f, country: e.target.value, currency: c?.currency ?? f.currency });
-              }}
-            >
-              <option value="">Choose your country</option>
-              {countries.data?.data.map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.name}
-                </option>
-              ))}
-            </Select>
-          )}
-        </Field>
-        <Field label="Currency" hint="The currency your prices and bills use. You can change it until your first guest checks in.">
-          {(p) => (
-            <Select {...p} value={f.currency} onChange={(e) => setF({ ...f, currency: e.target.value })}>
-              <option value="">Choose your currency</option>
-              {currencies.data?.data.map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.code} · {c.name}
-                </option>
-              ))}
-            </Select>
-          )}
-        </Field>
-        <hr className="border-line" />
-        {field("name", "Your name")}
-        {field("email", "Your email", "email")}
-        {field("password", "Password", "password", "At least 12 characters. A passphrase works well.")}
-        {docs.length ? (
-          <div className="flex flex-col gap-2">
-            {docs.map((d) => (
-              <LegalText key={d.id} doc={d} />
-            ))}
-            <label className="flex items-center gap-2 text-sm text-ink">
-              <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
-              I accept these documents on behalf of the hotel.
-            </label>
-          </div>
-        ) : null}
-        {s.error ? <ErrorNotice error={s.error} /> : null}
-        <Button
-          type="submit"
-          loading={s.busy}
-          disabled={(docs.length > 0 && !agreed) || !f.hotel || !f.country || !f.currency || !f.name || !f.email || f.password.length < 12}>
-          Register
-        </Button>
-        <p className="text-xs text-muted">
-          By registering you confirm you may act for this hotel and accept that guest data is processed under the data
-          protection law of your country as described in our privacy notice.
-        </p>
-      </form>
-    </Panel>
-  );
 }
 
 export function ForgotPassword() {

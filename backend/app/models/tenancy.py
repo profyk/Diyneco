@@ -119,6 +119,9 @@ class Hotel(Base):
     logo_path: Mapped[str | None]
     country: Mapped[str] = mapped_column(CHAR(2))
     data_region: Mapped[str]
+    property_type: Mapped[str | None]  # D84
+    room_count: Mapped[int | None] = mapped_column(Integer)
+    website: Mapped[str | None]
     created_at: Mapped[datetime] = _created()
     updated_at: Mapped[datetime] = _updated()
     version: Mapped[int] = _version()
@@ -242,6 +245,7 @@ class User(Base):
     failed_window_start: Mapped[datetime | None]
     locked_until: Mapped[datetime | None]
     last_login_at: Mapped[datetime | None]
+    phone: Mapped[str | None]  # E.164, e.g. +27821234567 (D84)
     created_at: Mapped[datetime] = _created()
     updated_at: Mapped[datetime] = _updated()
 
@@ -373,6 +377,17 @@ class OneTimeToken(Base):
     purpose: Mapped[str]
     expires_at: Mapped[datetime]
     used_at: Mapped[datetime | None]
+    attempts: Mapped[int] = mapped_column(SmallInteger, server_default=text("0"))
+    created_at: Mapped[datetime] = _created()
+
+
+class OperationalCountry(Base):
+    """A country where new hotels can sign up (control plane, D84)."""
+
+    __tablename__ = "operational_countries"
+    country: Mapped[str] = mapped_column(CHAR(2), primary_key=True)
+    enabled_at: Mapped[datetime] = _created()
+    enabled_by: Mapped[uuid.UUID | None]
 
 
 class LegalDocument(Base):

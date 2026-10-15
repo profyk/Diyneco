@@ -47,7 +47,7 @@ SETTINGS_FIELDS: dict[str, tuple[str, str]] = {
     "tax_label": ("tax_label", "plain"),
 }
 
-HOTEL_FIELDS = ("name", "legal_name", "address", "phone", "email")
+HOTEL_FIELDS = ("name", "legal_name", "address", "phone", "email", "property_type", "room_count", "website")
 
 
 def parse_if_match(header: str | None) -> int:
@@ -112,6 +112,9 @@ async def hotel_payload(repo: HotelRepository, hotel: Hotel, storage: Storage, b
         "logo_url": await storage.signed_download(bucket, hotel.logo_path) if hotel.logo_path else None,
         "country": hotel.country,
         "data_region": hotel.data_region,
+        "property_type": hotel.property_type,
+        "room_count": hotel.room_count,
+        "website": hotel.website,
         "plan": {
             "code": current[1].code if current[1] else None,
             "name": current[1].name if current[1] else None,
