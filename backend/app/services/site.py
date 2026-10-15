@@ -68,7 +68,9 @@ _REF_KEYS = ("image_id", "cover_id", "default_image_id", "organization_logo_id")
 
 def _field_error(field: str, problem: str) -> AppError:
     return AppError(
-        "VALIDATION_FAILED", problem, details={"fields": [{"field": field, "problem": problem, "type": "value_error"}]}
+        "VALIDATION_FAILED",
+        problem,
+        details={"fields": [{"field": field, "problem": problem, "type": "value_error"}]},
     )
 
 
@@ -117,7 +119,9 @@ async def _media(st: AppState, uow: UnitOfWork, ids: set[uuid.UUID]) -> dict[str
     if not ids:
         return {}
     rows = (
-        await uow.session.execute(select(SiteMedia).where(SiteMedia.id.in_(ids), SiteMedia.deleted_at.is_(None)))
+        await uow.session.execute(
+            select(SiteMedia).where(SiteMedia.id.in_(ids), SiteMedia.deleted_at.is_(None))
+        )
     ).scalars()
     return {str(m.id): media_payload(st, m) for m in rows}
 
@@ -175,12 +179,16 @@ async def put_settings(
                 select(func.count())
                 .select_from(SiteEntry)
                 .where(
-                    SiteEntry.locale.in_(removed), SiteEntry.published.is_not(None), SiteEntry.deleted_at.is_(None)
+                    SiteEntry.locale.in_(removed),
+                    SiteEntry.published.is_not(None),
+                    SiteEntry.deleted_at.is_(None),
                 )
             )
         ).scalar_one()
         if live:
-            raise _field_error("locales", "Unpublish the pages in a language before switching the language off.")
+            raise _field_error(
+                "locales", "Unpublish the pages in a language before switching the language off."
+            )
     for k, v in values.items():
         setattr(s, k, v)
     s.updated_at = datetime.now(UTC)
@@ -261,12 +269,15 @@ async def _entry_out(uow: UnitOfWork, e: SiteEntry) -> dict[str, Any]:
         "draft": e.draft,
         "published": e.published,
         "translations": [
-            {"id": t.id, "locale": t.locale, "slug": t.slug, "status": _status(t)} for t in await _translations(uow, e)
+            {"id": t.id, "locale": t.locale, "slug": t.slug, "status": _status(t)}
+            for t in await _translations(uow, e)
         ],
     }
 
 
-async def list_entries(uow: UnitOfWork, kind: str | None, locale: str | None, q: str | None) -> list[dict[str, Any]]:
+async def list_entries(
+    uow: UnitOfWork, kind: str | None, locale: str | None, q: str | None
+) -> list[dict[str, Any]]:
     query = select(SiteEntry).where(SiteEntry.deleted_at.is_(None))
     if kind:
         query = query.where(SiteEntry.kind == kind)
@@ -305,7 +316,9 @@ async def _insert(uow: UnitOfWork, values: dict[str, Any]) -> SiteEntry:
     except IntegrityError as exc:
         if "site_entries_translation" in str(exc.orig):
             raise _field_error("locale", "This page already has a version in that language.") from exc
-        raise _field_error("slug", "Another page or post in this language already uses that address.") from exc
+        raise _field_error(
+            "slug", "Another page or post in this language already uses that address."
+        ) from exc
     await uow.session.refresh(e)
     return e
 
@@ -362,10 +375,14 @@ async def update_entry(
         async with uow.session.begin_nested():
             await uow.session.flush()
     except IntegrityError as exc:
-        raise _field_error("slug", "Another page or post in this language already uses that address.") from exc
+        raise _field_error(
+            "slug", "Another page or post in this language already uses that address."
+        ) from exc
     if moved and e.published is not None:
         new_path = path_for(e.kind, e.locale, e.slug, s.default_locale)
-        await uow.session.execute(text("DELETE FROM app.site_redirects WHERE from_path = :p"), {"p": new_path})
+        await uow.session.execute(
+            text("DELETE FROM app.site_redirects WHERE from_path = :p"), {"p": new_path}
+        )
         await uow.session.execute(
             text(
                 "INSERT INTO app.site_redirects (from_path, to_path, permanent, created_by) "
@@ -473,7 +490,9 @@ async def restore_version(
     e = await _entry(uow, entry_id, for_update=True)
     v = (
         await uow.session.execute(
-            select(SiteEntryVersion).where(SiteEntryVersion.entry_id == entry_id, SiteEntryVersion.version == version)
+            select(SiteEntryVersion).where(
+                SiteEntryVersion.entry_id == entry_id, SiteEntryVersion.version == version
+            )
         )
     ).scalar_one_or_none()
     if v is None:
@@ -523,7 +542,9 @@ async def _alternates(uow: UnitOfWork, e: SiteEntry, default_locale: str) -> lis
     ]
 
 
-def _card(st: AppState, e: SiteEntry, default_locale: str, media: dict[str, dict[str, Any]]) -> dict[str, Any]:
+def _card(
+    st: AppState, e: SiteEntry, default_locale: str, media: dict[str, dict[str, Any]]
+) -> dict[str, Any]:
     c = e.published or {}
     cover = media.get(str(c.get("cover_id"))) if c.get("cover_id") else None
     return {
@@ -539,7 +560,13 @@ def _card(st: AppState, e: SiteEntry, default_locale: str, media: dict[str, dict
 
 
 async def _posts(
-    st: AppState, uow: UnitOfWork, locale: str, default_locale: str, limit: int, before: datetime | None, tag: str | None
+    st: AppState,
+    uow: UnitOfWork,
+    locale: str,
+    default_locale: str,
+    limit: int,
+    before: datetime | None,
+    tag: str | None,
 ) -> list[dict[str, Any]]:
     q = select(SiteEntry).where(
         SiteEntry.kind == "post",
@@ -552,15 +579,23 @@ async def _posts(
     if tag:
         q = q.where(SiteEntry.published["tags"].contains([tag]))
     rows = list((await uow.session.execute(q.order_by(SiteEntry.published_at.desc()).limit(limit))).scalars())
-    media = await _media(st, uow, {uuid.UUID(str(e.published["cover_id"])) for e in rows if (e.published or {}).get("cover_id")})
+    media = await _media(
+        st,
+        uow,
+        {uuid.UUID(str(c)) for e in rows if (c := (e.published or {}).get("cover_id"))},
+    )
     return [_card(st, e, default_locale, media) for e in rows]
 
 
-async def _render(st: AppState, uow: UnitOfWork, e: SiteEntry, content: dict[str, Any], s: SiteSettings, *, preview: bool) -> dict[str, Any]:
+async def _render(
+    st: AppState, uow: UnitOfWork, e: SiteEntry, content: dict[str, Any], s: SiteSettings, *, preview: bool
+) -> dict[str, Any]:
     posts: list[dict[str, Any]] = []
     wanted = [b for b in content.get("blocks", []) if b.get("type") == "post_list"]
     if wanted:
-        posts = await _posts(st, uow, e.locale, s.default_locale, max(b.get("limit", 3) for b in wanted), None, None)
+        posts = await _posts(
+            st, uow, e.locale, s.default_locale, max(b.get("limit", 3) for b in wanted), None, None
+        )
     return {
         "kind": e.kind,
         "locale": e.locale,
@@ -654,11 +689,19 @@ async def sitemap(uow: UnitOfWork) -> list[dict[str, Any]]:
 
 
 def _redirect_payload(r: SiteRedirect) -> dict[str, Any]:
-    return {"id": r.id, "from_path": r.from_path, "to_path": r.to_path, "permanent": r.permanent, "created_at": r.created_at}
+    return {
+        "id": r.id,
+        "from_path": r.from_path,
+        "to_path": r.to_path,
+        "permanent": r.permanent,
+        "created_at": r.created_at,
+    }
 
 
 async def list_redirects(uow: UnitOfWork) -> list[dict[str, Any]]:
-    rows = (await uow.session.execute(select(SiteRedirect).order_by(SiteRedirect.from_path).limit(2000))).scalars()
+    rows = (
+        await uow.session.execute(select(SiteRedirect).order_by(SiteRedirect.from_path).limit(2000))
+    ).scalars()
     return [_redirect_payload(r) for r in rows]
 
 
@@ -692,8 +735,12 @@ async def create_redirect(
     return _redirect_payload(r)
 
 
-async def delete_redirect(st: AppState, uow: UnitOfWork, actor: dict[str, Any], redirect_id: uuid.UUID) -> None:
-    r = (await uow.session.execute(select(SiteRedirect).where(SiteRedirect.id == redirect_id))).scalar_one_or_none()
+async def delete_redirect(
+    st: AppState, uow: UnitOfWork, actor: dict[str, Any], redirect_id: uuid.UUID
+) -> None:
+    r = (
+        await uow.session.execute(select(SiteRedirect).where(SiteRedirect.id == redirect_id))
+    ).scalar_one_or_none()
     if r is None:
         raise AppError("NOT_FOUND")
     await uow.session.delete(r)
@@ -732,7 +779,9 @@ def encode_image(data: bytes) -> tuple[int, int, dict[int, bytes]]:
                     break
                 copy = img.copy()
                 if copy.width > width:
-                    copy.thumbnail((width, round(width * copy.height / copy.width) or 1), Image.Resampling.LANCZOS)
+                    copy.thumbnail(
+                        (width, round(width * copy.height / copy.width) or 1), Image.Resampling.LANCZOS
+                    )
                 buf = io.BytesIO()
                 copy.save(buf, "WEBP", quality=84, method=4)  # no exif/icc: metadata dropped
                 out[min(width, img.width)] = buf.getvalue()
@@ -785,7 +834,10 @@ async def upload_media(
 async def list_media(st: AppState, uow: UnitOfWork) -> list[dict[str, Any]]:
     rows = (
         await uow.session.execute(
-            select(SiteMedia).where(SiteMedia.deleted_at.is_(None)).order_by(SiteMedia.created_at.desc()).limit(500)
+            select(SiteMedia)
+            .where(SiteMedia.deleted_at.is_(None))
+            .order_by(SiteMedia.created_at.desc())
+            .limit(500)
         )
     ).scalars()
     return [media_payload(st, m) for m in rows]
@@ -793,14 +845,18 @@ async def list_media(st: AppState, uow: UnitOfWork) -> list[dict[str, Any]]:
 
 async def _live_media(uow: UnitOfWork, media_id: uuid.UUID) -> SiteMedia:
     m = (
-        await uow.session.execute(select(SiteMedia).where(SiteMedia.id == media_id, SiteMedia.deleted_at.is_(None)))
+        await uow.session.execute(
+            select(SiteMedia).where(SiteMedia.id == media_id, SiteMedia.deleted_at.is_(None))
+        )
     ).scalar_one_or_none()
     if m is None:
         raise AppError("NOT_FOUND")
     return m
 
 
-async def update_media(st: AppState, uow: UnitOfWork, actor: dict[str, Any], media_id: uuid.UUID, alt: str) -> dict[str, Any]:
+async def update_media(
+    st: AppState, uow: UnitOfWork, actor: dict[str, Any], media_id: uuid.UUID, alt: str
+) -> dict[str, Any]:
     m = await _live_media(uow, media_id)
     m.alt = alt
     await write_platform_audit(
@@ -899,18 +955,21 @@ async def create_lead(st: AppState, uow: UnitOfWork, body: dict[str, Any], ip: s
         "",
         "Follow it up in the Admin panel under Website > Leads.",
     ]
+    what = "demo request" if lead.kind == "demo" else "website message"
     await st.mailer.queue(
         uow,
         hotel_id=None,
         template="site_lead",
         to=s.lead_email,
-        subject=f"New {'demo request' if lead.kind == 'demo' else 'website message'}: {lead.company or lead.name}",
+        subject=f"New {what}: {lead.company or lead.name}",
         body="\n".join(lines),
         subject_ref={"site_lead": str(lead.id)},
     )
 
 
-async def list_leads(uow: UnitOfWork, status: str | None, kind: str | None, before: datetime | None, limit: int) -> dict[str, Any]:
+async def list_leads(
+    uow: UnitOfWork, status: str | None, kind: str | None, before: datetime | None, limit: int
+) -> dict[str, Any]:
     q = select(SiteLead)
     if status:
         q = q.where(SiteLead.status == status)
@@ -918,7 +977,9 @@ async def list_leads(uow: UnitOfWork, status: str | None, kind: str | None, befo
         q = q.where(SiteLead.kind == kind)
     if before is not None:
         q = q.where(SiteLead.created_at < before)
-    rows = list((await uow.session.execute(q.order_by(SiteLead.created_at.desc()).limit(limit + 1))).scalars())
+    rows = list(
+        (await uow.session.execute(q.order_by(SiteLead.created_at.desc()).limit(limit + 1))).scalars()
+    )
     more = len(rows) > limit
     rows = rows[:limit]
     return {
@@ -1002,9 +1063,7 @@ def _referrer_host(referrer: str, own_host: str) -> str:
     return "" if not host or host == own_host else host[:200]
 
 
-async def record_view(
-    uow: UnitOfWork, body: dict[str, Any], ip: str | None, user_agent: str | None
-) -> None:
+async def record_view(uow: UnitOfWork, body: dict[str, Any], ip: str | None, user_agent: str | None) -> None:
     if not user_agent or _BOT.search(user_agent):
         return
     s = await _settings(uow)
@@ -1021,7 +1080,13 @@ async def record_view(
             "ON CONFLICT (day, path, locale, referrer) DO UPDATE SET "
             "views = app.site_page_views.views + 1, visitors = app.site_page_views.visitors + :v"
         ),
-        {"d": today, "p": path, "l": body["locale"], "r": _referrer_host(body.get("referrer", ""), own), "v": int(new)},
+        {
+            "d": today,
+            "p": path,
+            "l": body["locale"],
+            "r": _referrer_host(body.get("referrer", ""), own),
+            "v": int(new),
+        },
     )
 
 
@@ -1080,7 +1145,9 @@ def _affected_paths(e: SiteEntry, s: SiteSettings) -> list[str]:
     return paths
 
 
-def _revalidate_after_commit(st: AppState, uow: UnitOfWork, paths: list[str], *, everything: bool = False) -> None:
+def _revalidate_after_commit(
+    st: AppState, uow: UnitOfWork, paths: list[str], *, everything: bool = False
+) -> None:
     url, secret = st.settings.website_url, st.settings.website_revalidate_secret
     if not url or not secret:
         return

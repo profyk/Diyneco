@@ -67,10 +67,10 @@ test("a staff code signs a room-service member in with the Hotel ID and their PI
   await runner.getByLabel("Hotel ID").fill(hotelCode);
   await runner.getByLabel("Staff code").fill(staffCode);
   await runner.getByLabel("PIN").fill("9999");
-  await runner.getByRole("button", { name: "Sign in" }).click();
+  await runner.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(runner.getByText(/That PIN is not correct/)).toBeVisible();
   await runner.getByLabel("PIN").fill(accounts.pin);
-  await runner.getByRole("button", { name: "Sign in" }).click();
+  await runner.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(runner.getByRole("button", { name: "Sign out" }).first()).toBeAttached();
 });
 

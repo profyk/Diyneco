@@ -17,8 +17,13 @@ from pydantic import BaseModel, Field, StringConstraints, field_validator, model
 from app.schemas.common import StrictModel
 
 Locale = Annotated[str, StringConstraints(pattern=r"^[a-z]{2}(-[A-Z]{2})?$")]
-Slug = Annotated[str, StringConstraints(pattern=r"^$|^[a-z0-9]+(-[a-z0-9]+)*(/[a-z0-9]+(-[a-z0-9]+)*)*$", max_length=120)]
-Href = Annotated[str, StringConstraints(pattern=r"^(/[A-Za-z0-9/_.~%#?=&-]*|https://[^\s]+|mailto:[^\s]+)$", max_length=300)]
+Slug = Annotated[
+    str, StringConstraints(pattern=r"^$|^[a-z0-9]+(-[a-z0-9]+)*(/[a-z0-9]+(-[a-z0-9]+)*)*$", max_length=120)
+]
+Href = Annotated[
+    str,
+    StringConstraints(pattern=r"^(/[A-Za-z0-9/_.~%#?=&-]*|https://[^\s]+|mailto:[^\s]+)$", max_length=300),
+]
 Line = Annotated[str, StringConstraints(min_length=1, max_length=160)]
 Para = Annotated[str, StringConstraints(max_length=1200)]
 Markdown = Annotated[str, StringConstraints(max_length=100_000)]
@@ -194,9 +199,9 @@ class EntryContent(StrictModel):
     body: Markdown | None = None
     cover_id: uuid.UUID | None = None
     author: Line | None = None
-    tags: Annotated[list[Annotated[str, StringConstraints(min_length=1, max_length=40)]], Field(max_length=10)] = (
-        Field(default_factory=list)
-    )
+    tags: Annotated[
+        list[Annotated[str, StringConstraints(min_length=1, max_length=40)]], Field(max_length=10)
+    ] = Field(default_factory=list)
 
 
 class EntryCreate(StrictModel):

@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from sqlalchemy import text
+
 from app.models.base import (
     ARRAY,
     CHAR,
@@ -24,7 +26,6 @@ from app.models.base import (
     updated_at,
     uuid,
 )
-from sqlalchemy import text
 
 
 class SiteSettings(Base):
@@ -40,7 +41,9 @@ class SiteSettings(Base):
     social: Mapped[list[Any]] = mapped_column(JSONB, server_default=text("'[]'"))
     seo: Mapped[dict[str, Any]] = mapped_column(JSONB, server_default=text("'{}'"))
     verification: Mapped[dict[str, Any]] = mapped_column(JSONB, server_default=text("'{}'"))
-    analytics: Mapped[dict[str, Any]] = mapped_column(JSONB, server_default=text("""'{"provider": "builtin"}'"""))
+    analytics: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, server_default=text("""'{"provider": "builtin"}'""")
+    )
     lead_email: Mapped[str] = mapped_column(server_default=text("'sales@diyneco.com'"))
     updated_at: Mapped[datetime] = updated_at()
     updated_by: Mapped[uuid.UUID | None]
@@ -67,7 +70,9 @@ class SiteEntry(Base):
     kind: Mapped[str]
     locale: Mapped[str]
     slug: Mapped[str]
-    translation_key: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), server_default=text("app.uuid_v7()"))
+    translation_key: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), server_default=text("app.uuid_v7()")
+    )
     draft: Mapped[dict[str, Any]]
     published: Mapped[dict[str, Any] | None]
     version: Mapped[int] = mapped_column(Integer, server_default=text("0"))

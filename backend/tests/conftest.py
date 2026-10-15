@@ -95,6 +95,9 @@ def settings() -> Settings:
         kms_local_master_key=_env("KMS_LOCAL_MASTER_KEY"),
         email_provider="console",
         log_level="warning",
+        # Never a real bucket, even when backend/.env points at Supabase: local storage only.
+        supabase_url=None,
+        supabase_service_role_key=None,
     )
 
 

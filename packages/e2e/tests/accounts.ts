@@ -53,7 +53,7 @@ export async function signIn(page: Page, email: string, password: string): Promi
   for (let attempt = 0; attempt < 2; attempt++) {
     await page.getByLabel("Email").fill(email);
     await page.getByLabel("Password").fill(password);
-    await page.getByRole("button", { name: "Sign in" }).click();
+    await page.getByRole("button", { name: "Sign in", exact: true }).click();
     // The API allows 10 sign-ins a minute per address; the whole suite signs in from one.
     // Wait the window out once rather than loosening the limit for tests.
     const limited = page.getByText(/Too many requests/);

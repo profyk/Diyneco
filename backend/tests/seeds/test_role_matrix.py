@@ -96,7 +96,10 @@ async def test_platform_roles(owner_engine):
         "platform.legal.manage",  # D70; Super Admin holds every platform.* permission
         "platform.staff.manage",  # D71
         "platform.company.manage",  # D72
+        "platform.website.manage",  # D83
+        "platform.leads.read",  # D83
     }
+    assert roles["platform_website_editor"] == {"platform.website.manage", "platform.leads.read"}
     # Neither platform role holds any hotel permission.
     assert all(p.startswith("platform.") for perms in roles.values() for p in perms)
 
