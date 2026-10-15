@@ -24,6 +24,7 @@ from app.db.session import TenantContext, UnitOfWork
 from app.models.domain import DeviceStation, KitchenStation, Order, OrderItem
 from app.models.tenancy import HotelUser, RolePermission, Session, User, UserRole
 from app.realtime.outbox import emit, hotel_channel
+from app.repositories.hotels import HotelRepository
 from app.repositories.menu import MenuRepository
 from app.repositories.orders import OrderRepository
 from app.services.auth import check_member_pin
@@ -144,6 +145,14 @@ async def sign_in(
 
 
 # --- Board ---------------------------------------------------------------------------------
+
+
+async def display_settings(uow: UnitOfWork, ctx: TenantContext) -> dict[str, str]:
+    """The hotel's time zone and language: the display shows hotel time, not device time."""
+    settings = await HotelRepository(uow.session, ctx).get_settings()
+    if settings is None:
+        raise AppError("NOT_FOUND")
+    return {"timezone": settings.timezone, "locale": settings.locale}
 
 
 async def board(uow: UnitOfWork, ctx: TenantContext, stations: set[uuid.UUID]) -> list[dict[str, Any]]:

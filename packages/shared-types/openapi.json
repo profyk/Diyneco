@@ -9878,6 +9878,10 @@
             "title": "Data",
             "type": "array"
           },
+          "locale": {
+            "title": "Locale",
+            "type": "string"
+          },
           "next_cursor": {
             "anyOf": [
               {
@@ -9888,10 +9892,16 @@
               }
             ],
             "title": "Next Cursor"
+          },
+          "timezone": {
+            "title": "Timezone",
+            "type": "string"
           }
         },
         "required": [
-          "data"
+          "data",
+          "timezone",
+          "locale"
         ],
         "title": "KitchenBoard",
         "type": "object"

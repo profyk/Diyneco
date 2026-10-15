@@ -145,6 +145,8 @@ async def test_device_token_shows_the_board_but_cannot_act(client, factory):
     display = await _display(client, gm, [stations["Main Kitchen"]])
     board = await client.get("/kitchen/orders", headers=display)
     assert board.status_code == 200 and board.json()["data"][0]["id"] == placed["id"]
+    # The display shows hotel time: the board carries the hotel's zone and language.
+    assert board.json()["timezone"] and board.json()["locale"]
     act = await client.post(f"/kitchen/orders/{placed['id']}/accept", headers={**display, **idem()})
     assert act.status_code == 401
 

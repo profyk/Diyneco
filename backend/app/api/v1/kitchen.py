@@ -91,6 +91,10 @@ class KitchenOrder(BaseModel):
 class KitchenBoard(BaseModel):
     data: list[KitchenOrder]
     next_cursor: str | None = None
+    # The hotel's zone and language, so the display shows hotel time whatever the device's
+    # own clock is set to.
+    timezone: str
+    locale: str
 
 
 def _kitchen_display(request: Request) -> Device:
@@ -143,7 +147,12 @@ BoardViewer = Annotated[Principal, Depends(_board_viewer)]
 @router.get("/kitchen/orders", response_model=KitchenBoard)
 async def kitchen_orders(request: Request, uow: Uow, principal: BoardViewer) -> dict[str, Any]:
     stations = await _stations(request, uow, principal)
-    return {"data": await svc.board(uow, principal.tenant(request), stations), "next_cursor": None}
+    ctx = principal.tenant(request)
+    return {
+        "data": await svc.board(uow, ctx, stations),
+        "next_cursor": None,
+        **await svc.display_settings(uow, ctx),
+    }
 
 
 @router.post("/kitchen/orders/{order_id}/accept", response_model=KitchenOrder)

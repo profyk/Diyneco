@@ -1,6 +1,6 @@
 "use client";
 
-import { connectRealtime, ok, type RealtimeStatus } from "@diyneco/api-client";
+import { connectRealtime, ok, type RealtimeStatus, setDisplayLocale } from "@diyneco/api-client";
 import { ApiGate, Badge, Button, ErrorNotice, Spinner, ToastProvider } from "@diyneco/shared-ui";
 import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -152,7 +152,10 @@ function Kitchen({ onStatus }: { onStatus: (m: Mode) => void }) {
     queryKey: ["board"],
     queryFn: async () => {
       await getDeviceToken();
-      return ok(deviceApi.GET("/api/v1/kitchen/orders"));
+      const out = await ok(deviceApi.GET("/api/v1/kitchen/orders"));
+      // Times on the board are hotel time, whatever the tablet's own clock zone is.
+      setDisplayLocale(out.locale, out.timezone);
+      return out;
     },
     // The socket drives updates; polling covers a dropped connection (every 10 s) and is a
     // slow safety net otherwise.

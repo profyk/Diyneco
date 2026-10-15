@@ -8007,8 +8007,12 @@ export interface components {
         KitchenBoard: {
             /** Data */
             data: components["schemas"]["KitchenOrder"][];
+            /** Locale */
+            locale: string;
             /** Next Cursor */
             next_cursor?: string | null;
+            /** Timezone */
+            timezone: string;
         };
         /** KitchenItem */
         KitchenItem: {
