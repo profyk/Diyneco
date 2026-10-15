@@ -146,7 +146,9 @@ async def get_settings(uow: Uow, principal: WebsiteManage) -> dict[str, Any]:
 
 
 @admin_router.put("/settings", response_model=SettingsOut)
-async def put_settings(body: SettingsIn, request: Request, uow: Uow, principal: WebsiteManage) -> dict[str, Any]:
+async def put_settings(
+    body: SettingsIn, request: Request, uow: Uow, principal: WebsiteManage
+) -> dict[str, Any]:
     return await svc.put_settings(
         state_of(request), uow, principal.platform_actor(request), body.model_dump(mode="json")
     )
@@ -164,7 +166,9 @@ async def list_entries(
 
 
 @admin_router.post("/entries", status_code=201, response_model=EntryOut)
-async def create_entry(body: EntryCreate, request: Request, uow: Uow, principal: WebsiteManage) -> dict[str, Any]:
+async def create_entry(
+    body: EntryCreate, request: Request, uow: Uow, principal: WebsiteManage
+) -> dict[str, Any]:
     return await svc.create_entry(
         state_of(request), uow, principal.platform_actor(request), body.model_dump(mode="json")
     )
@@ -195,7 +199,9 @@ async def delete_entry(entry_id: uuid.UUID, request: Request, uow: Uow, principa
 
 
 @admin_router.post("/entries/{entry_id}/publish", response_model=EntryOut)
-async def publish_entry(entry_id: uuid.UUID, request: Request, uow: Uow, principal: WebsiteManage) -> dict[str, Any]:
+async def publish_entry(
+    entry_id: uuid.UUID, request: Request, uow: Uow, principal: WebsiteManage
+) -> dict[str, Any]:
     return await svc.publish_entry(state_of(request), uow, principal.platform_actor(request), entry_id)
 
 
@@ -216,11 +222,15 @@ async def restore_version(
     entry_id: uuid.UUID, version: int, request: Request, uow: Uow, principal: WebsiteManage
 ) -> dict[str, Any]:
     """Copies a published version back into the draft; publish to make it live again."""
-    return await svc.restore_version(state_of(request), uow, principal.platform_actor(request), entry_id, version)
+    return await svc.restore_version(
+        state_of(request), uow, principal.platform_actor(request), entry_id, version
+    )
 
 
 @admin_router.post("/entries/{entry_id}/preview", response_model=PreviewOut)
-async def preview_link(entry_id: uuid.UUID, request: Request, uow: Uow, principal: WebsiteManage) -> dict[str, Any]:
+async def preview_link(
+    entry_id: uuid.UUID, request: Request, uow: Uow, principal: WebsiteManage
+) -> dict[str, Any]:
     return await svc.preview(state_of(request), uow, entry_id)
 
 
@@ -233,8 +243,12 @@ async def list_redirects(uow: Uow, principal: WebsiteManage) -> dict[str, Any]:
 
 
 @admin_router.post("/redirects", status_code=201, response_model=RedirectOut)
-async def create_redirect(body: RedirectIn, request: Request, uow: Uow, principal: WebsiteManage) -> dict[str, Any]:
-    return await svc.create_redirect(state_of(request), uow, principal.platform_actor(request), body.model_dump())
+async def create_redirect(
+    body: RedirectIn, request: Request, uow: Uow, principal: WebsiteManage
+) -> dict[str, Any]:
+    return await svc.create_redirect(
+        state_of(request), uow, principal.platform_actor(request), body.model_dump()
+    )
 
 
 @admin_router.delete("/redirects/{redirect_id}", status_code=204)
@@ -251,16 +265,22 @@ async def list_media(request: Request, uow: Uow, principal: WebsiteManage) -> di
 
 
 @admin_router.post("/media", status_code=201, response_model=MediaOut)
-async def upload_media(body: MediaUpload, request: Request, uow: Uow, principal: WebsiteManage) -> dict[str, Any]:
+async def upload_media(
+    body: MediaUpload, request: Request, uow: Uow, principal: WebsiteManage
+) -> dict[str, Any]:
     """JPEG, PNG or WebP up to 6 MB; re-encoded as WebP in several widths, metadata dropped."""
-    return await svc.upload_media(state_of(request), uow, principal.platform_actor(request), body.model_dump())
+    return await svc.upload_media(
+        state_of(request), uow, principal.platform_actor(request), body.model_dump()
+    )
 
 
 @admin_router.patch("/media/{media_id}", response_model=MediaOut)
 async def update_media(
     media_id: uuid.UUID, body: MediaPatch, request: Request, uow: Uow, principal: WebsiteManage
 ) -> dict[str, Any]:
-    return await svc.update_media(state_of(request), uow, principal.platform_actor(request), media_id, body.alt)
+    return await svc.update_media(
+        state_of(request), uow, principal.platform_actor(request), media_id, body.alt
+    )
 
 
 @admin_router.delete("/media/{media_id}", status_code=204)
