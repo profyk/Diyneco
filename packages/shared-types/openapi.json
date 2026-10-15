@@ -128,6 +128,69 @@
         "title": "ActivityList",
         "type": "object"
       },
+      "AddPropertyOut": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "hotel_id": {
+            "format": "uuid",
+            "title": "Hotel Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "subscription_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subscription Status"
+          }
+        },
+        "required": [
+          "hotel_id",
+          "name",
+          "code",
+          "status",
+          "subscription_status"
+        ],
+        "title": "AddPropertyOut",
+        "type": "object"
+      },
+      "AddPropertyRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "accepted_documents": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 10,
+            "title": "Accepted Documents",
+            "type": "array"
+          },
+          "hotel": {
+            "$ref": "#/components/schemas/SignupHotel"
+          }
+        },
+        "required": [
+          "hotel"
+        ],
+        "title": "AddPropertyRequest",
+        "type": "object"
+      },
       "Address-Output": {
         "additionalProperties": false,
         "properties": {
@@ -4129,6 +4192,31 @@
           "decimals"
         ],
         "title": "CurrencyOut",
+        "type": "object"
+      },
+      "CurrencyTotals": {
+        "properties": {
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "month": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "payments_month": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "today": {
+            "$ref": "#/components/schemas/SignedMoney"
+          }
+        },
+        "required": [
+          "currency",
+          "today",
+          "month",
+          "payments_month"
+        ],
+        "title": "CurrencyTotals",
         "type": "object"
       },
       "DailyClosePut": {
@@ -11498,6 +11586,237 @@
         "title": "PlatformStaffRoles",
         "type": "object"
       },
+      "PortfolioHotel": {
+        "properties": {
+          "arrivals_today": {
+            "title": "Arrivals Today",
+            "type": "integer"
+          },
+          "business_date": {
+            "format": "date",
+            "title": "Business Date",
+            "type": "string"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "country": {
+            "title": "Country",
+            "type": "string"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "hotel_id": {
+            "format": "uuid",
+            "title": "Hotel Id",
+            "type": "string"
+          },
+          "in_house": {
+            "title": "In House",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "occupancy_bp": {
+            "title": "Occupancy Bp",
+            "type": "integer"
+          },
+          "occupied": {
+            "title": "Occupied",
+            "type": "integer"
+          },
+          "open_orders": {
+            "title": "Open Orders",
+            "type": "integer"
+          },
+          "payments_month": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "plan_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plan Name"
+          },
+          "property_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Property Type"
+          },
+          "province": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Province"
+          },
+          "revenue_month": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "revenue_today": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "rooms": {
+            "title": "Rooms",
+            "type": "integer"
+          },
+          "staff": {
+            "title": "Staff",
+            "type": "integer"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "subscription_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subscription Status"
+          },
+          "trial_ends_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trial Ends On"
+          }
+        },
+        "required": [
+          "hotel_id",
+          "name",
+          "code",
+          "status",
+          "property_type",
+          "country",
+          "city",
+          "province",
+          "currency",
+          "business_date",
+          "subscription_status",
+          "plan_name",
+          "trial_ends_on",
+          "rooms",
+          "occupied",
+          "occupancy_bp",
+          "in_house",
+          "arrivals_today",
+          "open_orders",
+          "staff",
+          "revenue_today",
+          "revenue_month",
+          "payments_month"
+        ],
+        "title": "PortfolioHotel",
+        "type": "object"
+      },
+      "PortfolioOut": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/PortfolioHotel"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/PortfolioTotals"
+          }
+        },
+        "required": [
+          "data",
+          "totals"
+        ],
+        "title": "PortfolioOut",
+        "type": "object"
+      },
+      "PortfolioTotals": {
+        "properties": {
+          "in_house": {
+            "title": "In House",
+            "type": "integer"
+          },
+          "occupancy_bp": {
+            "title": "Occupancy Bp",
+            "type": "integer"
+          },
+          "occupied": {
+            "title": "Occupied",
+            "type": "integer"
+          },
+          "open_orders": {
+            "title": "Open Orders",
+            "type": "integer"
+          },
+          "properties": {
+            "title": "Properties",
+            "type": "integer"
+          },
+          "revenue": {
+            "items": {
+              "$ref": "#/components/schemas/CurrencyTotals"
+            },
+            "title": "Revenue",
+            "type": "array"
+          },
+          "rooms": {
+            "title": "Rooms",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "properties",
+          "rooms",
+          "occupied",
+          "occupancy_bp",
+          "in_house",
+          "open_orders",
+          "revenue"
+        ],
+        "title": "PortfolioTotals",
+        "type": "object"
+      },
       "PriceCreate": {
         "additionalProperties": false,
         "properties": {
@@ -16026,6 +16345,29 @@
         "title": "TokenResponse",
         "type": "object"
       },
+      "TrialGrant": {
+        "additionalProperties": false,
+        "properties": {
+          "days": {
+            "maximum": 90.0,
+            "minimum": 1.0,
+            "title": "Days",
+            "type": "integer"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 3,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "days",
+          "reason"
+        ],
+        "title": "TrialGrant",
+        "type": "object"
+      },
       "Usage": {
         "properties": {
           "limit": {
@@ -19825,6 +20167,60 @@
           }
         },
         "summary": "Suspend",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/hotels/{hotel_id}/trial": {
+      "post": {
+        "description": "Grants a free trial to a hotel without a subscription (an owner's further property,\nD86), or sets when a running trial ends. Audited with the reason.",
+        "operationId": "grant_trial_api_v1_admin_hotels__hotel_id__trial_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "hotel_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Hotel Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrialGrant"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Grant Trial",
         "tags": [
           "admin"
         ]
@@ -23887,6 +24283,48 @@
         ]
       }
     },
+    "/api/v1/hotels": {
+      "post": {
+        "description": "A Hotel Owner adds another property with the signup form's hotel details. It starts\nwith no subscription (the free trial is once per owner); switch to it with\nPOST /auth/refresh {hotel_id}.",
+        "operationId": "add_property_api_v1_hotels_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddPropertyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddPropertyOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Property",
+        "tags": [
+          "properties"
+        ]
+      }
+    },
     "/api/v1/invoices/{invoice_id}": {
       "get": {
         "operationId": "get_invoice_api_v1_invoices__invoice_id__get",
@@ -26508,6 +26946,28 @@
         "summary": "Public Plans",
         "tags": [
           "plans"
+        ]
+      }
+    },
+    "/api/v1/portfolio": {
+      "get": {
+        "description": "Every property the caller owns side by side: occupancy, stays, open orders and revenue\ntoday and this month, with totals per currency.",
+        "operationId": "portfolio_api_v1_portfolio_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Portfolio",
+        "tags": [
+          "properties"
         ]
       }
     },

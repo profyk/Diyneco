@@ -607,6 +607,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/hotels/{hotel_id}/trial": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Grant Trial
+         * @description Grants a free trial to a hotel without a subscription (an owner's further property,
+         *     D86), or sets when a running trial ends. Audited with the reason.
+         */
+        post: operations["grant_trial_api_v1_admin_hotels__hotel_id__trial_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/legal-documents": {
         parameters: {
             query?: never;
@@ -2196,6 +2217,28 @@ export interface paths {
         patch: operations["patch_settings_api_v1_hotel_settings_patch"];
         trace?: never;
     };
+    "/api/v1/hotels": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Property
+         * @description A Hotel Owner adds another property with the signup form's hotel details. It starts
+         *     with no subscription (the free trial is once per owner); switch to it with
+         *     POST /auth/refresh {hotel_id}.
+         */
+        post: operations["add_property_api_v1_hotels_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/invoices/{invoice_id}": {
         parameters: {
             query?: never;
@@ -2991,6 +3034,27 @@ export interface paths {
          * @description Published plans with their prices in force (public: the pricing page and signup).
          */
         get: operations["public_plans_api_v1_plans_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/portfolio": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Portfolio
+         * @description Every property the caller owns side by side: occupancy, stays, open orders and revenue
+         *     today and this month, with totals per currency.
+         */
+        get: operations["portfolio_api_v1_portfolio_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4132,6 +4196,28 @@ export interface components {
             data: components["schemas"]["ActivityEvent"][];
             /** Next Cursor */
             next_cursor?: string | null;
+        };
+        /** AddPropertyOut */
+        AddPropertyOut: {
+            /** Code */
+            code: string;
+            /**
+             * Hotel Id
+             * Format: uuid
+             */
+            hotel_id: string;
+            /** Name */
+            name: string;
+            /** Status */
+            status: string;
+            /** Subscription Status */
+            subscription_status: string | null;
+        };
+        /** AddPropertyRequest */
+        AddPropertyRequest: {
+            /** Accepted Documents */
+            accepted_documents?: string[];
+            hotel: components["schemas"]["SignupHotel"];
         };
         /** Address */
         "Address-Output": {
@@ -5396,6 +5482,14 @@ export interface components {
             name: string;
             /** Symbol */
             symbol: string;
+        };
+        /** CurrencyTotals */
+        CurrencyTotals: {
+            /** Currency */
+            currency: string;
+            month: components["schemas"]["SignedMoney"];
+            payments_month: components["schemas"]["SignedMoney"];
+            today: components["schemas"]["SignedMoney"];
         };
         /** DailyClosePut */
         DailyClosePut: {
@@ -7784,6 +7878,81 @@ export interface components {
             /** Roles */
             roles: string[];
         };
+        /** PortfolioHotel */
+        PortfolioHotel: {
+            /** Arrivals Today */
+            arrivals_today: number;
+            /**
+             * Business Date
+             * Format: date
+             */
+            business_date: string;
+            /** City */
+            city: string | null;
+            /** Code */
+            code: string;
+            /** Country */
+            country: string;
+            /** Currency */
+            currency: string;
+            /**
+             * Hotel Id
+             * Format: uuid
+             */
+            hotel_id: string;
+            /** In House */
+            in_house: number;
+            /** Name */
+            name: string;
+            /** Occupancy Bp */
+            occupancy_bp: number;
+            /** Occupied */
+            occupied: number;
+            /** Open Orders */
+            open_orders: number;
+            payments_month: components["schemas"]["SignedMoney"];
+            /** Plan Name */
+            plan_name: string | null;
+            /** Property Type */
+            property_type: string | null;
+            /** Province */
+            province: string | null;
+            revenue_month: components["schemas"]["SignedMoney"];
+            revenue_today: components["schemas"]["SignedMoney"];
+            /** Rooms */
+            rooms: number;
+            /** Staff */
+            staff: number;
+            /** Status */
+            status: string;
+            /** Subscription Status */
+            subscription_status: string | null;
+            /** Trial Ends On */
+            trial_ends_on: string | null;
+        };
+        /** PortfolioOut */
+        PortfolioOut: {
+            /** Data */
+            data: components["schemas"]["PortfolioHotel"][];
+            totals: components["schemas"]["PortfolioTotals"];
+        };
+        /** PortfolioTotals */
+        PortfolioTotals: {
+            /** In House */
+            in_house: number;
+            /** Occupancy Bp */
+            occupancy_bp: number;
+            /** Occupied */
+            occupied: number;
+            /** Open Orders */
+            open_orders: number;
+            /** Properties */
+            properties: number;
+            /** Revenue */
+            revenue: components["schemas"]["CurrencyTotals"][];
+            /** Rooms */
+            rooms: number;
+        };
         /** PriceCreate */
         PriceCreate: {
             amount: components["schemas"]["Money"];
@@ -9263,6 +9432,13 @@ export interface components {
              */
             token_type: "Bearer";
             user: components["schemas"]["UserOut"];
+        };
+        /** TrialGrant */
+        TrialGrant: {
+            /** Days */
+            days: number;
+            /** Reason */
+            reason: string;
         };
         /** Usage */
         Usage: {
@@ -11063,6 +11239,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HotelStatusOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    grant_trial_api_v1_admin_hotels__hotel_id__trial_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                hotel_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TrialGrant"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscriptionOut"];
                 };
             };
             /** @description Validation Error */
@@ -14018,6 +14229,39 @@ export interface operations {
             };
         };
     };
+    add_property_api_v1_hotels_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddPropertyRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AddPropertyOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_invoice_api_v1_invoices__invoice_id__get: {
         parameters: {
             query?: never;
@@ -15759,6 +16003,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PublicPlanList"];
+                };
+            };
+        };
+    };
+    portfolio_api_v1_portfolio_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortfolioOut"];
                 };
             };
         };

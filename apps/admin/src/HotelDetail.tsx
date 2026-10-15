@@ -44,6 +44,7 @@ export function HotelDetail({ id }: { id: string }) {
   const { api, can } = useSession();
   const [managing, setManaging] = useState(false);
   const [limitsOpen, setLimitsOpen] = useState(false);
+  const [trialOpen, setTrialOpen] = useState(false);
   const detail = useQuery({
     queryKey: ["hotel", id],
     queryFn: () => ok(api.GET("/api/v1/admin/hotels/{hotel_id}", { params: { path: { hotel_id: id } } })),
@@ -106,11 +107,18 @@ export function HotelDetail({ id }: { id: string }) {
         <Card className="p-5">
           <div className="flex items-start justify-between gap-2">
             <h2 className="font-display text-base font-semibold">Subscription</h2>
-            {sub && can("platform.billing.manage") ? (
-              <Button size="sm" variant="secondary" onClick={() => setLimitsOpen(true)}>
-                Custom limits
-              </Button>
-            ) : null}
+            <div className="flex gap-2">
+              {can("platform.billing.manage") && (!sub || sub.status === "trial") ? (
+                <Button size="sm" variant="secondary" onClick={() => setTrialOpen(true)}>
+                  {sub ? "Change trial end" : "Grant trial"}
+                </Button>
+              ) : null}
+              {sub && can("platform.billing.manage") ? (
+                <Button size="sm" variant="secondary" onClick={() => setLimitsOpen(true)}>
+                  Custom limits
+                </Button>
+              ) : null}
+            </div>
           </div>
           {sub ? (
             <>
@@ -136,7 +144,10 @@ export function HotelDetail({ id }: { id: string }) {
               </div>
             </>
           ) : (
-            <EmptyState title="No subscription" body="Choose a plan under Manage." />
+            <EmptyState
+              title="No subscription"
+              body="An owner's further property starts without a trial (one per owner). Grant one here, or the owner chooses a plan."
+            />
           )}
           <p className="mt-4 text-sm text-muted">
             {h.counts.connected_devices} of {h.counts.devices} devices online · {h.counts.active_stays} guests in house
@@ -188,6 +199,7 @@ export function HotelDetail({ id }: { id: string }) {
         )}
       </Card>
       {managing ? <HotelDialog hotel={h} onClose={() => setManaging(false)} /> : null}
+      {trialOpen ? <TrialDialog hotelId={h.id} hotelName={h.name} running={sub?.status === "trial"} onClose={() => setTrialOpen(false)} /> : null}
       {limitsOpen && sub && sub.plan ? (
         <LimitsDialog
           hotelId={h.id}
@@ -201,6 +213,47 @@ export function HotelDetail({ id }: { id: string }) {
         />
       ) : null}
     </>
+  );
+}
+
+/** A free trial without a plan (D86): for an owner's further property, or a new trial end. */
+function TrialDialog(props: { hotelId: string; hotelName: string; running: boolean; onClose: () => void }) {
+  const { api } = useSession();
+  const [days, setDays] = useState("14");
+  const [reason, setReason] = useState("");
+  const valid = /^\d{1,2}$/.test(days) && Number(days) >= 1 && Number(days) <= 90 && reason.trim().length >= 3;
+  const save = useAction(
+    () =>
+      ok(
+        api.POST("/api/v1/admin/hotels/{hotel_id}/trial", {
+          params: { path: { hotel_id: props.hotelId } },
+          body: { days: Number(days), reason },
+        }),
+      ),
+    { success: (s) => `Trial until ${formatDate(s.trial_ends_on)}.`, onDone: props.onClose },
+  );
+  return (
+    <Dialog
+      open
+      onClose={props.onClose}
+      title={props.running ? `Change the trial end for ${props.hotelName}` : `Grant a trial to ${props.hotelName}`}
+      description="The trial runs with the trial limits from Billing settings. Nothing is invoiced until the hotel chooses a plan."
+      footer={
+        <Button disabled={!valid} loading={save.isPending} onClick={() => save.mutate(undefined)}>
+          {props.running ? "Save trial end" : "Grant trial"}
+        </Button>
+      }
+    >
+      <div className="flex flex-col gap-4">
+        <Field label="Days from today" hint="1 to 90.">
+          {(p) => <Input {...p} inputMode="numeric" value={days} onChange={(e) => setDays(e.target.value.trim())} />}
+        </Field>
+        <Field label="Reason" hint="Recorded in the hotel's audit log.">
+          {(p) => <Input {...p} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Second lodge for an existing customer" />}
+        </Field>
+      </div>
+      {save.error ? <ErrorNotice error={save.error} className="mt-4" /> : null}
+    </Dialog>
   );
 }
 

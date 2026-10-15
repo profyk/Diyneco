@@ -26,6 +26,7 @@ from app.api.v1 import (
     orders,
     plans,
     platform_staff,
+    properties,
     reports,
     room_service,
     rooms,
@@ -126,6 +127,7 @@ def create_app(settings: Settings | None = None, state: AppState | None = None) 
     api.include_router(platform_staff.router)
     api.include_router(company.router)
     api.include_router(countries.router)
+    api.include_router(properties.router)
     api.include_router(plans.router)
     api.include_router(plans.public_router)
     for billing_router in (

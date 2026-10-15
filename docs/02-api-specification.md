@@ -77,6 +77,9 @@ A new owner signs up, creates a hotel, and the onboarding wizard tracks which of
 | --- | --- | --- | --- | --- | --- |
 | POST | `/signup` | none | — | Idem | Owner account + hotel in one call; sends verification email with a 6-digit code. Only operational countries; no currency asked (the country's); property type, rooms, website, address, the country's time zone and the owner's mobile (D84) |
 | GET | `/countries` | none | — | — | Countries open for signups (operational, D84) with currency, every time zone, dialling code and tax defaults |
+| POST | `/hotels` | staff | Hotel Owner of any hotel + Step-up | Idem | `{hotel, accepted_documents}`: an owner adds another property; it starts with no subscription (the trial is once per owner) (D86) |
+| GET | `/portfolio` | staff | Hotel Owner | — | Every hotel the caller owns: status, plan, occupancy, stays, orders, staff, revenue today and this month; totals per currency (D86) |
+| POST | `/admin/hotels/{id}/trial` | platform | `platform.billing.manage` + Step-up | — | `{days, reason}`: grant a trial to a hotel without a subscription or change a running trial's end; audited (D86) |
 | GET | `/countries/{code}/regions` | none | — | — | `{label, data: [{code, name}]}`: the country's provinces or states (ISO 3166-2, D85); empty where none are listed (free text) |
 | GET | `/admin/countries` | platform | `platform.countries.manage` | — | Every country with whether it takes signups and its hotel counts (D84) |
 | PUT | `/admin/countries/{code}` | platform | `platform.countries.manage` + Step-up | — | `{operational, reason}`: open or pause signups in a country; audited; existing hotels unaffected (D84) |

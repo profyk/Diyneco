@@ -26,6 +26,7 @@ from app.schemas.admin import (
     SupportRequest,
     SuspendRequest,
 )
+from app.schemas.properties import TrialGrant
 from app.services import admin as svc
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -121,6 +122,15 @@ async def put_subscription(
     hotel_id: uuid.UUID, body: SubscriptionPut, request: Request, uow: Uow, principal: BillingManage
 ) -> dict[str, Any]:
     return await svc.put_subscription(uow, principal.for_hotel(request, hotel_id), body.model_dump())
+
+
+@router.post("/hotels/{hotel_id}/trial", response_model=SubscriptionOut)
+async def grant_trial(
+    hotel_id: uuid.UUID, body: TrialGrant, request: Request, uow: Uow, principal: BillingManage, _s: StepUp
+) -> dict[str, Any]:
+    """Grants a free trial to a hotel without a subscription (an owner's further property,
+    D86), or sets when a running trial ends. Audited with the reason."""
+    return await svc.grant_trial(uow, principal.for_hotel(request, hotel_id), body.days, body.reason)
 
 
 @router.get("/feature-flags", response_model=FlagList)

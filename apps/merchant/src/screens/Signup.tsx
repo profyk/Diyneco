@@ -5,7 +5,7 @@
  * confirmation email. Countries are the ones Diyneco has opened for signups; the currency
  * follows the country and is shown, not asked. The draft survives a reload (never the password).
  */
-import { ApiError, newIdempotencyKey } from "@diyneco/api-client";
+import { ApiError, newIdempotencyKey, ok } from "@diyneco/api-client";
 import {
   BrandLogo,
   Button,
@@ -14,6 +14,8 @@ import {
   ErrorNotice,
   Field,
   Input,
+  PageHeader,
+  type PropertyType,
   propertyTypeGroups,
   propertyTypeLabel,
   Select,
@@ -25,6 +27,7 @@ import { type FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } 
 
 import { API_URL } from "../config";
 import { type LegalDoc, LegalText } from "../Legal";
+import { useSession } from "../session";
 
 interface Country {
   code: string;
@@ -106,27 +109,27 @@ async function publicJson<T>(path: string, init?: RequestInit): Promise<T> {
   return data as T;
 }
 
-function loadDraft(): Form {
+function loadDraft(key: string): Form {
   try {
-    const raw = sessionStorage.getItem(DRAFT_KEY);
+    const raw = sessionStorage.getItem(key);
     return raw ? { ...EMPTY, ...(JSON.parse(raw) as Partial<Form>), password: "" } : EMPTY;
   } catch {
     return EMPTY;
   }
 }
 
-function saveDraft(f: Form) {
+function saveDraft(key: string, f: Form) {
   try {
     const { password: _never, ...rest } = f;
-    sessionStorage.setItem(DRAFT_KEY, JSON.stringify(rest));
+    sessionStorage.setItem(key, JSON.stringify(rest));
   } catch {
     /* private mode: the form still works, it just is not kept */
   }
 }
 
-function clearDraft() {
+function clearDraft(key: string) {
   try {
-    sessionStorage.removeItem(DRAFT_KEY);
+    sessionStorage.removeItem(key);
   } catch {
     /* ignore */
   }
@@ -208,7 +211,17 @@ function stepOf(field: string): number {
   return 3;
 }
 
-export function Signup() {
+/**
+ * `signup`: a new owner registers their first property. `add`: a signed-in owner adds another
+ * property (D86): the same property and location steps, no account step, and it starts
+ * without a free trial (the trial is once per owner).
+ */
+export function Signup({ mode = "signup" }: { mode?: "signup" | "add" }) {
+  const adding = mode === "add";
+  const shown = adding ? [0, 1, 3] : [0, 1, 2, 3];
+  const draftKey = `${DRAFT_KEY}.${mode}`;
+  const { api, switchHotel } = useSession();
+  const [added, setAdded] = useState<{ hotel_id: string; name: string; code: string } | null>(null);
   const [f, setF] = useState<Form>(EMPTY);
   const [step, setStep] = useState(0);
   const [errors, setErrors] = useState<Errors>({});
@@ -247,7 +260,7 @@ export function Signup() {
   const regionName = regions?.data.find((r) => r.code === f.provinceCode)?.name;
 
   // Restore a draft, then fill the country from the browser when nothing was chosen yet.
-  useEffect(() => setF(loadDraft()), []);
+  useEffect(() => setF(loadDraft(draftKey)), [draftKey]);
   useEffect(() => {
     if (!list.length) return;
     setF((cur) => {
@@ -259,7 +272,7 @@ export function Signup() {
         : cur;
     });
   }, [list]);
-  useEffect(() => saveDraft(f), [f]);
+  useEffect(() => saveDraft(draftKey, f), [draftKey, f]);
   useEffect(() => heading.current?.focus(), [step]);
 
   const set = <K extends keyof Form>(k: K, v: Form[K]) => {
@@ -284,8 +297,9 @@ export function Signup() {
     e?.preventDefault();
     const found = validate(step, f, regions);
     setErrors(found);
-    if (Object.keys(found).length === 0) setStep((s) => Math.min(s + 1, STEPS.length - 1));
+    if (Object.keys(found).length === 0) setStep((s) => shown[shown.indexOf(s) + 1] ?? s);
   };
+  const back = () => setStep((s) => shown[shown.indexOf(s) - 1] ?? 0);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -293,7 +307,7 @@ export function Signup() {
       setErrors({ agreed: "Accept the documents to continue." });
       return;
     }
-    for (let s = 0; s < 3; s++) {
+    for (const s of shown.filter((x) => x < 3)) {
       const found = validate(s, f, regions);
       if (Object.keys(found).length) {
         setErrors(found);
@@ -314,32 +328,41 @@ export function Signup() {
         postal_code: f.postalCode.trim() || null,
         country: f.country,
       };
+      const hotel = {
+        name: f.hotel.trim(),
+        property_type: f.propertyType as PropertyType,
+        room_count: Number(f.rooms),
+        legal_name: f.legalName.trim() || null,
+        website: f.website.trim() || null,
+        country: f.country,
+        timezone: f.timezone || null,
+        address,
+        phone: f.hotelPhone ? toE164(dialOf(f.hotelPhoneCountry), f.hotelPhone) : null,
+        email: f.hotelEmail.trim() || null,
+      };
+      const accepted_documents = agreed ? docs.map((d) => d.id) : [];
+      if (adding) {
+        // Step-up (PIN or password) is asked for by the API client when the server wants it.
+        const created = await ok(api.POST("/api/v1/hotels", { body: { hotel, accepted_documents } }));
+        clearDraft(draftKey);
+        setAdded({ hotel_id: created.hotel_id, name: created.name, code: created.code });
+        return;
+      }
       await publicJson("/signup", {
         method: "POST",
         headers: { "Idempotency-Key": newIdempotencyKey() },
         body: JSON.stringify({
-          hotel: {
-            name: f.hotel.trim(),
-            property_type: f.propertyType,
-            room_count: Number(f.rooms),
-            legal_name: f.legalName.trim() || null,
-            website: f.website.trim() || null,
-            country: f.country,
-            timezone: f.timezone || null,
-            address,
-            phone: f.hotelPhone ? toE164(dialOf(f.hotelPhoneCountry), f.hotelPhone) : null,
-            email: f.hotelEmail.trim() || null,
-          },
+          hotel,
           owner: {
             name: f.name.trim(),
             email: f.email.trim(),
             password: f.password,
             phone: toE164(dialOf(f.mobileCountry), f.mobile) || null,
           },
-          accepted_documents: agreed ? docs.map((d) => d.id) : [],
+          accepted_documents,
         }),
       });
-      clearDraft();
+      clearDraft(draftKey);
       setRegisteredEmail(f.email.trim());
     } catch (err) {
       setSubmitError(err);
@@ -352,13 +375,40 @@ export function Signup() {
   };
 
   if (registeredEmail) return <ConfirmEmail email={registeredEmail} />;
+  if (added) {
+    return (
+      <Card className="mx-auto max-w-xl p-8 text-center">
+        <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-good-bg text-2xl text-good">✓</div>
+        <h2 className="mt-4 font-display text-xl font-semibold text-ink">{added.name} is added</h2>
+        <p className="mt-2 text-sm text-muted">
+          Its Hotel ID is <span className="font-mono text-ink">{added.code}</span>. Diyneco reviews new properties, usually
+          within one working day. Choose a plan for it in Settings › Plan to add rooms, staff and devices.
+        </p>
+        <div className="mt-6 flex flex-wrap justify-center gap-3">
+          <Button
+            size="lg"
+            onClick={async () => {
+              await switchHotel(added.hotel_id);
+              window.location.assign("/settings?tab=plan");
+            }}
+          >
+            Open {added.name}
+          </Button>
+          <a href="/properties" className="inline-flex h-12 items-center rounded-[10px] border border-line px-5 text-ink hover:bg-surface-2">
+            All properties
+          </a>
+        </div>
+      </Card>
+    );
+  }
 
   const currencyName = currencies.data?.data.find((c) => c.code === country?.currency)?.name;
   const score = passwordScore(f.password);
 
+  const Frame = adding ? InApp : Shell;
   return (
-    <Shell>
-      <Stepper step={step} onJump={(s) => s < step && setStep(s)} />
+    <Frame>
+      <Stepper steps={shown} step={step} onJump={(s) => s < step && setStep(s)} />
       <Card className="mt-4 p-6 sm:p-8">
         <h2 ref={heading} tabIndex={-1} className="font-display text-xl font-semibold text-ink outline-none">
           {["Tell us about your property", "Where is it?", "Create your account", "Check and confirm"][step]}
@@ -369,7 +419,9 @@ export function Signup() {
               "This sets up your hotel. You can change all of it later in Settings.",
               "The country sets where your data is stored, your currency and your tax defaults.",
               "You'll be the owner of this hotel on Diyneco and can invite your team afterwards.",
-              "Make sure everything is right, then register. We'll email you a 6-digit code.",
+              adding
+                ? "Make sure everything is right, then add the property."
+                : "Make sure everything is right, then register. We'll email you a 6-digit code.",
             ][step]
           }
         </p>
@@ -564,9 +616,13 @@ export function Signup() {
 
             <div className="mt-2 flex items-center justify-between gap-3">
               {step > 0 ? (
-                <Button variant="ghost" onClick={() => setStep((s) => s - 1)}>
+                <Button variant="ghost" onClick={back}>
                   Back
                 </Button>
+              ) : adding ? (
+                <a className="text-sm text-blue hover:underline" href="/properties">
+                  Cancel
+                </a>
               ) : (
                 <a className="text-sm text-blue hover:underline" href="/">
                   Already registered? Sign in
@@ -588,7 +644,9 @@ export function Signup() {
                   1,
                 ],
                 ["Currency and time zone", `${country?.currency ?? ""} · ${f.timezone ? zoneLabel(f.timezone) : ""}`, 1],
-                ["Owner", `${f.name} · ${f.email} · ${toE164(dialOf(f.mobileCountry), f.mobile)}`, 2],
+                ...(adding
+                  ? []
+                  : [["Owner", `${f.name} · ${f.email} · ${toE164(dialOf(f.mobileCountry), f.mobile)}`, 2] as [string, string, number]]),
               ]}
               onEdit={setStep}
             />
@@ -607,21 +665,33 @@ export function Signup() {
             ) : null}
             {submitError ? <ErrorNotice error={submitError} /> : null}
             <div className="flex items-center justify-between gap-3">
-              <Button variant="ghost" onClick={() => setStep(2)}>
+              <Button variant="ghost" onClick={back}>
                 Back
               </Button>
               <Button type="submit" size="lg" loading={busy} disabled={docs.length > 0 && !agreed}>
-                Register property
+                {adding ? "Add property" : "Register property"}
               </Button>
             </div>
             <p className="text-xs text-muted">
               Guest data is processed under the data protection law of {country?.name ?? "your country"} as described in our privacy
-              notice. Your free trial starts today; nothing is charged until you choose a plan.
+              notice.{" "}
+              {adding
+                ? "The free trial comes once per owner: choose a plan for this property, or ask Diyneco about a trial."
+                : "Your free trial starts today; nothing is charged until you choose a plan."}
             </p>
           </form>
         )}
       </Card>
-    </Shell>
+    </Frame>
+  );
+}
+
+function InApp({ children }: { children: ReactNode }) {
+  return (
+    <div className="mx-auto w-full max-w-2xl">
+      <PageHeader title="Add a property" description="Another hotel, lodge or guest house under your account." />
+      {children}
+    </div>
   );
 }
 
@@ -640,10 +710,11 @@ function Shell({ children }: { children: ReactNode }) {
   );
 }
 
-function Stepper({ step, onJump }: { step: number; onJump: (s: number) => void }) {
+function Stepper({ steps, step, onJump }: { steps: number[]; step: number; onJump: (s: number) => void }) {
+  const items = steps.map((i) => ({ i, label: STEPS[i] ?? "" }));
   return (
     <ol className="flex items-center gap-2" aria-label="Registration steps">
-      {STEPS.map((label, i) => (
+      {items.map(({ i, label }, n) => (
         <li key={label} className="flex flex-1 items-center gap-2">
           <button
             type="button"
@@ -658,11 +729,11 @@ function Stepper({ step, onJump }: { step: number; onJump: (s: number) => void }
                 i < step ? "bg-good text-white" : i === step ? "bg-brand text-on-brand" : "bg-surface-2 text-muted",
               )}
             >
-              {i < step ? "✓" : i + 1}
+              {i < step ? "✓" : n + 1}
             </span>
             <span className={cn("hidden text-sm sm:inline", i === step ? "font-medium text-ink" : "text-muted")}>{label}</span>
           </button>
-          {i < STEPS.length - 1 ? <span className={cn("h-px flex-1", i < step ? "bg-good" : "bg-line")} /> : null}
+          {n < items.length - 1 ? <span className={cn("h-px flex-1", i < step ? "bg-good" : "bg-line")} /> : null}
         </li>
       ))}
     </ol>

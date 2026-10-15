@@ -24,6 +24,7 @@ ALLOWED = {
     ("POST", "/api/v1/auth/login"): {"hotel_id"},
     ("POST", "/api/v1/auth/refresh"): {"hotel_id"},
     ("POST", "/api/v1/signup"): {"hotel"},  # the hotel being created, not a reference
+    ("POST", "/api/v1/hotels"): {"hotel"},  # an owner's new property, not a reference (D86)
 }
 
 

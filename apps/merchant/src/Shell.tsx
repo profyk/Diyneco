@@ -13,7 +13,8 @@ import { API_URL } from "./config";
 import { Search } from "./Search";
 import { useSession } from "./session";
 
-const NAV: { href: string; label: string; perm?: string; any?: string[] }[] = [
+const NAV: { href: string; label: string; perm?: string; any?: string[]; owner?: boolean }[] = [
+  { href: "/properties", label: "All properties", owner: true },
   { href: "/", label: "Today" },
   { href: "/orders", label: "Orders", perm: "orders.read" },
   { href: "/dispatch", label: "Dispatch", perm: "deliveries.manage" },
@@ -86,7 +87,11 @@ function Shell({ children }: { children: ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
   if (state.status !== "signed-in") return null;
   const { me, hotels } = state;
-  const nav = NAV.filter((n) => (n.perm ? can(n.perm) : n.any ? n.any.some(can) : true));
+  // Owners see every property they own side by side and can add more (D86).
+  const owner = me.roles.includes("hotel_owner") || hotels.some((h) => h.roles.includes("hotel_owner"));
+  const nav = NAV.filter((n) =>
+    n.owner ? owner : n.perm ? can(n.perm) : n.any ? n.any.some(can) : true,
+  );
   const suspended = me.hotel?.status === "suspended";
   const pending = me.hotel?.status === "pending_approval";
 
@@ -113,6 +118,13 @@ function Shell({ children }: { children: ReactNode }) {
                 </option>
               ))}
             </Select>
+          ) : owner ? (
+            <div className="mt-1 flex items-center justify-between gap-2">
+              <p className="truncate text-sm text-muted">{me.hotel?.name}</p>
+              <Link href="/properties/new" className="shrink-0 text-xs text-blue hover:underline">
+                + Add property
+              </Link>
+            </div>
           ) : (
             <p className="mt-1 truncate text-sm text-muted">{me.hotel?.name}</p>
           )}

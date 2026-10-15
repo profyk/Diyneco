@@ -285,6 +285,53 @@ async def put_subscription(uow: UnitOfWork, ctx: TenantContext, body: dict[str, 
     return await subscription_payload(uow, sub, plan)
 
 
+async def grant_trial(uow: UnitOfWork, ctx: TenantContext, days: int, reason: str) -> dict[str, Any]:
+    """Starts a free trial without a plan for a hotel that has no subscription (an owner's
+    further property, D86, or an expired trial), or sets a running trial to end `days` from
+    today. A hotel on a plan is never put back on a trial."""
+    s = uow.session
+    await _enter(uow, ctx)
+    today = datetime.now(UTC).date()
+    current = (
+        await s.execute(
+            select(Subscription)
+            .where(Subscription.hotel_id == ctx.hotel_id, Subscription.status.in_(CURRENT_STATUSES))
+            .with_for_update()
+        )
+    ).scalar_one_or_none()
+    ends = today + timedelta(days=days)
+    if current is None:
+        sub = (
+            await s.execute(
+                insert(Subscription)
+                .values(
+                    hotel_id=ctx.hotel_id, plan_id=None, status="trial", starts_on=today, trial_ends_on=ends
+                )
+                .returning(Subscription)
+            )
+        ).scalar_one()
+        old = None
+    elif current.status == "trial":
+        old = {"trial_ends_on": current.trial_ends_on.isoformat() if current.trial_ends_on else None}
+        current.trial_ends_on = ends
+        current.version += 1
+        sub = current
+    else:
+        raise AppError("INVALID_TRANSITION", "This hotel is on a plan; a trial can't replace it.")
+    await s.flush()
+    await write_audit(
+        s,
+        ctx,
+        "subscription.trial_granted",
+        "subscription",
+        sub.id,
+        old_value=old,
+        new_value={"status": "trial", "trial_ends_on": ends.isoformat()},
+        reason=reason,
+    )
+    return await subscription_payload(uow, sub, None)
+
+
 async def subscription_payload(uow: UnitOfWork, sub: Subscription, plan: Plan | None) -> dict[str, Any]:
     return {
         "id": sub.id,
