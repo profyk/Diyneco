@@ -74,7 +74,9 @@ class SiteEntry(Base):
         UUID(as_uuid=True), server_default=text("app.uuid_v7()")
     )
     draft: Mapped[dict[str, Any]]
-    published: Mapped[dict[str, Any] | None]
+    # None must be SQL NULL (not published), never the JSON value null, which the table's
+    # "published is an object" check refuses.
+    published: Mapped[dict[str, Any] | None] = mapped_column(JSONB(none_as_null=True))
     version: Mapped[int] = mapped_column(Integer, server_default=text("0"))
     published_at: Mapped[datetime | None]
     republished_at: Mapped[datetime | None]

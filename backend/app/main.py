@@ -30,6 +30,7 @@ from app.api.v1 import (
     reports,
     room_service,
     rooms,
+    site,
     staff,
     stays,
     sub_invoices,
@@ -105,40 +106,42 @@ def create_app(settings: Settings | None = None, state: AppState | None = None) 
     api = APIRouter(
         prefix=API_PREFIX, dependencies=[Depends(reject_unknown_query), Depends(reject_card_data)]
     )
-    api.include_router(health.router)
-    api.include_router(auth.router)
-    api.include_router(hotel.router)
-    api.include_router(rooms.router)
-    api.include_router(staff.router)
-    api.include_router(devices.router)
-    api.include_router(menu.router)
-    api.include_router(stays.router)
-    api.include_router(orders.router)
-    api.include_router(guest.router)
-    api.include_router(kitchen.router)
-    api.include_router(room_service.router)
-    api.include_router(billing.router)
-    api.include_router(admin.router)
-    api.include_router(admin.hotel_router)
-    api.include_router(reports.router)
-    api.include_router(reports.admin_router)
-    api.include_router(legal.router)
-    api.include_router(legal.admin_router)
-    api.include_router(platform_staff.router)
-    api.include_router(company.router)
-    api.include_router(countries.router)
-    api.include_router(properties.router)
-    api.include_router(plans.router)
-    api.include_router(plans.public_router)
-    for billing_router in (
+    for router in (
+        health.router,
+        auth.router,
+        hotel.router,
+        rooms.router,
+        staff.router,
+        devices.router,
+        menu.router,
+        stays.router,
+        orders.router,
+        guest.router,
+        kitchen.router,
+        room_service.router,
+        billing.router,
+        admin.router,
+        admin.hotel_router,
+        reports.router,
+        reports.admin_router,
+        legal.router,
+        legal.admin_router,
+        platform_staff.router,
+        company.router,
+        countries.router,
+        properties.router,
+        site.public_router,
+        site.admin_router,
+        plans.router,
+        plans.public_router,
         sub_invoices.admin_router,
         sub_invoices.router,
         sub_payments.router,
         sub_payments.admin_router,
         sub_payments.webhook_router,
+        platform_staff.public_router,
     ):
-        api.include_router(billing_router)
-    api.include_router(platform_staff.public_router)
+        api.include_router(router)
     if isinstance(app_state.storage, LocalStorage):
         api.include_router(dev_storage.router)  # development only (build_storage refuses elsewhere)
     app.include_router(api)

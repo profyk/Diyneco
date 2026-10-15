@@ -25,6 +25,7 @@ OPEN_TO_EVERY_ACCOUNT = (
     "/currencies",
     "/signup",
     "/dev-storage",
+    "/site/",  # the public website's reads, leads and page views (D83)
 )
 
 

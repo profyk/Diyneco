@@ -21,6 +21,7 @@ LIMITS: dict[str, tuple[int, int]] = {
     # Failed pairing codes per IP: 5 in 15 minutes locks pairing from that IP (security spec).
     "pair_fail": (5, 900),
     "staff_code_fail": (10, 900),  # wrong Hotel ID or staff code at code sign-in (D82)
+    "site_lead": (5, 3600),  # website demo and contact requests per address (D83)
 }
 
 

@@ -1358,11 +1358,72 @@
         "title": "AdminPaymentRow",
         "type": "object"
       },
-      "Analytics": {
+      "Alternate": {
+        "properties": {
+          "locale": {
+            "title": "Locale",
+            "type": "string"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          }
+        },
+        "required": [
+          "locale",
+          "path"
+        ],
+        "title": "Alternate",
+        "type": "object"
+      },
+      "Analytics-Input": {
+        "additionalProperties": false,
+        "description": "`builtin`: Diyneco's own cookieless counts. `plausible`: a Plausible-compatible script\n(also cookieless). `none`: nothing is counted.",
+        "properties": {
+          "plausible_domain": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plausible Domain"
+          },
+          "plausible_script": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "pattern": "^https://",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plausible Script"
+          },
+          "provider": {
+            "default": "builtin",
+            "enum": [
+              "builtin",
+              "plausible",
+              "none"
+            ],
+            "title": "Provider",
+            "type": "string"
+          }
+        },
+        "title": "Analytics",
+        "type": "object"
+      },
+      "Analytics-Output": {
         "properties": {
           "days": {
             "items": {
-              "$ref": "#/components/schemas/AnalyticsDay"
+              "$ref": "#/components/schemas/app__schemas__reports__AnalyticsDay"
             },
             "title": "Days",
             "type": "array"
@@ -1374,33 +1435,94 @@
         "title": "Analytics",
         "type": "object"
       },
-      "AnalyticsDay": {
+      "AnalyticsOut": {
         "properties": {
-          "checkins": {
-            "title": "Checkins",
+          "days": {
+            "items": {
+              "$ref": "#/components/schemas/app__schemas__site__AnalyticsDay"
+            },
+            "title": "Days",
+            "type": "array"
+          },
+          "leads": {
+            "title": "Leads",
             "type": "integer"
           },
-          "day": {
+          "locales": {
+            "items": {
+              "$ref": "#/components/schemas/AnalyticsRow"
+            },
+            "title": "Locales",
+            "type": "array"
+          },
+          "pages": {
+            "items": {
+              "$ref": "#/components/schemas/AnalyticsRow"
+            },
+            "title": "Pages",
+            "type": "array"
+          },
+          "referrers": {
+            "items": {
+              "$ref": "#/components/schemas/AnalyticsRow"
+            },
+            "title": "Referrers",
+            "type": "array"
+          },
+          "since": {
             "format": "date",
-            "title": "Day",
+            "title": "Since",
             "type": "string"
           },
-          "new_hotels": {
-            "title": "New Hotels",
+          "until": {
+            "format": "date",
+            "title": "Until",
+            "type": "string"
+          },
+          "views": {
+            "title": "Views",
             "type": "integer"
           },
-          "orders": {
-            "title": "Orders",
+          "visitors": {
+            "title": "Visitors",
             "type": "integer"
           }
         },
         "required": [
-          "day",
-          "orders",
-          "new_hotels",
-          "checkins"
+          "since",
+          "until",
+          "views",
+          "visitors",
+          "days",
+          "pages",
+          "referrers",
+          "locales",
+          "leads"
         ],
-        "title": "AnalyticsDay",
+        "title": "AnalyticsOut",
+        "type": "object"
+      },
+      "AnalyticsRow": {
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "views": {
+            "title": "Views",
+            "type": "integer"
+          },
+          "visitors": {
+            "title": "Visitors",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "key",
+          "views",
+          "visitors"
+        ],
+        "title": "AnalyticsRow",
         "type": "object"
       },
       "AnonymiseOut": {
@@ -2809,6 +2931,54 @@
         "title": "BulkResult",
         "type": "object"
       },
+      "CallToAction": {
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "anyOf": [
+              {
+                "maxLength": 1200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Body"
+          },
+          "heading": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Heading",
+            "type": "string"
+          },
+          "primary": {
+            "$ref": "#/components/schemas/Cta"
+          },
+          "secondary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Cta"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "const": "cta",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "heading",
+          "primary"
+        ],
+        "title": "CallToAction",
+        "type": "object"
+      },
       "CancelRequest": {
         "additionalProperties": false,
         "properties": {
@@ -4096,6 +4266,49 @@
         "title": "CompanySettingsPut",
         "type": "object"
       },
+      "Contact": {
+        "additionalProperties": false,
+        "properties": {
+          "address": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "maxLength": 40,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          }
+        },
+        "title": "Contact",
+        "type": "object"
+      },
       "ContactAddress": {
         "additionalProperties": false,
         "properties": {
@@ -4340,6 +4553,29 @@
           "reason"
         ],
         "title": "CreditRequest",
+        "type": "object"
+      },
+      "Cta": {
+        "additionalProperties": false,
+        "properties": {
+          "href": {
+            "maxLength": 300,
+            "pattern": "^(/[A-Za-z0-9/_.~%#?=&-]*|https://[^\\s]+|mailto:[^\\s]+)$",
+            "title": "Href",
+            "type": "string"
+          },
+          "label": {
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "href"
+        ],
+        "title": "Cta",
         "type": "object"
       },
       "CurrencyList": {
@@ -4988,6 +5224,640 @@
         "title": "DraftLine",
         "type": "object"
       },
+      "EntryContent": {
+        "additionalProperties": false,
+        "description": "A page is blocks; a post is a body with an excerpt, a cover and tags.",
+        "properties": {
+          "author": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Author"
+          },
+          "blocks": {
+            "items": {
+              "discriminator": {
+                "mapping": {
+                  "cta": "#/components/schemas/CallToAction",
+                  "faq": "#/components/schemas/Faq",
+                  "features": "#/components/schemas/Features",
+                  "hero": "#/components/schemas/Hero",
+                  "lead_form": "#/components/schemas/LeadForm",
+                  "logos": "#/components/schemas/Logos",
+                  "post_list": "#/components/schemas/PostList",
+                  "pricing": "#/components/schemas/Pricing",
+                  "rich_text": "#/components/schemas/RichText",
+                  "split": "#/components/schemas/Split",
+                  "stats": "#/components/schemas/Stats",
+                  "steps": "#/components/schemas/Steps",
+                  "testimonials": "#/components/schemas/Testimonials"
+                },
+                "propertyName": "type"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/Hero"
+                },
+                {
+                  "$ref": "#/components/schemas/Features"
+                },
+                {
+                  "$ref": "#/components/schemas/Steps"
+                },
+                {
+                  "$ref": "#/components/schemas/Split"
+                },
+                {
+                  "$ref": "#/components/schemas/Stats"
+                },
+                {
+                  "$ref": "#/components/schemas/Testimonials"
+                },
+                {
+                  "$ref": "#/components/schemas/Faq"
+                },
+                {
+                  "$ref": "#/components/schemas/CallToAction"
+                },
+                {
+                  "$ref": "#/components/schemas/Logos"
+                },
+                {
+                  "$ref": "#/components/schemas/Pricing"
+                },
+                {
+                  "$ref": "#/components/schemas/RichText"
+                },
+                {
+                  "$ref": "#/components/schemas/LeadForm"
+                },
+                {
+                  "$ref": "#/components/schemas/PostList"
+                }
+              ]
+            },
+            "maxItems": 40,
+            "title": "Blocks",
+            "type": "array"
+          },
+          "body": {
+            "anyOf": [
+              {
+                "maxLength": 100000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Body"
+          },
+          "cover_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Id"
+          },
+          "excerpt": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Excerpt"
+          },
+          "seo": {
+            "$ref": "#/components/schemas/Seo"
+          },
+          "tags": {
+            "items": {
+              "maxLength": 40,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 10,
+            "title": "Tags",
+            "type": "array"
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "title": "EntryContent",
+        "type": "object"
+      },
+      "EntryCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "content": {
+            "$ref": "#/components/schemas/EntryContent"
+          },
+          "kind": {
+            "enum": [
+              "page",
+              "post"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "locale": {
+            "pattern": "^[a-z]{2}(-[A-Z]{2})?$",
+            "title": "Locale",
+            "type": "string"
+          },
+          "slug": {
+            "maxLength": 120,
+            "pattern": "^$|^[a-z0-9]+(-[a-z0-9]+)*(/[a-z0-9]+(-[a-z0-9]+)*)*$",
+            "title": "Slug",
+            "type": "string"
+          },
+          "translation_of": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Translation Of"
+          }
+        },
+        "required": [
+          "kind",
+          "locale",
+          "slug",
+          "content"
+        ],
+        "title": "EntryCreate",
+        "type": "object"
+      },
+      "EntryList": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/EntrySummary"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "EntryList",
+        "type": "object"
+      },
+      "EntryOut": {
+        "properties": {
+          "draft": {
+            "additionalProperties": true,
+            "title": "Draft",
+            "type": "object"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "locale": {
+            "title": "Locale",
+            "type": "string"
+          },
+          "published": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "published",
+              "changed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "translation_key": {
+            "format": "uuid",
+            "title": "Translation Key",
+            "type": "string"
+          },
+          "translations": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Translations",
+            "type": "array"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "locale",
+          "slug",
+          "title",
+          "translation_key",
+          "status",
+          "version",
+          "published_at",
+          "updated_at",
+          "draft",
+          "published",
+          "translations"
+        ],
+        "title": "EntryOut",
+        "type": "object"
+      },
+      "EntryPatch": {
+        "additionalProperties": false,
+        "properties": {
+          "content": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EntryContent"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "pattern": "^$|^[a-z0-9]+(-[a-z0-9]+)*(/[a-z0-9]+(-[a-z0-9]+)*)*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
+          }
+        },
+        "title": "EntryPatch",
+        "type": "object"
+      },
+      "EntrySummary": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "locale": {
+            "title": "Locale",
+            "type": "string"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "published",
+              "changed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "translation_key": {
+            "format": "uuid",
+            "title": "Translation Key",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "locale",
+          "slug",
+          "title",
+          "translation_key",
+          "status",
+          "version",
+          "published_at",
+          "updated_at"
+        ],
+        "title": "EntrySummary",
+        "type": "object"
+      },
+      "EntryVersion": {
+        "properties": {
+          "content": {
+            "additionalProperties": true,
+            "title": "Content",
+            "type": "object"
+          },
+          "published_at": {
+            "format": "date-time",
+            "title": "Published At",
+            "type": "string"
+          },
+          "published_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published By"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version",
+          "published_at",
+          "published_by",
+          "content"
+        ],
+        "title": "EntryVersion",
+        "type": "object"
+      },
+      "EntryVersionList": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/EntryVersion"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "EntryVersionList",
+        "type": "object"
+      },
+      "Faq": {
+        "additionalProperties": false,
+        "properties": {
+          "heading": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heading"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/FaqItem"
+            },
+            "maxItems": 40,
+            "minItems": 1,
+            "title": "Items",
+            "type": "array"
+          },
+          "type": {
+            "const": "faq",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "items"
+        ],
+        "title": "Faq",
+        "type": "object"
+      },
+      "FaqItem": {
+        "additionalProperties": false,
+        "properties": {
+          "answer": {
+            "maxLength": 3000,
+            "minLength": 1,
+            "title": "Answer",
+            "type": "string"
+          },
+          "question": {
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Question",
+            "type": "string"
+          }
+        },
+        "required": [
+          "question",
+          "answer"
+        ],
+        "title": "FaqItem",
+        "type": "object"
+      },
+      "FeatureItem": {
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "maxLength": 1200,
+            "title": "Body",
+            "type": "string"
+          },
+          "icon": {
+            "anyOf": [
+              {
+                "pattern": "^[a-z0-9-]{1,40}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon"
+          },
+          "title": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "body"
+        ],
+        "title": "FeatureItem",
+        "type": "object"
+      },
+      "Features": {
+        "additionalProperties": false,
+        "properties": {
+          "heading": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heading"
+          },
+          "intro": {
+            "anyOf": [
+              {
+                "maxLength": 1200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Intro"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/FeatureItem"
+            },
+            "maxItems": 12,
+            "minItems": 1,
+            "title": "Items",
+            "type": "array"
+          },
+          "type": {
+            "const": "features",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "items"
+        ],
+        "title": "Features",
+        "type": "object"
+      },
       "FlagChange": {
         "additionalProperties": false,
         "properties": {
@@ -5363,6 +6233,58 @@
           "balance"
         ],
         "title": "FolioTotals",
+        "type": "object"
+      },
+      "Footer": {
+        "additionalProperties": false,
+        "properties": {
+          "columns": {
+            "items": {
+              "$ref": "#/components/schemas/FooterColumn"
+            },
+            "maxItems": 5,
+            "title": "Columns",
+            "type": "array"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "title": "Footer",
+        "type": "object"
+      },
+      "FooterColumn": {
+        "additionalProperties": false,
+        "properties": {
+          "heading": {
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Heading",
+            "type": "string"
+          },
+          "links": {
+            "items": {
+              "$ref": "#/components/schemas/NavLink"
+            },
+            "maxItems": 10,
+            "title": "Links",
+            "type": "array"
+          }
+        },
+        "required": [
+          "heading",
+          "links"
+        ],
+        "title": "FooterColumn",
         "type": "object"
       },
       "ForgotPasswordRequest": {
@@ -6173,6 +7095,84 @@
           "server_time"
         ],
         "title": "HeartbeatResponse",
+        "type": "object"
+      },
+      "Hero": {
+        "additionalProperties": false,
+        "properties": {
+          "eyebrow": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Eyebrow"
+          },
+          "heading": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Heading",
+            "type": "string"
+          },
+          "image_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Id"
+          },
+          "primary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Cta"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "secondary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Cta"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "subheading": {
+            "anyOf": [
+              {
+                "maxLength": 1200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subheading"
+          },
+          "type": {
+            "const": "hero",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "heading"
+        ],
+        "title": "Hero",
         "type": "object"
       },
       "HistoryOut": {
@@ -8660,6 +9660,396 @@
         "title": "KitchenUser",
         "type": "object"
       },
+      "LeadForm": {
+        "additionalProperties": false,
+        "properties": {
+          "heading": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heading"
+          },
+          "intro": {
+            "anyOf": [
+              {
+                "maxLength": 1200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Intro"
+          },
+          "kind": {
+            "enum": [
+              "demo",
+              "contact"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "type": {
+            "const": "lead_form",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "kind"
+        ],
+        "title": "LeadForm",
+        "type": "object"
+      },
+      "LeadIn": {
+        "additionalProperties": false,
+        "properties": {
+          "company": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company"
+          },
+          "consent": {
+            "const": true,
+            "title": "Consent",
+            "type": "boolean"
+          },
+          "consent_text": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Consent Text",
+            "type": "string"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Z]{2}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
+          "elapsed_ms": {
+            "maximum": 86400000.0,
+            "minimum": 0.0,
+            "title": "Elapsed Ms",
+            "type": "integer"
+          },
+          "email": {
+            "maxLength": 320,
+            "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
+            "title": "Email",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "demo",
+              "contact"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "locale": {
+            "pattern": "^[a-z]{2}(-[A-Z]{2})?$",
+            "title": "Locale",
+            "type": "string"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "maxLength": 4000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9 +()-]{0,40}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "rooms": {
+            "anyOf": [
+              {
+                "maximum": 100000.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rooms"
+          },
+          "source_path": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Path"
+          },
+          "website": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Website",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "name",
+          "email",
+          "locale",
+          "consent",
+          "consent_text",
+          "elapsed_ms"
+        ],
+        "title": "LeadIn",
+        "type": "object"
+      },
+      "LeadList": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/LeadOut"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "LeadList",
+        "type": "object"
+      },
+      "LeadOut": {
+        "properties": {
+          "company": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company"
+          },
+          "consent_text": {
+            "title": "Consent Text",
+            "type": "string"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "locale": {
+            "title": "Locale",
+            "type": "string"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "rooms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rooms"
+          },
+          "source_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Path"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "email",
+          "phone",
+          "company",
+          "rooms",
+          "country",
+          "message",
+          "locale",
+          "source_path",
+          "consent_text",
+          "status",
+          "notes",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "LeadOut",
+        "type": "object"
+      },
+      "LeadPatch": {
+        "additionalProperties": false,
+        "properties": {
+          "notes": {
+            "anyOf": [
+              {
+                "maxLength": 4000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "new",
+                  "contacted",
+                  "qualified",
+                  "closed",
+                  "spam"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        },
+        "title": "LeadPatch",
+        "type": "object"
+      },
       "LegalAccept": {
         "additionalProperties": false,
         "properties": {
@@ -8978,6 +10368,41 @@
         "title": "LoginRequest",
         "type": "object"
       },
+      "LogoItem": {
+        "additionalProperties": false,
+        "properties": {
+          "href": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "pattern": "^(/[A-Za-z0-9/_.~%#?=&-]*|https://[^\\s]+|mailto:[^\\s]+)$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Href"
+          },
+          "image_id": {
+            "format": "uuid",
+            "title": "Image Id",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "image_id",
+          "name"
+        ],
+        "title": "LogoItem",
+        "type": "object"
+      },
       "LogoUploadOut": {
         "properties": {
           "expires_at": {
@@ -9039,6 +10464,44 @@
           "size_bytes"
         ],
         "title": "LogoUploadRequest",
+        "type": "object"
+      },
+      "Logos": {
+        "additionalProperties": false,
+        "properties": {
+          "heading": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heading"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/LogoItem"
+            },
+            "maxItems": 24,
+            "minItems": 1,
+            "title": "Items",
+            "type": "array"
+          },
+          "type": {
+            "const": "logos",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "items"
+        ],
+        "title": "Logos",
         "type": "object"
       },
       "ManualPayment": {
@@ -9212,6 +10675,130 @@
           "mfa_pending"
         ],
         "title": "MeOut",
+        "type": "object"
+      },
+      "MediaList": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/MediaOut"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "MediaList",
+        "type": "object"
+      },
+      "MediaOut": {
+        "properties": {
+          "alt": {
+            "title": "Alt",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "height": {
+            "title": "Height",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          },
+          "width": {
+            "title": "Width",
+            "type": "integer"
+          },
+          "widths": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Widths",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "filename",
+          "alt",
+          "width",
+          "height",
+          "widths",
+          "url",
+          "created_at"
+        ],
+        "title": "MediaOut",
+        "type": "object"
+      },
+      "MediaPatch": {
+        "additionalProperties": false,
+        "properties": {
+          "alt": {
+            "maxLength": 300,
+            "title": "Alt",
+            "type": "string"
+          }
+        },
+        "required": [
+          "alt"
+        ],
+        "title": "MediaPatch",
+        "type": "object"
+      },
+      "MediaUpload": {
+        "additionalProperties": false,
+        "properties": {
+          "alt": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Alt",
+            "type": "string"
+          },
+          "data_base64": {
+            "maxLength": 8000000,
+            "minLength": 4,
+            "title": "Data Base64",
+            "type": "string"
+          },
+          "filename": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Filename",
+            "type": "string"
+          }
+        },
+        "required": [
+          "filename",
+          "data_base64"
+        ],
+        "title": "MediaUpload",
         "type": "object"
       },
       "MenuImportProblem": {
@@ -9777,6 +11364,29 @@
           "currency"
         ],
         "title": "Money",
+        "type": "object"
+      },
+      "NavLink": {
+        "additionalProperties": false,
+        "properties": {
+          "href": {
+            "maxLength": 300,
+            "pattern": "^(/[A-Za-z0-9/_.~%#?=&-]*|https://[^\\s]+|mailto:[^\\s]+)$",
+            "title": "Href",
+            "type": "string"
+          },
+          "label": {
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "href"
+        ],
+        "title": "NavLink",
         "type": "object"
       },
       "OccupancyNight": {
@@ -10679,6 +12289,34 @@
           "hotels"
         ],
         "title": "OwnerOut",
+        "type": "object"
+      },
+      "PageViewIn": {
+        "additionalProperties": false,
+        "properties": {
+          "locale": {
+            "pattern": "^[a-z]{2}(-[A-Z]{2})?$",
+            "title": "Locale",
+            "type": "string"
+          },
+          "path": {
+            "maxLength": 300,
+            "pattern": "^/",
+            "title": "Path",
+            "type": "string"
+          },
+          "referrer": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Referrer",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "locale"
+        ],
+        "title": "PageViewIn",
         "type": "object"
       },
       "PairRequest": {
@@ -12492,6 +14130,161 @@
         "title": "PortfolioTotals",
         "type": "object"
       },
+      "PostCard": {
+        "properties": {
+          "author": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Author"
+          },
+          "cover": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover"
+          },
+          "excerpt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Excerpt"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "published_at": {
+            "format": "date-time",
+            "title": "Published At",
+            "type": "string"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Tags",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "slug",
+          "path",
+          "title",
+          "excerpt",
+          "cover",
+          "author",
+          "tags",
+          "published_at"
+        ],
+        "title": "PostCard",
+        "type": "object"
+      },
+      "PostCardList": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/PostCard"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "PostCardList",
+        "type": "object"
+      },
+      "PostList": {
+        "additionalProperties": false,
+        "description": "The latest blog posts in the page's language.",
+        "properties": {
+          "heading": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heading"
+          },
+          "limit": {
+            "default": 3,
+            "maximum": 12.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "type": {
+            "const": "post_list",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "title": "PostList",
+        "type": "object"
+      },
+      "PreviewOut": {
+        "properties": {
+          "expires_in": {
+            "title": "Expires In",
+            "type": "integer"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "expires_in"
+        ],
+        "title": "PreviewOut",
+        "type": "object"
+      },
       "PriceCreate": {
         "additionalProperties": false,
         "properties": {
@@ -12658,6 +14451,47 @@
         "title": "PriceOut",
         "type": "object"
       },
+      "Pricing": {
+        "additionalProperties": false,
+        "description": "The live published plans from GET /plans, so prices on the site always match billing.",
+        "properties": {
+          "heading": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heading"
+          },
+          "intro": {
+            "anyOf": [
+              {
+                "maxLength": 1200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Intro"
+          },
+          "type": {
+            "const": "pricing",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "title": "Pricing",
+        "type": "object"
+      },
       "ProviderStatusOut": {
         "properties": {
           "bank_details_set": {
@@ -12700,6 +14534,96 @@
           "bank_details_set"
         ],
         "title": "ProviderStatusOut",
+        "type": "object"
+      },
+      "PublicEntry": {
+        "properties": {
+          "alternates": {
+            "items": {
+              "$ref": "#/components/schemas/Alternate"
+            },
+            "title": "Alternates",
+            "type": "array"
+          },
+          "content": {
+            "additionalProperties": true,
+            "title": "Content",
+            "type": "object"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "locale": {
+            "title": "Locale",
+            "type": "string"
+          },
+          "media": {
+            "additionalProperties": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Media",
+            "type": "object"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "posts": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Posts",
+            "type": "array"
+          },
+          "preview": {
+            "default": false,
+            "title": "Preview",
+            "type": "boolean"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "required": [
+          "kind",
+          "locale",
+          "slug",
+          "path",
+          "content",
+          "published_at",
+          "updated_at",
+          "alternates",
+          "media"
+        ],
+        "title": "PublicEntry",
         "type": "object"
       },
       "PublicPlan": {
@@ -12942,6 +14866,95 @@
           "saving_bp"
         ],
         "title": "PublicPrice",
+        "type": "object"
+      },
+      "PublicSettings": {
+        "description": "What the website renders with. The lead address is never public.",
+        "properties": {
+          "analytics": {
+            "additionalProperties": true,
+            "title": "Analytics",
+            "type": "object"
+          },
+          "base_url": {
+            "title": "Base Url",
+            "type": "string"
+          },
+          "contact": {
+            "additionalProperties": true,
+            "title": "Contact",
+            "type": "object"
+          },
+          "default_locale": {
+            "title": "Default Locale",
+            "type": "string"
+          },
+          "footer": {
+            "additionalProperties": true,
+            "title": "Footer",
+            "type": "object"
+          },
+          "locales": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Locales",
+            "type": "array"
+          },
+          "media": {
+            "additionalProperties": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Media",
+            "type": "object"
+          },
+          "navigation": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Navigation",
+            "type": "array"
+          },
+          "seo": {
+            "additionalProperties": true,
+            "title": "Seo",
+            "type": "object"
+          },
+          "site_name": {
+            "title": "Site Name",
+            "type": "string"
+          },
+          "social": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Social",
+            "type": "array"
+          },
+          "verification": {
+            "additionalProperties": true,
+            "title": "Verification",
+            "type": "object"
+          }
+        },
+        "required": [
+          "site_name",
+          "base_url",
+          "default_locale",
+          "locales",
+          "navigation",
+          "footer",
+          "contact",
+          "social",
+          "seo",
+          "verification",
+          "analytics",
+          "media"
+        ],
+        "title": "PublicSettings",
         "type": "object"
       },
       "Quote": {
@@ -13192,6 +15205,96 @@
           "status"
         ],
         "title": "ReconcileRequest",
+        "type": "object"
+      },
+      "RedirectIn": {
+        "additionalProperties": false,
+        "properties": {
+          "from_path": {
+            "maxLength": 300,
+            "pattern": "^/[A-Za-z0-9/_.~%-]+$",
+            "title": "From Path",
+            "type": "string"
+          },
+          "permanent": {
+            "default": true,
+            "title": "Permanent",
+            "type": "boolean"
+          },
+          "to_path": {
+            "maxLength": 300,
+            "pattern": "^(/[A-Za-z0-9/_.~%-]*|https://\\S+)$",
+            "title": "To Path",
+            "type": "string"
+          }
+        },
+        "required": [
+          "from_path",
+          "to_path"
+        ],
+        "title": "RedirectIn",
+        "type": "object"
+      },
+      "RedirectList": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/RedirectOut"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "RedirectList",
+        "type": "object"
+      },
+      "RedirectOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "from_path": {
+            "title": "From Path",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "permanent": {
+            "title": "Permanent",
+            "type": "boolean"
+          },
+          "to_path": {
+            "title": "To Path",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "from_path",
+          "to_path",
+          "permanent",
+          "created_at"
+        ],
+        "title": "RedirectOut",
         "type": "object"
       },
       "Ref": {
@@ -13535,6 +15638,27 @@
           "tips"
         ],
         "title": "RevenueRow",
+        "type": "object"
+      },
+      "RichText": {
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "maxLength": 100000,
+            "title": "Body",
+            "type": "string"
+          },
+          "type": {
+            "const": "rich_text",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "body"
+        ],
+        "title": "RichText",
         "type": "object"
       },
       "RoleActivity": {
@@ -14446,6 +16570,54 @@
         "title": "SentOut",
         "type": "object"
       },
+      "Seo": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "maxLength": 170,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "image_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Id"
+          },
+          "noindex": {
+            "default": false,
+            "title": "Noindex",
+            "type": "boolean"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 70,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "title": "Seo",
+        "type": "object"
+      },
       "SessionList": {
         "properties": {
           "data": {
@@ -14545,135 +16717,89 @@
         "title": "SetPinRequest",
         "type": "object"
       },
-      "SettingsOut": {
+      "SettingsIn": {
+        "additionalProperties": false,
         "properties": {
-          "abridged_invoice_max": {
-            "$ref": "#/components/schemas/Money"
+          "analytics": {
+            "$ref": "#/components/schemas/Analytics-Input"
           },
-          "accommodation_rates_include_vat": {
-            "title": "Accommodation Rates Include Vat",
-            "type": "boolean"
-          },
-          "checkout_override_allowed": {
-            "title": "Checkout Override Allowed",
-            "type": "boolean"
-          },
-          "checkout_time": {
-            "title": "Checkout Time",
+          "base_url": {
+            "maxLength": 200,
+            "pattern": "^https?://[^/\\s]+$",
+            "title": "Base Url",
             "type": "string"
           },
-          "currency": {
-            "title": "Currency",
+          "contact": {
+            "$ref": "#/components/schemas/Contact"
+          },
+          "default_locale": {
+            "pattern": "^[a-z]{2}(-[A-Z]{2})?$",
+            "title": "Default Locale",
             "type": "string"
           },
-          "guest_data_retention_days": {
-            "title": "Guest Data Retention Days",
-            "type": "integer"
+          "footer": {
+            "$ref": "#/components/schemas/Footer"
           },
-          "guest_id_number_enabled": {
-            "title": "Guest Id Number Enabled",
-            "type": "boolean"
+          "lead_email": {
+            "maxLength": 320,
+            "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
+            "title": "Lead Email",
+            "type": "string"
           },
-          "info_pages": {
+          "locales": {
             "items": {
-              "$ref": "#/components/schemas/InfoPage"
+              "pattern": "^[a-z]{2}(-[A-Z]{2})?$",
+              "type": "string"
             },
-            "title": "Info Pages",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Locales",
             "type": "array"
           },
-          "invoice_prefix": {
-            "title": "Invoice Prefix",
+          "navigation": {
+            "items": {
+              "$ref": "#/components/schemas/NavLink"
+            },
+            "maxItems": 10,
+            "title": "Navigation",
+            "type": "array"
+          },
+          "seo": {
+            "$ref": "#/components/schemas/SiteSeo"
+          },
+          "site_name": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Site Name",
             "type": "string"
           },
-          "locale": {
-            "title": "Locale",
-            "type": "string"
+          "social": {
+            "items": {
+              "$ref": "#/components/schemas/SocialLink"
+            },
+            "maxItems": 8,
+            "title": "Social",
+            "type": "array"
           },
-          "menu_prices_include_vat": {
-            "title": "Menu Prices Include Vat",
-            "type": "boolean"
-          },
-          "room_charge_auto_approve_limit": {
-            "$ref": "#/components/schemas/Money"
-          },
-          "room_charging_enabled": {
-            "title": "Room Charging Enabled",
-            "type": "boolean"
-          },
-          "room_service_fee": {
-            "$ref": "#/components/schemas/Money"
-          },
-          "room_status_after_checkout": {
-            "enum": [
-              "cleaning",
-              "available"
-            ],
-            "title": "Room Status After Checkout",
-            "type": "string"
-          },
-          "tax_label": {
-            "title": "Tax Label",
-            "type": "string"
-          },
-          "timezone": {
-            "title": "Timezone",
-            "type": "string"
-          },
-          "vat_number": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Vat Number"
-          },
-          "vat_rate_bp": {
-            "title": "Vat Rate Bp",
-            "type": "integer"
-          },
-          "vat_registered": {
-            "title": "Vat Registered",
-            "type": "boolean"
-          },
-          "wifi_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Wifi Name"
+          "verification": {
+            "$ref": "#/components/schemas/Verification"
           }
         },
         "required": [
-          "timezone",
-          "currency",
-          "vat_registered",
-          "vat_number",
-          "vat_rate_bp",
-          "accommodation_rates_include_vat",
-          "menu_prices_include_vat",
-          "room_charging_enabled",
-          "room_charge_auto_approve_limit",
-          "room_service_fee",
-          "checkout_override_allowed",
-          "room_status_after_checkout",
-          "checkout_time",
-          "wifi_name",
-          "info_pages",
-          "invoice_prefix",
-          "abridged_invoice_max",
-          "guest_data_retention_days",
-          "guest_id_number_enabled",
-          "locale",
-          "tax_label"
+          "site_name",
+          "base_url",
+          "default_locale",
+          "locales",
+          "navigation",
+          "footer",
+          "contact",
+          "social",
+          "seo",
+          "verification",
+          "analytics",
+          "lead_email"
         ],
-        "title": "SettingsOut",
+        "title": "SettingsIn",
         "type": "object"
       },
       "SettingsPatch": {
@@ -15234,6 +17360,149 @@
         "title": "SignupResponse",
         "type": "object"
       },
+      "SiteSeo": {
+        "additionalProperties": false,
+        "properties": {
+          "default_description": {
+            "anyOf": [
+              {
+                "maxLength": 170,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Description"
+          },
+          "default_image_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Image Id"
+          },
+          "default_title": {
+            "anyOf": [
+              {
+                "maxLength": 70,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Title"
+          },
+          "organization_logo_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Logo Id"
+          },
+          "title_template": {
+            "default": "%s | Diyneco",
+            "maxLength": 80,
+            "title": "Title Template",
+            "type": "string"
+          }
+        },
+        "title": "SiteSeo",
+        "type": "object"
+      },
+      "Sitemap": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/SitemapEntry"
+            },
+            "title": "Data",
+            "type": "array"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "Sitemap",
+        "type": "object"
+      },
+      "SitemapEntry": {
+        "properties": {
+          "alternates": {
+            "items": {
+              "$ref": "#/components/schemas/Alternate"
+            },
+            "title": "Alternates",
+            "type": "array"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "locale": {
+            "title": "Locale",
+            "type": "string"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "locale",
+          "updated_at",
+          "alternates",
+          "kind"
+        ],
+        "title": "SitemapEntry",
+        "type": "object"
+      },
+      "SocialLink": {
+        "additionalProperties": false,
+        "properties": {
+          "network": {
+            "enum": [
+              "linkedin",
+              "facebook",
+              "instagram",
+              "x",
+              "youtube",
+              "tiktok"
+            ],
+            "title": "Network",
+            "type": "string"
+          },
+          "url": {
+            "maxLength": 300,
+            "pattern": "^https://",
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "network",
+          "url"
+        ],
+        "title": "SocialLink",
+        "type": "object"
+      },
       "SoldOutChange": {
         "additionalProperties": false,
         "properties": {
@@ -15246,6 +17515,65 @@
           "available"
         ],
         "title": "SoldOutChange",
+        "type": "object"
+      },
+      "Split": {
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "maxLength": 4000,
+            "title": "Body",
+            "type": "string"
+          },
+          "cta": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Cta"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "heading": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Heading",
+            "type": "string"
+          },
+          "image_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Id"
+          },
+          "image_side": {
+            "default": "right",
+            "enum": [
+              "left",
+              "right"
+            ],
+            "title": "Image Side",
+            "type": "string"
+          },
+          "type": {
+            "const": "split",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "heading",
+          "body"
+        ],
+        "title": "Split",
         "type": "object"
       },
       "StaffCodeLoginRequest": {
@@ -15636,6 +17964,29 @@
         "title": "StandardLayout",
         "type": "object"
       },
+      "StatItem": {
+        "additionalProperties": false,
+        "properties": {
+          "label": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Label",
+            "type": "string"
+          },
+          "value": {
+            "maxLength": 20,
+            "minLength": 1,
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "value",
+          "label"
+        ],
+        "title": "StatItem",
+        "type": "object"
+      },
       "StationCreate": {
         "additionalProperties": false,
         "properties": {
@@ -15791,6 +18142,44 @@
           "p90_seconds"
         ],
         "title": "StationTimes",
+        "type": "object"
+      },
+      "Stats": {
+        "additionalProperties": false,
+        "properties": {
+          "heading": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heading"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/StatItem"
+            },
+            "maxItems": 6,
+            "minItems": 1,
+            "title": "Items",
+            "type": "array"
+          },
+          "type": {
+            "const": "stats",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "items"
+        ],
+        "title": "Stats",
         "type": "object"
       },
       "StayCreate": {
@@ -16107,6 +18496,28 @@
         "title": "StayOut",
         "type": "object"
       },
+      "StepItem": {
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "maxLength": 1200,
+            "title": "Body",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "body"
+        ],
+        "title": "StepItem",
+        "type": "object"
+      },
       "StepUpRequest": {
         "additionalProperties": false,
         "properties": {
@@ -16158,6 +18569,44 @@
           "expires_at"
         ],
         "title": "StepUpResponse",
+        "type": "object"
+      },
+      "Steps": {
+        "additionalProperties": false,
+        "properties": {
+          "heading": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heading"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/StepItem"
+            },
+            "maxItems": 8,
+            "minItems": 1,
+            "title": "Items",
+            "type": "array"
+          },
+          "type": {
+            "const": "steps",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "items"
+        ],
+        "title": "Steps",
         "type": "object"
       },
       "SubscribeOut": {
@@ -17015,6 +19464,93 @@
         "title": "TaxToday",
         "type": "object"
       },
+      "Testimonial": {
+        "additionalProperties": false,
+        "properties": {
+          "hotel": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hotel"
+          },
+          "name": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "quote": {
+            "maxLength": 600,
+            "minLength": 1,
+            "title": "Quote",
+            "type": "string"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
+          }
+        },
+        "required": [
+          "quote",
+          "name"
+        ],
+        "title": "Testimonial",
+        "type": "object"
+      },
+      "Testimonials": {
+        "additionalProperties": false,
+        "properties": {
+          "heading": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heading"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Testimonial"
+            },
+            "maxItems": 12,
+            "minItems": 1,
+            "title": "Items",
+            "type": "array"
+          },
+          "type": {
+            "const": "testimonials",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "items"
+        ],
+        "title": "Testimonials",
+        "type": "object"
+      },
       "TokenResponse": {
         "properties": {
           "access_token": {
@@ -17182,6 +19718,37 @@
           "type"
         ],
         "title": "ValidationError",
+        "type": "object"
+      },
+      "Verification": {
+        "additionalProperties": false,
+        "properties": {
+          "bing": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Za-z0-9_-]{0,100}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bing"
+          },
+          "google": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Za-z0-9_-]{0,100}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Google"
+          }
+        },
+        "title": "Verification",
         "type": "object"
       },
       "VerifyEmailCodeRequest": {
@@ -17930,6 +20497,137 @@
         "title": "PlanOut",
         "type": "object"
       },
+      "app__schemas__hotel__SettingsOut": {
+        "properties": {
+          "abridged_invoice_max": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "accommodation_rates_include_vat": {
+            "title": "Accommodation Rates Include Vat",
+            "type": "boolean"
+          },
+          "checkout_override_allowed": {
+            "title": "Checkout Override Allowed",
+            "type": "boolean"
+          },
+          "checkout_time": {
+            "title": "Checkout Time",
+            "type": "string"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "guest_data_retention_days": {
+            "title": "Guest Data Retention Days",
+            "type": "integer"
+          },
+          "guest_id_number_enabled": {
+            "title": "Guest Id Number Enabled",
+            "type": "boolean"
+          },
+          "info_pages": {
+            "items": {
+              "$ref": "#/components/schemas/InfoPage"
+            },
+            "title": "Info Pages",
+            "type": "array"
+          },
+          "invoice_prefix": {
+            "title": "Invoice Prefix",
+            "type": "string"
+          },
+          "locale": {
+            "title": "Locale",
+            "type": "string"
+          },
+          "menu_prices_include_vat": {
+            "title": "Menu Prices Include Vat",
+            "type": "boolean"
+          },
+          "room_charge_auto_approve_limit": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "room_charging_enabled": {
+            "title": "Room Charging Enabled",
+            "type": "boolean"
+          },
+          "room_service_fee": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "room_status_after_checkout": {
+            "enum": [
+              "cleaning",
+              "available"
+            ],
+            "title": "Room Status After Checkout",
+            "type": "string"
+          },
+          "tax_label": {
+            "title": "Tax Label",
+            "type": "string"
+          },
+          "timezone": {
+            "title": "Timezone",
+            "type": "string"
+          },
+          "vat_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vat Number"
+          },
+          "vat_rate_bp": {
+            "title": "Vat Rate Bp",
+            "type": "integer"
+          },
+          "vat_registered": {
+            "title": "Vat Registered",
+            "type": "boolean"
+          },
+          "wifi_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wifi Name"
+          }
+        },
+        "required": [
+          "timezone",
+          "currency",
+          "vat_registered",
+          "vat_number",
+          "vat_rate_bp",
+          "accommodation_rates_include_vat",
+          "menu_prices_include_vat",
+          "room_charging_enabled",
+          "room_charge_auto_approve_limit",
+          "room_service_fee",
+          "checkout_override_allowed",
+          "room_status_after_checkout",
+          "checkout_time",
+          "wifi_name",
+          "info_pages",
+          "invoice_prefix",
+          "abridged_invoice_max",
+          "guest_data_retention_days",
+          "guest_id_number_enabled",
+          "locale",
+          "tax_label"
+        ],
+        "title": "SettingsOut",
+        "type": "object"
+      },
       "app__schemas__orders__QuoteLine": {
         "properties": {
           "line_total": {
@@ -18221,6 +20919,35 @@
           "history"
         ],
         "title": "PlanOut",
+        "type": "object"
+      },
+      "app__schemas__reports__AnalyticsDay": {
+        "properties": {
+          "checkins": {
+            "title": "Checkins",
+            "type": "integer"
+          },
+          "day": {
+            "format": "date",
+            "title": "Day",
+            "type": "string"
+          },
+          "new_hotels": {
+            "title": "New Hotels",
+            "type": "integer"
+          },
+          "orders": {
+            "title": "Orders",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "day",
+          "orders",
+          "new_hotels",
+          "checkins"
+        ],
+        "title": "AnalyticsDay",
         "type": "object"
       },
       "app__schemas__reports__DeliveryList": {
@@ -18666,6 +21393,120 @@
           "created_at"
         ],
         "title": "PaymentOut",
+        "type": "object"
+      },
+      "app__schemas__site__AnalyticsDay": {
+        "properties": {
+          "day": {
+            "format": "date",
+            "title": "Day",
+            "type": "string"
+          },
+          "views": {
+            "title": "Views",
+            "type": "integer"
+          },
+          "visitors": {
+            "title": "Visitors",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "day",
+          "views",
+          "visitors"
+        ],
+        "title": "AnalyticsDay",
+        "type": "object"
+      },
+      "app__schemas__site__SettingsOut": {
+        "properties": {
+          "analytics": {
+            "additionalProperties": true,
+            "title": "Analytics",
+            "type": "object"
+          },
+          "base_url": {
+            "title": "Base Url",
+            "type": "string"
+          },
+          "contact": {
+            "additionalProperties": true,
+            "title": "Contact",
+            "type": "object"
+          },
+          "default_locale": {
+            "title": "Default Locale",
+            "type": "string"
+          },
+          "footer": {
+            "additionalProperties": true,
+            "title": "Footer",
+            "type": "object"
+          },
+          "lead_email": {
+            "title": "Lead Email",
+            "type": "string"
+          },
+          "locales": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Locales",
+            "type": "array"
+          },
+          "navigation": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Navigation",
+            "type": "array"
+          },
+          "seo": {
+            "additionalProperties": true,
+            "title": "Seo",
+            "type": "object"
+          },
+          "site_name": {
+            "title": "Site Name",
+            "type": "string"
+          },
+          "social": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Social",
+            "type": "array"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "verification": {
+            "additionalProperties": true,
+            "title": "Verification",
+            "type": "object"
+          }
+        },
+        "required": [
+          "site_name",
+          "base_url",
+          "default_locale",
+          "locales",
+          "navigation",
+          "footer",
+          "contact",
+          "social",
+          "seo",
+          "verification",
+          "analytics",
+          "lead_email",
+          "updated_at"
+        ],
+        "title": "SettingsOut",
         "type": "object"
       },
       "app__schemas__sub_payments__CheckoutOut": {
@@ -19175,7 +22016,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Analytics"
+                  "$ref": "#/components/schemas/Analytics-Output"
                 }
               }
             },
@@ -21671,6 +24512,1049 @@
           }
         },
         "summary": "Restore Plan",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/site/analytics": {
+      "get": {
+        "operationId": "analytics_api_v1_admin_site_analytics_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "since",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Since"
+            }
+          },
+          {
+            "in": "query",
+            "name": "until",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Until"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyticsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Analytics",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/site/entries": {
+      "get": {
+        "operationId": "list_entries_api_v1_admin_site_entries_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "kind",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "page",
+                    "post"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kind"
+            }
+          },
+          {
+            "in": "query",
+            "name": "locale",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^[a-z]{2}(-[A-Z]{2})?$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Locale"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntryList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Entries",
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "operationId": "create_entry_api_v1_admin_site_entries_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EntryCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Entry",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/site/entries/{entry_id}": {
+      "delete": {
+        "operationId": "delete_entry_api_v1_admin_site_entries__entry_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "entry_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Entry Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Entry",
+        "tags": [
+          "admin"
+        ]
+      },
+      "get": {
+        "operationId": "get_entry_api_v1_admin_site_entries__entry_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "entry_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Entry Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Entry",
+        "tags": [
+          "admin"
+        ]
+      },
+      "patch": {
+        "operationId": "update_entry_api_v1_admin_site_entries__entry_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "entry_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Entry Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EntryPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Entry",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/site/entries/{entry_id}/preview": {
+      "post": {
+        "operationId": "preview_link_api_v1_admin_site_entries__entry_id__preview_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "entry_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Entry Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreviewOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview Link",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/site/entries/{entry_id}/publish": {
+      "post": {
+        "operationId": "publish_entry_api_v1_admin_site_entries__entry_id__publish_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "entry_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Entry Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Publish Entry",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/site/entries/{entry_id}/unpublish": {
+      "post": {
+        "operationId": "unpublish_entry_api_v1_admin_site_entries__entry_id__unpublish_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "entry_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Entry Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Unpublish Entry",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/site/entries/{entry_id}/versions": {
+      "get": {
+        "operationId": "versions_api_v1_admin_site_entries__entry_id__versions_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "entry_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Entry Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntryVersionList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Versions",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/site/entries/{entry_id}/versions/{version}/restore": {
+      "post": {
+        "description": "Copies a published version back into the draft; publish to make it live again.",
+        "operationId": "restore_version_api_v1_admin_site_entries__entry_id__versions__version__restore_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "entry_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Entry Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "version",
+            "required": true,
+            "schema": {
+              "title": "Version",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Restore Version",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/site/leads": {
+      "get": {
+        "operationId": "list_leads_api_v1_admin_site_leads_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "new",
+                    "contacted",
+                    "qualified",
+                    "closed",
+                    "spam"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "kind",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "demo",
+                    "contact"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kind"
+            }
+          },
+          {
+            "in": "query",
+            "name": "before",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Before"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeadList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Leads",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/site/leads/{lead_id}": {
+      "delete": {
+        "description": "Erases a lead on the person's request (POPIA); the audit keeps only that it happened.",
+        "operationId": "erase_lead_api_v1_admin_site_leads__lead_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "lead_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Lead Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Erase Lead",
+        "tags": [
+          "admin"
+        ]
+      },
+      "patch": {
+        "operationId": "update_lead_api_v1_admin_site_leads__lead_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "lead_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Lead Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LeadPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeadOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Lead",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/site/media": {
+      "get": {
+        "operationId": "list_media_api_v1_admin_site_media_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Media",
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "description": "JPEG, PNG or WebP up to 6 MB; re-encoded as WebP in several widths, metadata dropped.",
+        "operationId": "upload_media_api_v1_admin_site_media_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MediaUpload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Media",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/site/media/{media_id}": {
+      "delete": {
+        "operationId": "delete_media_api_v1_admin_site_media__media_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "media_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Media Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Media",
+        "tags": [
+          "admin"
+        ]
+      },
+      "patch": {
+        "operationId": "update_media_api_v1_admin_site_media__media_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "media_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Media Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MediaPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Media",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/site/redirects": {
+      "get": {
+        "operationId": "list_redirects_api_v1_admin_site_redirects_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RedirectList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Redirects",
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "operationId": "create_redirect_api_v1_admin_site_redirects_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RedirectIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RedirectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Redirect",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/site/redirects/{redirect_id}": {
+      "delete": {
+        "operationId": "delete_redirect_api_v1_admin_site_redirects__redirect_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "redirect_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Redirect Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Redirect",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/site/settings": {
+      "get": {
+        "operationId": "get_settings_api_v1_admin_site_settings_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/app__schemas__site__SettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Settings",
+        "tags": [
+          "admin"
+        ]
+      },
+      "put": {
+        "operationId": "put_settings_api_v1_admin_site_settings_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/app__schemas__site__SettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Put Settings",
         "tags": [
           "admin"
         ]
@@ -25025,7 +28909,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SettingsOut"
+                  "$ref": "#/components/schemas/app__schemas__hotel__SettingsOut"
                 }
               }
             },
@@ -25072,7 +28956,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SettingsOut"
+                  "$ref": "#/components/schemas/app__schemas__hotel__SettingsOut"
                 }
               }
             },
@@ -29062,6 +32946,402 @@
         "summary": "Signup",
         "tags": [
           "hotel"
+        ]
+      }
+    },
+    "/api/v1/site/entry": {
+      "get": {
+        "description": "A published page or post; the home page is the page with an empty slug.",
+        "operationId": "public_entry_api_v1_site_entry_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "enum": [
+                "page",
+                "post"
+              ],
+              "title": "Kind",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "locale",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-z]{2}(-[A-Z]{2})?$",
+              "title": "Locale",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "slug",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 120,
+              "pattern": "^$|^[a-z0-9]+(-[a-z0-9]+)*(/[a-z0-9]+(-[a-z0-9]+)*)*$",
+              "title": "Slug",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicEntry"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Public Entry",
+        "tags": [
+          "site"
+        ]
+      }
+    },
+    "/api/v1/site/leads": {
+      "post": {
+        "description": "A demo request or contact message. Spam is accepted silently and dropped.",
+        "operationId": "create_lead_api_v1_site_leads_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LeadIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Create Lead Api V1 Site Leads Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Lead",
+        "tags": [
+          "site"
+        ]
+      }
+    },
+    "/api/v1/site/media/{media_id}/{width}.webp": {
+      "get": {
+        "operationId": "media_api_v1_site_media__media_id___width__webp_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "media_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Media Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "width",
+            "required": true,
+            "schema": {
+              "title": "Width",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Media",
+        "tags": [
+          "site"
+        ]
+      }
+    },
+    "/api/v1/site/posts": {
+      "get": {
+        "operationId": "public_posts_api_v1_site_posts_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "locale",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-z]{2}(-[A-Z]{2})?$",
+              "title": "Locale",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 12,
+              "maximum": 50,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "before",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Before"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tag",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 40,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tag"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostCardList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Public Posts",
+        "tags": [
+          "site"
+        ]
+      }
+    },
+    "/api/v1/site/preview": {
+      "get": {
+        "description": "The draft behind a 15-minute preview link made in the admin panel.",
+        "operationId": "preview_entry_api_v1_site_preview_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicEntry"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview Entry",
+        "tags": [
+          "site"
+        ]
+      }
+    },
+    "/api/v1/site/redirects": {
+      "get": {
+        "description": "Old addresses and where they now live, for the website to answer with 301 or 302.",
+        "operationId": "public_redirects_api_v1_site_redirects_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RedirectList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Public Redirects",
+        "tags": [
+          "site"
+        ]
+      }
+    },
+    "/api/v1/site/settings": {
+      "get": {
+        "operationId": "public_settings_api_v1_site_settings_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicSettings"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Public Settings",
+        "tags": [
+          "site"
+        ]
+      }
+    },
+    "/api/v1/site/sitemap": {
+      "get": {
+        "operationId": "sitemap_api_v1_site_sitemap_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Sitemap"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Sitemap",
+        "tags": [
+          "site"
+        ]
+      }
+    },
+    "/api/v1/site/views": {
+      "post": {
+        "description": "A cookieless page view; nothing that identifies the visitor is stored.",
+        "operationId": "record_view_api_v1_site_views_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PageViewIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Record View",
+        "tags": [
+          "site"
         ]
       }
     },
