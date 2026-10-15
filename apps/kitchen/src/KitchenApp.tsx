@@ -11,6 +11,7 @@ import { API_CHOICE_NEEDED, API_URL, apiReady } from "./config";
 import { appVersion, cookSession, credential, DeviceRevoked, getDeviceToken } from "./device";
 import { PairScreen } from "./PairScreen";
 import { SignInPanel } from "./SignInPanel";
+import { audioReady, buzzNewOrder, buzzReminder, saveSoundPreference, soundPreference, unlockAudio } from "./sound";
 import { SoldOutPanel } from "./SoldOut";
 
 type Mode = "loading" | "unpaired" | "board" | "locked" | "disabled" | "suspended";
@@ -107,26 +108,9 @@ function Heartbeat({ onStatus }: { onStatus: (m: Mode) => void }) {
   return null;
 }
 
-function chime(): void {
-  try {
-    const ctx = new AudioContext();
-    const tone = (freq: number, at: number) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0.0001, ctx.currentTime + at);
-      gain.gain.exponentialRampToValueAtTime(0.4, ctx.currentTime + at + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + at + 0.35);
-      osc.connect(gain).connect(ctx.destination);
-      osc.start(ctx.currentTime + at);
-      osc.stop(ctx.currentTime + at + 0.4);
-    };
-    tone(880, 0);
-    tone(1175, 0.18);
-  } catch {
-    /* audio blocked until the first touch */
-  }
-}
+/** How long a new order may wait unaccepted before the display reminds the kitchen again. */
+const REMIND_AFTER_MS = 60_000;
+const REMIND_EVERY_MS = 30_000;
 
 function Kitchen({ onStatus }: { onStatus: (m: Mode) => void }) {
   const qc = useQueryClient();
@@ -137,8 +121,24 @@ function Kitchen({ onStatus }: { onStatus: (m: Mode) => void }) {
   const pending = useRef<(() => void) | null>(null);
   const [highVis, setHighVis] = useState(false);
   const [sound, setSound] = useState(true);
+  const [audioOn, setAudioOn] = useState(false);
+  const [arrived, setArrived] = useState<{ room: string; number: number; count: number } | null>(null);
+  const seen = useRef<Set<string> | null>(null);
   const soundRef = useRef(sound);
   soundRef.current = sound;
+
+  useEffect(() => {
+    setSound(soundPreference());
+    setAudioOn(audioReady());
+    // Any touch on the display unlocks sound for the rest of the shift.
+    const unlock = () => void unlockAudio().then(setAudioOn);
+    document.addEventListener("pointerdown", unlock);
+    document.addEventListener("keydown", unlock);
+    return () => {
+      document.removeEventListener("pointerdown", unlock);
+      document.removeEventListener("keydown", unlock);
+    };
+  }, []);
 
   useEffect(() => {
     document.documentElement.dataset.contrast = highVis ? "high" : "";
@@ -163,15 +163,50 @@ function Kitchen({ onStatus }: { onStatus: (m: Mode) => void }) {
     const rt = connectRealtime({
       baseUrl: API_URL,
       getToken: () => getDeviceToken(),
-      onEvent: (event) => {
-        if (event.type === "NEW_ORDER" && soundRef.current) chime();
-        void qc.invalidateQueries({ queryKey: ["board"] });
-      },
+      // The buzzer follows the board itself (below), so orders seen by polling while the socket
+      // was down buzz too, and nothing buzzes twice.
+      onEvent: () => void qc.invalidateQueries({ queryKey: ["board"] }),
       onStatus: setLive,
       onFatal: (code) => onStatus(code === 4410 ? "suspended" : "unpaired"),
     });
     return () => rt.close();
   }, [qc, onStatus]);
+
+  // A new order on the board: buzz and show who it is for. The first load only records what is
+  // already there, so opening the display does not buzz for old orders.
+  useEffect(() => {
+    const list = board.data?.data;
+    if (!list) return;
+    const ids = new Set(list.map((o) => o.id));
+    if (seen.current === null) {
+      seen.current = ids;
+      return;
+    }
+    const fresh = list.filter((o) => o.status === "NEW" && !seen.current?.has(o.id));
+    seen.current = ids;
+    if (!fresh.length) return;
+    const first = fresh[0]!;
+    setArrived({ room: first.room, number: first.number, count: fresh.length });
+    if (soundRef.current) buzzNewOrder();
+    navigator.vibrate?.([200, 100, 200]);
+  }, [board.data]);
+
+  useEffect(() => {
+    if (!arrived) return;
+    const t = setTimeout(() => setArrived(null), 8_000);
+    return () => clearTimeout(t);
+  }, [arrived]);
+
+  // Orders nobody has accepted for a minute buzz again every 30 seconds.
+  useEffect(() => {
+    const t = setInterval(() => {
+      const waiting = (board.data?.data ?? []).some(
+        (o) => o.status === "NEW" && Date.now() - new Date(o.created_at).getTime() > REMIND_AFTER_MS,
+      );
+      if (waiting && soundRef.current) buzzReminder();
+    }, REMIND_EVERY_MS);
+    return () => clearInterval(t);
+  }, [board.data]);
 
   const needCook = useCallback(
     (action: () => void) => {
@@ -222,7 +257,17 @@ function Kitchen({ onStatus }: { onStatus: (m: Mode) => void }) {
           <Button variant="secondary" size="lg" onClick={() => setSoldOutOpen(true)}>
             Sold out
           </Button>
-          <Button variant="secondary" size="lg" aria-pressed={sound} onClick={() => setSound(!sound)}>
+          <Button
+            variant="secondary"
+            size="lg"
+            aria-pressed={sound}
+            onClick={() => {
+              const next = !sound;
+              setSound(next);
+              saveSoundPreference(next);
+              if (next) void unlockAudio().then((on) => (setAudioOn(on), on && buzzReminder()));
+            }}
+          >
             {sound ? "Sound on" : "Sound off"}
           </Button>
           <Button variant="secondary" size="lg" aria-pressed={highVis} onClick={() => setHighVis(!highVis)}>
@@ -237,6 +282,20 @@ function Kitchen({ onStatus }: { onStatus: (m: Mode) => void }) {
           </Button>
         </div>
       </header>
+      {sound && !audioOn ? (
+        <button
+          type="button"
+          onClick={() => void unlockAudio().then((on) => (setAudioOn(on), on && buzzReminder()))}
+          className="rounded-xl bg-warn-bg px-4 py-3 text-left text-lg font-semibold text-warn"
+        >
+          Tap here to turn on the new-order sound
+        </button>
+      ) : null}
+      {arrived ? (
+        <div role="alert" className="animate-pulse rounded-xl bg-good px-5 py-4 font-display text-2xl font-semibold text-white">
+          New order{arrived.count > 1 ? `s (${arrived.count})` : ""}: Room {arrived.room} · #{arrived.number}
+        </div>
+      ) : null}
       {board.error ? <ErrorNotice error={board.error} /> : null}
       {board.isLoading ? (
         <div className="flex flex-1 items-center justify-center">
