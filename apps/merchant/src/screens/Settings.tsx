@@ -13,6 +13,8 @@ import {
   Field,
   Input,
   PageHeader,
+  type PropertyType,
+  propertyTypeGroups,
   Select,
   Skeleton,
   Table,
@@ -181,8 +183,18 @@ function LogoField({ logoUrl }: { logoUrl: string | null }) {
 function HotelProfile() {
   const { api, can } = useSession();
   const hotel = useQuery({ queryKey: ["hotel"], queryFn: () => withEtag(api.GET("/api/v1/hotel")) });
+  const country = hotel.data?.data.country;
+  // The country's provinces or states (D85); empty where the country lists none.
+  const regions = useQuery({
+    queryKey: ["regions", country],
+    enabled: Boolean(country),
+    staleTime: Infinity,
+    queryFn: () => ok(api.GET("/api/v1/countries/{code}/regions", { params: { path: { code: country ?? "" } } })),
+  });
   const [form, setForm] = useState<Record<string, string>>({});
   const h0 = () => hotel.data?.data;
+  const listed = (regions.data?.data.length ?? 0) > 0;
+  const addressKeys = [...ADDRESS.map(([k]) => k), "province_code"];
   const save = useAction(
     () =>
       ok(
@@ -193,11 +205,23 @@ function HotelProfile() {
             ...(form.legal_name !== undefined ? { legal_name: form.legal_name || null } : {}),
             ...(form.phone !== undefined ? { phone: form.phone || null } : {}),
             ...(form.email !== undefined ? { email: form.email || null } : {}),
-            ...(ADDRESS.some(([k]) => form[k] !== undefined)
+            ...(form.property_type !== undefined ? { property_type: (form.property_type || null) as PropertyType | null } : {}),
+            ...(form.room_count !== undefined ? { room_count: form.room_count ? Number(form.room_count) : null } : {}),
+            ...(form.website !== undefined ? { website: form.website.trim() || null } : {}),
+            ...(addressKeys.some((k) => form[k] !== undefined)
               ? {
                   address: {
-                    ...Object.fromEntries(ADDRESS.map(([k]) => [k, (form[k] ?? String(h0()?.address[k] ?? "")).trim() || null])),
-                    country: (h0()?.address.country as string | undefined) ?? null,
+                    ...Object.fromEntries(
+                      ADDRESS.filter(([k]) => !(listed && k === "province")).map(([k]) => [k, (form[k] ?? String(h0()?.address[k] ?? "")).trim() || null]),
+                    ),
+                    ...(listed
+                      ? (() => {
+                          const code = form.province_code ?? String(h0()?.address.province_code ?? "");
+                          // Keep an older typed province until a listed one is chosen.
+                          return code ? { province_code: code } : { province: (h0()?.address.province as string | undefined) ?? null };
+                        })()
+                      : {}),
+                    country: country ?? null,
                   },
                 }
               : {}),
@@ -209,6 +233,7 @@ function HotelProfile() {
   if (!hotel.data) return <Skeleton className="h-40" />;
   const h = hotel.data.data;
   const value = (k: "name" | "legal_name" | "phone" | "email") => form[k] ?? h[k] ?? "";
+  const editable = can("hotel.update");
   return (
     <Card className="max-w-2xl p-5">
       <div className="grid gap-4 sm:grid-cols-2">
@@ -225,20 +250,75 @@ function HotelProfile() {
           </Field>
         ))}
       </div>
+      <h3 className="mt-6 mb-3 font-display text-sm font-semibold">Property</h3>
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Field label="Category">
+          {(p) => (
+            <Select {...p} disabled={!editable} value={form.property_type ?? h.property_type ?? ""} onChange={(e) => setForm({ ...form, property_type: e.target.value })}>
+              <option value="">Not set</option>
+              {propertyTypeGroups().map((g) => (
+                <optgroup key={g.group} label={g.group}>
+                  {g.items.map((t) => (
+                    <option key={t.value} value={t.value}>
+                      {t.label}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </Select>
+          )}
+        </Field>
+        <Field label="Rooms or units">
+          {(p) => (
+            <Input
+              {...p}
+              type="number"
+              min={1}
+              max={5000}
+              disabled={!editable}
+              value={form.room_count ?? (h.room_count ? String(h.room_count) : "")}
+              onChange={(e) => setForm({ ...form, room_count: e.target.value })}
+            />
+          )}
+        </Field>
+        <Field label="Website">
+          {(p) => <Input {...p} type="url" placeholder="https://" disabled={!editable} value={form.website ?? h.website ?? ""} onChange={(e) => setForm({ ...form, website: e.target.value })} />}
+        </Field>
+      </div>
       <h3 className="mt-6 mb-3 font-display text-sm font-semibold">Address (printed on tax invoices)</h3>
       <div className="grid gap-4 sm:grid-cols-2">
-        {ADDRESS.map(([k, l]) => (
-          <Field key={k} label={l} className={k === "line1" || k === "line2" ? "sm:col-span-2" : undefined}>
-            {(p) => (
-              <Input
-                {...p}
-                disabled={!can("hotel.update")}
-                value={form[k] ?? String(h.address[k] ?? "")}
-                onChange={(e) => setForm({ ...form, [k]: e.target.value })}
-              />
-            )}
-          </Field>
-        ))}
+        {ADDRESS.map(([k, l]) =>
+          k === "province" && listed ? (
+            <Field key={k} label={regions.data?.label ?? l}>
+              {(p) => (
+                <Select
+                  {...p}
+                  disabled={!editable}
+                  value={form.province_code ?? String(h.address.province_code ?? "")}
+                  onChange={(e) => setForm({ ...form, province_code: e.target.value })}
+                >
+                  <option value="">{h.address.province && !h.address.province_code ? `${String(h.address.province)} (choose from the list)` : "Choose…"}</option>
+                  {regions.data?.data.map((r) => (
+                    <option key={r.code} value={r.code}>
+                      {r.name}
+                    </option>
+                  ))}
+                </Select>
+              )}
+            </Field>
+          ) : (
+            <Field key={k} label={l} className={k === "line1" || k === "line2" ? "sm:col-span-2" : undefined}>
+              {(p) => (
+                <Input
+                  {...p}
+                  disabled={!editable}
+                  value={form[k] ?? String(h.address[k] ?? "")}
+                  onChange={(e) => setForm({ ...form, [k]: e.target.value })}
+                />
+              )}
+            </Field>
+          ),
+        )}
       </div>
       {can("hotel.update") ? <LogoField logoUrl={h.logo_url} /> : null}
       <p className="mt-4 text-sm text-muted">
