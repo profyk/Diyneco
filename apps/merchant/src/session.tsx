@@ -5,7 +5,7 @@
  * httpOnly cookie the API sets for allowed web origins, so a page reload restores the
  * session with POST /auth/refresh and nothing secret ever touches local storage.
  */
-import { type Api, ApiError, type components, createApi, type ErrorBody, ok, setDisplayLocale } from "@diyneco/api-client";
+import { type Api, ApiError, type components, createApi, type ErrorBody, ok, setDisplayLocale, singleRefresh } from "@diyneco/api-client";
 import { StepUpProvider, useStepUp } from "@diyneco/shared-ui";
 import { useQueryClient } from "@tanstack/react-query";
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
@@ -53,6 +53,11 @@ async function post<T>(path: string, body: unknown): Promise<{ status: number; d
   return { status: res.status, data: data as T };
 }
 
+/** One refresh at a time, shared by every caller and every tab (refresh tokens rotate). */
+function refreshTokens(hotelId?: string): Promise<{ status: number; data: TokenResponse }> {
+  return singleRefresh(`merchant|${hotelId ?? ""}`, () => post<TokenResponse>("/auth/refresh", hotelId ? { hotel_id: hotelId } : {}));
+}
+
 export function SessionProvider({ children }: { children: ReactNode }) {
   const token = useRef<string | null>(null);
   const [state, setState] = useState<SessionState>({ status: "loading" });
@@ -77,7 +82,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async (hotelId?: string): Promise<string | null> => {
     try {
-      const { data } = await post<TokenResponse>("/auth/refresh", hotelId ? { hotel_id: hotelId } : {});
+      const { data } = await refreshTokens(hotelId);
       token.current = data.access_token;
       return data.access_token;
     } catch {
@@ -127,7 +132,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     (async () => {
       try {
-        const { data } = await post<TokenResponse>("/auth/refresh", {});
+        const { data } = await refreshTokens();
         await accept(data);
       } catch {
         setState({ status: "signed-out" });
@@ -159,7 +164,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       },
       completeEnrolment: accept,
       async switchHotel(hotelId) {
-        const { data } = await post<TokenResponse>("/auth/refresh", { hotel_id: hotelId });
+        const { data } = await refreshTokens(hotelId);
         await accept(data);
       },
       async signOut() {

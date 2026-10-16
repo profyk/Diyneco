@@ -15,5 +15,6 @@ export {
 } from "./money";
 export type { Money } from "./money";
 export { connectRealtime, wsUrl } from "./realtime";
+export { singleRefresh } from "./refresh-lock";
 export type { RealtimeEvent, RealtimeOptions, RealtimeStatus } from "./realtime";
 export type { components, paths } from "@diyneco/shared-types";
