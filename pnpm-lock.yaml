@@ -434,8 +434,8 @@ importers:
         specifier: workspace:*
         version: link:../config
       typescript:
-        specifier: ^5.9.0
-        version: 5.9.3
+        specifier: ^7.0.2
+        version: 7.0.2
 
   packages/config: {}
 
@@ -479,8 +479,8 @@ importers:
         specifier: ^19.1.0
         version: 19.3.0
       typescript:
-        specifier: ^5.9.0
-        version: 5.9.3
+        specifier: ^7.0.2
+        version: 7.0.2
 
 packages:
 
