@@ -1,5 +1,33 @@
 # Progress
 
+## 2026-10-16: Design, themes, kitchen buzzer, website images, gaps closed (D94 to D97)
+
+### Done
+
+- Staff app shell (D96): Admin and Merchant share a navy sidebar that scrolls on its own, a
+  fixed top bar, separately scrolling pages, a phone drawer, an icon-only narrow mode and a
+  Light / Dark / Same-as-device switch with no flash; show/hide on every password and PIN.
+- Sessions survive a reload (D97): refreshes are single-flight per tab and serialised across
+  tabs; two overlapping refreshes used to end the session as a token replay.
+- Kitchen buzzer (D95): every new order buzzes and shows a banner; unaccepted orders buzz
+  again every 30 s; the board shows hotel time (closes the known gap).
+- Website images (D94): published images are allowed cross-site; seven original hotel
+  illustrations on the built-in pages.
+- Guest requests report (`/reports/requests`, merchant Reports tab); prorated upgrades carry
+  the group discount (closes the D89 gap); Vercel builds compare with the last deployment.
+- First Super Admin created in Supabase (staging); Supabase is at 0037.
+
+### Next
+
+- Owner: rename `NEXT_PUBLIC_API` to `NEXT_PUBLIC_API_URL` on five Vercel projects, set
+  `CORS_ALLOWED_ORIGINS` and the app URLs on Railway, then redeploy.
+- Production readiness as listed below (KMS, SMTP, production Supabase, custom domain).
+
+### Known gaps
+
+- Cross-site cookies: until the apps and the API share a domain, browsers that block
+  third-party cookies may sign staff out on reload.
+
 ## 2026-10-15: Deployment, onboarding, owners with several properties, insights, website, guest requests (D84 to D93)
 
 ### Done
@@ -45,7 +73,6 @@
 
 - The browser tests in CI were last seen failing on timeouts in the subscription journey;
   the timeout was raised and needs confirming on the next run.
-- Prorated upgrade invoices do not carry the group discount (D89).
 
 ## 2026-10-12: Worldwide hotels (D69), legal documents (D70), locale formatting
 
