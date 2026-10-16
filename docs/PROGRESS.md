@@ -1,6 +1,6 @@
 # Progress
 
-## 2026-10-16: Design, themes, kitchen buzzer, website images, gaps closed (D94 to D97)
+## 2026-10-16: Design, themes, kitchen buzzer, website images, guest feedback, gaps closed (D94 to D98)
 
 ### Done
 
@@ -15,7 +15,11 @@
   illustrations on the built-in pages.
 - Guest requests report (`/reports/requests`, merchant Reports tab); prorated upgrades carry
   the group discount (closes the D89 gap); Vercel builds compare with the last deployment.
-- First Super Admin created in Supabase (staging); Supabase is at 0037.
+- Guest feedback (D98): stars and a comment for delivered orders, finished requests and the
+  stay from the room tablet; Reports > Guest feedback; a live alert for 1 or 2 stars.
+- Checked in the browser against a local API: Merchant and Admin in light and dark, desktop
+  and phone; the room-service Requests tab; the guest tablet's Requests and ratings.
+- First Super Admin created in Supabase (staging); Supabase is at 0038.
 
 ### Next
 
