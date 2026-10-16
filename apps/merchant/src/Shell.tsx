@@ -1,7 +1,7 @@
 "use client";
 
 import { connectRealtime, ok, type RealtimeStatus } from "@diyneco/api-client";
-import { AppShell, Badge, cn, type IconName, type NavGroup, Spinner } from "@diyneco/shared-ui";
+import { AppShell, Badge, cn, type IconName, type NavGroup, Spinner, useToast } from "@diyneco/shared-ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -101,11 +101,18 @@ function useLiveUpdates(): RealtimeStatus {
   const { accessToken } = useSession();
   const [status, setStatus] = useState<RealtimeStatus>("connecting");
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const toast = useToast();
+  const { can } = useSession();
+  const canReports = can("reports.read");
   useEffect(() => {
     const rt = connectRealtime({
       baseUrl: API_URL,
       getToken: accessToken,
-      onEvent: () => {
+      onEvent: (e) => {
+        // A guest unhappy enough to give 1 or 2 stars reaches managers at once (D98).
+        if (e.type === "FEEDBACK_RECEIVED" && e.data.low === true && canReports) {
+          toast("crit", `Room ${String(e.data.room)} gave ${String(e.data.rating)} star${e.data.rating === 1 ? "" : "s"}. See Reports > Guest feedback.`);
+        }
         // Events are notifications; refetch what is on screen, at most every 1.5 s.
         if (timer.current) return;
         timer.current = setTimeout(() => {
@@ -116,7 +123,7 @@ function useLiveUpdates(): RealtimeStatus {
       onStatus: setStatus,
     });
     return () => rt.close();
-  }, [accessToken, qc]);
+  }, [accessToken, qc, toast, canReports]);
   return status;
 }
 

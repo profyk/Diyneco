@@ -26,7 +26,7 @@ import { useState } from "react";
 import { isoDay, label, useAction } from "../common";
 import { useCurrency, useSession } from "../session";
 
-type Tab = "revenue" | "payments" | "operations" | "requests" | "occupancy" | "close" | "receivable";
+type Tab = "revenue" | "payments" | "operations" | "requests" | "feedback" | "occupancy" | "close" | "receivable";
 
 const TABS: { key: Tab; title: string; perm: string }[] = [
   { key: "revenue", title: "Revenue", perm: "reports.finance" },
@@ -35,6 +35,7 @@ const TABS: { key: Tab; title: string; perm: string }[] = [
   { key: "receivable", title: "Open balances", perm: "reports.finance" },
   { key: "operations", title: "Orders & kitchen", perm: "reports.read" },
   { key: "requests", title: "Guest requests", perm: "reports.read" },
+  { key: "feedback", title: "Guest feedback", perm: "reports.read" },
   { key: "occupancy", title: "Occupancy", perm: "reports.read" },
 ];
 
@@ -84,6 +85,7 @@ export function Reports() {
       {tab === "payments" ? <PaymentsReport from={from} to={to} /> : null}
       {tab === "operations" ? <Operations from={from} to={to} /> : null}
       {tab === "requests" ? <RequestsReport from={from} to={to} /> : null}
+      {tab === "feedback" ? <FeedbackReport from={from} to={to} /> : null}
       {tab === "occupancy" ? <Occupancy from={from} to={to} /> : null}
       {tab === "close" ? <DailyClose /> : null}
       {tab === "receivable" ? <Receivable /> : null}
@@ -210,6 +212,80 @@ function PaymentsReport({ from, to }: { from: string; to: string }) {
           </tbody>
         </Table>
       </Card>
+    </div>
+  );
+}
+
+const SUBJECTS: Record<string, string> = { order: "Orders", request: "Requests", stay: "Stays" };
+
+function StarLine({ n }: { n: number }) {
+  return (
+    <span className="whitespace-nowrap text-[#e09a1a]" aria-label={`${n} of 5 stars`}>
+      {"★".repeat(n)}
+      <span className="text-line">{"★".repeat(5 - n)}</span>
+    </span>
+  );
+}
+
+/** Guest ratings (D98): how guests score orders, requests and their stay, and what they say. */
+function FeedbackReport({ from, to }: { from: string; to: string }) {
+  const { api } = useSession();
+  const r = useQuery({
+    queryKey: ["reports", "feedback", from, to],
+    queryFn: () => ok(api.GET("/api/v1/reports/feedback", { params: { query: { from, to } } })),
+  });
+  if (r.isLoading) return <Skeleton className="h-40" />;
+  if (!r.data) return <ErrorNotice error={r.error} />;
+  const d = r.data;
+  const max = Math.max(1, ...d.distribution);
+  const low = (d.distribution[0] ?? 0) + (d.distribution[1] ?? 0);
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatTile label="Average" value={d.average === null ? "–" : `${d.average.toFixed(1)} ★`} hint={`${d.ratings} rating${d.ratings === 1 ? "" : "s"}`} />
+        {(["order", "request", "stay"] as const).map((s) => {
+          const row = d.by_subject.find((x) => x.subject === s);
+          return <StatTile key={s} label={SUBJECTS[s]} value={row?.average != null ? `${row.average.toFixed(1)} ★` : "–"} hint={`${row?.ratings ?? 0} ratings`} />;
+        })}
+      </div>
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Card>
+          <CardHeader title="Stars" description={low ? `${low} low rating${low === 1 ? "" : "s"} (1 or 2 stars)` : "No low ratings"} />
+          <div className="flex flex-col gap-2 p-5">
+            {[5, 4, 3, 2, 1].map((n) => (
+              <div key={n} className="flex items-center gap-3 text-sm">
+                <span className="w-10 tabular-nums text-muted">{n} ★</span>
+                <div className="h-2.5 flex-1 rounded-full bg-surface-2" aria-hidden>
+                  <div className={cn("h-2.5 rounded-full", n <= 2 ? "bg-crit" : "bg-blue")} style={{ width: `${((d.distribution[n - 1] ?? 0) / max) * 100}%` }} />
+                </div>
+                <span className="w-8 text-right tabular-nums">{d.distribution[n - 1] ?? 0}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+        <Card className="lg:col-span-2">
+          <CardHeader title="What guests said" description="Comments first, newest first." />
+          {d.recent.length ? (
+            <ul className="divide-y divide-line">
+              {d.recent.map((c) => (
+                <li key={c.id} className="flex flex-col gap-1 px-5 py-3">
+                  <div className="flex flex-wrap items-center gap-2 text-sm">
+                    <StarLine n={c.rating} />
+                    <span className="font-medium text-ink">Room {c.room}</span>
+                    <Badge>{SUBJECTS[c.subject] ?? c.subject}</Badge>
+                    <span className="ml-auto text-xs text-muted">
+                      {formatDate(c.created_at)} {formatTime(c.created_at)}
+                    </span>
+                  </div>
+                  {c.comment ? <p className="text-sm text-ink">{c.comment}</p> : null}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <EmptyState title="No ratings in this period" body="Guests rate orders, requests and their stay from the room tablet." />
+          )}
+        </Card>
+      </div>
     </div>
   );
 }

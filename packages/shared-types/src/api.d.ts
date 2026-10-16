@@ -2221,6 +2221,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/guest/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My Feedback
+         * @description What this stay has rated already (D98), so the tablet only asks once.
+         */
+        get: operations["my_feedback_api_v1_guest_feedback_get"];
+        put?: never;
+        /** Give Feedback */
+        post: operations["give_feedback_api_v1_guest_feedback_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/guest/folio": {
         parameters: {
             query?: never;
@@ -3543,6 +3564,26 @@ export interface paths {
         get?: never;
         /** Put Daily Close */
         put: operations["put_daily_close_api_v1_reports_daily_close__day__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Guest Feedback
+         * @description Guest ratings (D98): average, stars, by subject and the latest comments.
+         */
+        get: operations["guest_feedback_api_v1_reports_feedback_get"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -6773,6 +6814,100 @@ export interface components {
              * @enum {string}
              */
             type: "features";
+        };
+        /** FeedbackComment */
+        FeedbackComment: {
+            /** Comment */
+            comment: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Rating */
+            rating: number;
+            /** Room */
+            room: string;
+            /**
+             * Subject
+             * @enum {string}
+             */
+            subject: "order" | "request" | "stay";
+        };
+        /** FeedbackCreate */
+        FeedbackCreate: {
+            /** Comment */
+            comment?: string | null;
+            /** Order Id */
+            order_id?: string | null;
+            /** Rating */
+            rating: number;
+            /** Request Id */
+            request_id?: string | null;
+            /**
+             * Subject
+             * @enum {string}
+             */
+            subject: "order" | "request" | "stay";
+        };
+        /** FeedbackList */
+        FeedbackList: {
+            /** Data */
+            data: components["schemas"]["FeedbackOut"][];
+        };
+        /** FeedbackOut */
+        FeedbackOut: {
+            /** Comment */
+            comment: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Order Id */
+            order_id: string | null;
+            /** Rating */
+            rating: number;
+            /** Request Id */
+            request_id: string | null;
+            /**
+             * Subject
+             * @enum {string}
+             */
+            subject: "order" | "request" | "stay";
+        };
+        /** FeedbackReport */
+        FeedbackReport: {
+            /** Average */
+            average: number | null;
+            /** By Subject */
+            by_subject: components["schemas"]["SubjectScore"][];
+            /** Distribution */
+            distribution: number[];
+            /**
+             * From
+             * Format: date
+             */
+            from: string;
+            /** Ratings */
+            ratings: number;
+            /** Recent */
+            recent: components["schemas"]["FeedbackComment"][];
+            /**
+             * To
+             * Format: date
+             */
+            to: string;
         };
         /** FlagChange */
         FlagChange: {
@@ -11345,6 +11480,18 @@ export interface components {
              * @enum {string}
              */
             type: "steps";
+        };
+        /** SubjectScore */
+        SubjectScore: {
+            /** Average */
+            average: number | null;
+            /** Ratings */
+            ratings: number;
+            /**
+             * Subject
+             * @enum {string}
+             */
+            subject: "order" | "request" | "stay";
         };
         /** SubscribeOut */
         SubscribeOut: {
@@ -16779,6 +16926,59 @@ export interface operations {
             };
         };
     };
+    my_feedback_api_v1_guest_feedback_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedbackList"];
+                };
+            };
+        };
+    };
+    give_feedback_api_v1_guest_feedback_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeedbackCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedbackOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     my_folio_api_v1_guest_folio_get: {
         parameters: {
             query?: never;
@@ -19467,6 +19667,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DailyCloseReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    guest_feedback_api_v1_reports_feedback_get: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedbackReport"];
                 };
             };
             /** @description Validation Error */

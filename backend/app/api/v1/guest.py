@@ -11,6 +11,7 @@ from fastapi import APIRouter, Request, Response
 from app.api.deps import DeviceAnyState, DevicePrincipal, IdemDevice, Principal, Uow, state_of
 from app.core.errors import AppError
 from app.models.domain import Device
+from app.schemas.feedback import FeedbackCreate, FeedbackList, FeedbackOut
 from app.schemas.orders import (
     GuestFolio,
     GuestInfo,
@@ -24,6 +25,7 @@ from app.schemas.orders import (
     QuoteRequest,
 )
 from app.schemas.requests import GuestRequestCreate, GuestRequestList, GuestRequestOut
+from app.services import feedback as feedback_service
 from app.services import guest as svc
 from app.services import orders as order_service
 from app.services import requests as request_service
@@ -139,6 +141,26 @@ async def cancel_request(
     stay = await svc.require_stay(uow, ctx, _tablet(request))
     result = await request_service.cancel_by_guest(uow, ctx, request_id, stay.id)
     return await idem.complete(uow, 200, GuestRequestOut.model_validate(result).model_dump(mode="json"))
+
+
+@router.get("/feedback", response_model=FeedbackList)
+async def my_feedback(request: Request, uow: Uow, principal: DevicePrincipal) -> dict[str, Any]:
+    """What this stay has rated already (D98), so the tablet only asks once."""
+    device = _tablet(request)
+    ctx = _ctx(request, principal)
+    assert device.room_id is not None  # noqa: S101 - checked by _tablet
+    stay = await svc.active_stay(uow, ctx, device.room_id)
+    return {"data": await feedback_service.for_stay(uow, ctx, stay.id) if stay else []}
+
+
+@router.post("/feedback", status_code=201, response_model=FeedbackOut)
+async def give_feedback(
+    idem: IdemDevice, body: FeedbackCreate, request: Request, uow: Uow, principal: DevicePrincipal
+) -> Response:
+    ctx = _ctx(request, principal)
+    stay = await svc.require_stay(uow, ctx, _tablet(request))
+    result = await feedback_service.give(uow, ctx, stay, body.model_dump())
+    return await idem.complete(uow, 201, FeedbackOut.model_validate(result).model_dump(mode="json"))
 
 
 @router.get("/info", response_model=GuestInfo)

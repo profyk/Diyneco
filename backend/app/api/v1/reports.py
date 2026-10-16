@@ -12,6 +12,7 @@ from app.api.deps import IdemUser, Principal, StepUp, Uow, require_permission, s
 from app.api.pagination import DEFAULT_LIMIT, Cursor, Limit, decode_cursor, page
 from app.billing.folio import business_date
 from app.repositories.hotels import HotelRepository
+from app.schemas.feedback import FeedbackReport
 from app.schemas.reports import (
     Analytics,
     ApiKeyCreate,
@@ -43,7 +44,7 @@ from app.schemas.reports import (
     WebhookStatusChange,
     WebhookTestOut,
 )
-from app.services import admin, integrations, reports, subscription
+from app.services import admin, feedback, integrations, reports, subscription
 
 router = APIRouter(tags=["reports"])
 admin_router = APIRouter(prefix="/admin", tags=["admin"])
@@ -101,6 +102,14 @@ async def service_requests(
 ) -> dict[str, Any]:
     """Guest service requests (D93): by kind and by the person who finished them."""
     return await reports.requests(uow, principal.tenant(request), from_, to)
+
+
+@router.get("/reports/feedback", response_model=FeedbackReport)
+async def guest_feedback(
+    request: Request, uow: Uow, principal: ReportsRead, from_: From, to: To
+) -> dict[str, Any]:
+    """Guest ratings (D98): average, stars, by subject and the latest comments."""
+    return await feedback.report(uow, principal.tenant(request), from_, to)
 
 
 @router.get("/reports/occupancy", response_model=OccupancyReport)

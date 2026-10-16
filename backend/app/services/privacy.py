@@ -186,6 +186,13 @@ async def anonymise_guest(
     )
     await s.execute(
         text(
+            "UPDATE app.guest_feedback SET comment = :r WHERE hotel_id = :h AND comment IS NOT NULL "
+            "AND stay_id IN (SELECT id FROM app.stays WHERE hotel_id = :h AND guest_id = :g)"
+        ),
+        {**p, "r": REDACTED},
+    )
+    await s.execute(
+        text(
             "UPDATE app.service_requests SET note = :r WHERE hotel_id = :h AND note IS NOT NULL "
             "AND stay_id IN (SELECT id FROM app.stays WHERE hotel_id = :h AND guest_id = :g)"
         ),

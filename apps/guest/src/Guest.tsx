@@ -508,6 +508,116 @@ const STEP_LABEL: Record<string, string> = {
   CANCELLED: "Cancelled",
 };
 
+// Guest feedback (D98): one rating per delivered order, finished request and stay.
+type Subject = "order" | "request" | "stay";
+
+function useFeedback() {
+  return useQuery({ queryKey: ["feedback"], queryFn: () => ok(api.GET("/api/v1/guest/feedback")) });
+}
+
+function rated(
+  list: { subject: string; rating: number; order_id?: string | null; request_id?: string | null }[] | undefined,
+  subject: Subject,
+  id?: string,
+) {
+  return (list ?? []).find((f) => f.subject === subject && (subject === "stay" || f.order_id === id || f.request_id === id));
+}
+
+function Stars({ value, onPick, size = "md", label }: { value: number; onPick?: (n: number) => void; size?: "md" | "lg"; label: string }) {
+  return (
+    <div role={onPick ? "radiogroup" : "img"} aria-label={onPick ? label : `${label}: ${value} of 5 stars`} className="flex gap-1">
+      {[1, 2, 3, 4, 5].map((n) => {
+        const on = n <= value;
+        const star = (
+          <svg viewBox="0 0 24 24" className={size === "lg" ? "size-11" : "size-8"} aria-hidden>
+            <path
+              d="M12 2.8l2.8 5.8 6.3.9-4.6 4.4 1.1 6.3L12 17.2l-5.6 3 1.1-6.3L2.9 9.5l6.3-.9z"
+              fill={on ? "#f5b642" : "none"}
+              stroke={on ? "#e09a1a" : "currentColor"}
+              strokeWidth="1.6"
+              strokeLinejoin="round"
+            />
+          </svg>
+        );
+        return onPick ? (
+          <button key={n} type="button" role="radio" aria-checked={n === value} aria-label={`${n} star${n > 1 ? "s" : ""}`} onClick={() => onPick(n)} className="text-muted transition active:scale-90">
+            {star}
+          </button>
+        ) : (
+          <span key={n} className="text-muted">
+            {star}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+/** "How was it?" with five tappable stars; a tap opens a short form for an optional comment. */
+function RateIt({ subject, id, prompt }: { subject: Subject; id?: string; prompt: string }) {
+  const feedback = useFeedback();
+  const done = rated(feedback.data?.data, subject, id);
+  const [picked, setPicked] = useState(0);
+  if (feedback.isLoading) return null;
+  if (done) {
+    return (
+      <div className="mt-3 flex items-center gap-2 text-sm text-muted">
+        <Stars value={done.rating} label="Your rating" /> Thank you for your feedback.
+      </div>
+    );
+  }
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-3 rounded-xl bg-surface-2 px-4 py-3">
+      <span className="text-base font-medium text-ink">{prompt}</span>
+      <Stars value={picked} onPick={setPicked} label={prompt} />
+      {picked ? <FeedbackDialog subject={subject} id={id} rating={picked} onClose={() => setPicked(0)} /> : null}
+    </div>
+  );
+}
+
+function FeedbackDialog({ subject, id, rating: initial, onClose }: { subject: Subject; id?: string; rating: number; onClose: () => void }) {
+  const qc = useQueryClient();
+  const [rating, setRating] = useState(initial);
+  const [comment, setComment] = useState("");
+  const send = useMutation({
+    mutationFn: () =>
+      ok(
+        api.POST("/api/v1/guest/feedback", {
+          body: {
+            subject,
+            order_id: subject === "order" ? id : null,
+            request_id: subject === "request" ? id : null,
+            rating,
+            comment: comment.trim() || null,
+          },
+        }),
+      ),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["feedback"] });
+      onClose();
+    },
+  });
+  return (
+    <Dialog open onClose={onClose} title={rating >= 4 ? "Glad you enjoyed it" : "Thank you for telling us"} description="Your rating goes to the hotel's managers.">
+      <div className="flex flex-col items-center gap-4">
+        <Stars value={rating} onPick={setRating} size="lg" label="Your rating" />
+        <Field label={rating <= 2 ? "What went wrong? (optional)" : "Anything to add? (optional)"} className="w-full">
+          {(p) => <Textarea {...p} rows={3} maxLength={500} value={comment} onChange={(e) => setComment(e.target.value)} />}
+        </Field>
+        {send.error ? <ErrorNotice error={send.error} /> : null}
+        <div className="flex w-full justify-end gap-2">
+          <Button size="lg" variant="secondary" onClick={onClose}>
+            Back
+          </Button>
+          <Button size="lg" loading={send.isPending} onClick={() => send.mutate()}>
+            Send
+          </Button>
+        </div>
+      </div>
+    </Dialog>
+  );
+}
+
 function OrdersTab() {
   const orders = useQuery({ queryKey: ["orders"], queryFn: () => ok(api.GET("/api/v1/guest/orders")), refetchInterval: 30_000 });
   const list = orders.data?.data ?? [];
@@ -536,6 +646,7 @@ function OrdersTab() {
             ) : null}
             {o.decline_reason ? <p className="mt-2 text-sm text-muted">{o.decline_reason}</p> : null}
             <p className="mt-2 text-sm text-muted">{o.items.map((i) => `${i.quantity}× ${i.name}`).join(", ")}</p>
+            {o.status === "DELIVERED" || o.status === "CLOSED" ? <RateIt subject="order" id={o.id} prompt="How was it?" /> : null}
           </article>
         );
       })}
@@ -625,6 +736,7 @@ function RequestsTab() {
                   </p>
                   {r.note ? <p className="text-sm text-muted">{r.note}</p> : null}
                   <p className="text-xs text-muted">Asked at {formatTime(r.created_at)}</p>
+                  {r.status === "done" ? <RateIt subject="request" id={r.id} prompt="How did we do?" /> : null}
                 </div>
                 <div className="flex items-center gap-3">
                   <Badge tone={st.tone} className="text-sm">
@@ -744,6 +856,10 @@ function InfoTab() {
         {i.wifi_name ? <p>Wi-Fi: {i.wifi_name}</p> : null}
         {i.phone ? <p>Reception: {i.phone}</p> : null}
         {i.email ? <p>Email: {i.email}</p> : null}
+      </div>
+      <div className="mt-3 rounded-[var(--radius-card)] border border-line bg-surface p-5">
+        <h3 className="font-display text-xl font-semibold text-ink">How is your stay?</h3>
+        <RateIt subject="stay" prompt="Rate your stay" />
       </div>
       {i.pages.map((p, n) => (
         <details key={n} className="mt-3 rounded-[var(--radius-card)] border border-line bg-surface p-5 text-lg" open={i.pages.length === 1}>

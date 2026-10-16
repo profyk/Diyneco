@@ -5909,6 +5909,271 @@
         "title": "Features",
         "type": "object"
       },
+      "FeedbackComment": {
+        "properties": {
+          "comment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          },
+          "room": {
+            "title": "Room",
+            "type": "string"
+          },
+          "subject": {
+            "enum": [
+              "order",
+              "request",
+              "stay"
+            ],
+            "title": "Subject",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "room",
+          "subject",
+          "rating",
+          "comment",
+          "created_at"
+        ],
+        "title": "FeedbackComment",
+        "type": "object"
+      },
+      "FeedbackCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "comment": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment"
+          },
+          "order_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Id"
+          },
+          "rating": {
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Rating",
+            "type": "integer"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          },
+          "subject": {
+            "enum": [
+              "order",
+              "request",
+              "stay"
+            ],
+            "title": "Subject",
+            "type": "string"
+          }
+        },
+        "required": [
+          "subject",
+          "rating"
+        ],
+        "title": "FeedbackCreate",
+        "type": "object"
+      },
+      "FeedbackList": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/FeedbackOut"
+            },
+            "title": "Data",
+            "type": "array"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "FeedbackList",
+        "type": "object"
+      },
+      "FeedbackOut": {
+        "properties": {
+          "comment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "order_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Id"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          },
+          "subject": {
+            "enum": [
+              "order",
+              "request",
+              "stay"
+            ],
+            "title": "Subject",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "subject",
+          "order_id",
+          "request_id",
+          "rating",
+          "comment",
+          "created_at"
+        ],
+        "title": "FeedbackOut",
+        "type": "object"
+      },
+      "FeedbackReport": {
+        "properties": {
+          "average": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average"
+          },
+          "by_subject": {
+            "items": {
+              "$ref": "#/components/schemas/SubjectScore"
+            },
+            "title": "By Subject",
+            "type": "array"
+          },
+          "distribution": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Distribution",
+            "type": "array"
+          },
+          "from": {
+            "format": "date",
+            "title": "From",
+            "type": "string"
+          },
+          "ratings": {
+            "title": "Ratings",
+            "type": "integer"
+          },
+          "recent": {
+            "items": {
+              "$ref": "#/components/schemas/FeedbackComment"
+            },
+            "title": "Recent",
+            "type": "array"
+          },
+          "to": {
+            "format": "date",
+            "title": "To",
+            "type": "string"
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "ratings",
+          "average",
+          "distribution",
+          "by_subject",
+          "recent"
+        ],
+        "title": "FeedbackReport",
+        "type": "object"
+      },
       "FlagChange": {
         "additionalProperties": false,
         "properties": {
@@ -19939,6 +20204,41 @@
         "title": "Steps",
         "type": "object"
       },
+      "SubjectScore": {
+        "properties": {
+          "average": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average"
+          },
+          "ratings": {
+            "title": "Ratings",
+            "type": "integer"
+          },
+          "subject": {
+            "enum": [
+              "order",
+              "request",
+              "stay"
+            ],
+            "title": "Subject",
+            "type": "string"
+          }
+        },
+        "required": [
+          "subject",
+          "ratings",
+          "average"
+        ],
+        "title": "SubjectScore",
+        "type": "object"
+      },
       "SubscribeOut": {
         "properties": {
           "invoice": {
@@ -29559,6 +29859,67 @@
         ]
       }
     },
+    "/api/v1/guest/feedback": {
+      "get": {
+        "description": "What this stay has rated already (D98), so the tablet only asks once.",
+        "operationId": "my_feedback_api_v1_guest_feedback_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedbackList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "My Feedback",
+        "tags": [
+          "guest"
+        ]
+      },
+      "post": {
+        "operationId": "give_feedback_api_v1_guest_feedback_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedbackCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedbackOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Give Feedback",
+        "tags": [
+          "guest"
+        ]
+      }
+    },
     "/api/v1/guest/folio": {
       "get": {
         "operationId": "my_folio_api_v1_guest_folio_get",
@@ -33439,6 +33800,60 @@
           }
         },
         "summary": "Put Daily Close",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
+    "/api/v1/reports/feedback": {
+      "get": {
+        "description": "Guest ratings (D98): average, stars, by subject and the latest comments.",
+        "operationId": "guest_feedback_api_v1_reports_feedback_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "title": "From",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "title": "To",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedbackReport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Guest Feedback",
         "tags": [
           "reports"
         ]

@@ -470,6 +470,23 @@ class ServiceRequest(Base):
     updated_at: Mapped[datetime] = _updated()
 
 
+class GuestFeedback(Base):
+    """Stars and a comment for an order, a request or the stay (D98)."""
+
+    __tablename__ = "guest_feedback"
+    id: Mapped[uuid.UUID] = _pk()
+    hotel_id: Mapped[uuid.UUID]
+    stay_id: Mapped[uuid.UUID]
+    room_id: Mapped[uuid.UUID]
+    room_number: Mapped[str]
+    subject: Mapped[str]
+    order_id: Mapped[uuid.UUID | None]
+    request_id: Mapped[uuid.UUID | None]
+    rating: Mapped[int] = mapped_column(SmallInteger)
+    comment: Mapped[str | None]
+    created_at: Mapped[datetime] = _created()
+
+
 # --- Payments, tips and invoices -----------------------------------------------------------
 
 

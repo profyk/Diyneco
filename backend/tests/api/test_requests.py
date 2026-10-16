@@ -203,6 +203,16 @@ async def test_anonymising_a_guest_redacts_request_notes(client, factory, owner_
                 },
             )
         ).scalar_one()
+        fid = (
+            await conn.execute(
+                text(
+                    "INSERT INTO app.guest_feedback (hotel_id, stay_id, room_id, room_number, subject, rating, "
+                    "comment) VALUES (:h, :s, :room, '101', 'stay', 2, 'Ask for Thandi on 082 555 0101') "
+                    "RETURNING id"
+                ),
+                {"h": hotel.id, "room": hotel.room_ids[0], "s": rows["stay_id"]},
+            )
+        ).scalar_one()
     gm_s = await factory.step_up(hotel, "general_manager", gm)
     r = await client.post(
         f"/guests/{rows['guest_id']}/anonymise", json={"reason": "Guest asked"}, headers={**gm_s, **idem()}
@@ -212,4 +222,8 @@ async def test_anonymising_a_guest_redacts_request_notes(client, factory, owner_
         note = (
             await conn.execute(text("SELECT note FROM app.service_requests WHERE id = :r"), {"r": rid})
         ).scalar_one()
+        comment = (
+            await conn.execute(text("SELECT comment FROM app.guest_feedback WHERE id = :f"), {"f": fid})
+        ).scalar_one()
     assert "082" not in note
+    assert "082" not in comment  # D98: feedback comments are redacted too

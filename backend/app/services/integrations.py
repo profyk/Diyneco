@@ -78,6 +78,7 @@ WEBHOOK_EVENTS = frozenset(
         "ADJUSTMENT_REQUESTED",
         "REQUEST_CREATED",  # D93
         "REQUEST_UPDATED",
+        "FEEDBACK_RECEIVED",  # D98: stars only, never the comment
         "HOTEL_UPDATED",
         "SETTINGS_UPDATED",
         "DEVICE_PAIRED",
