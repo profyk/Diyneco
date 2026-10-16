@@ -249,13 +249,16 @@ export function AppShell({
           <div className="min-w-0 flex-1">{topbar}</div>
           <div className="flex shrink-0 items-center gap-2">
             {status}
-            <ThemeSwitch className="hidden sm:inline-flex" />
+            <span className="hidden sm:block">
+              <ThemeSwitch />
+            </span>
           </div>
         </header>
         {banner}
         <main id="main" ref={main} tabIndex={-1} className="dy-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain focus:outline-none">
           <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:py-8 lg:px-8">{children}</div>
-          <div className="px-4 pb-6 sm:hidden">
+          <div className="flex items-center justify-between gap-3 border-t border-line px-4 py-4 text-sm text-muted sm:hidden">
+            Theme
             <ThemeSwitch />
           </div>
         </main>

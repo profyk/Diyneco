@@ -13,7 +13,7 @@ test("hotel staff sign in and sign out of the Merchant app", async ({ page }) =>
   await signIn(page, accounts.receptionist.email, accounts.receptionist.password);
   const signOut = page.getByRole("button", { name: "Sign out" }).first();
   await expect(signOut).toBeAttached();
-  if (!(await signOut.isVisible())) await page.getByRole("button", { name: /Menu/ }).click();
+  if (!(await signOut.isVisible())) await page.getByRole("button", { name: "Open menu" }).click();
   await signOut.click();
   await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
   await page.reload();
