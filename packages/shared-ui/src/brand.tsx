@@ -3,7 +3,8 @@
 import { type FormEvent, useEffect, useState } from "react";
 
 import { ErrorNotice } from "./overlays";
-import { Button, cn, Field, Input, PasswordInput } from "./primitives";
+import { PasswordInput } from "./password-input";
+import { Button, cn, Field, Input } from "./primitives";
 
 /**
  * The Diyneco logo (brand/logo-draft.png, trimmed and resized into each app's

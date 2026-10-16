@@ -25,7 +25,9 @@
   --font-display: var(--font-sora), "Segoe UI", system-ui, sans-serif;
   --font-sans: var(--font-plex), "Segoe UI", system-ui, sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, "SFMono-Regular", monospace;
-  --radius-card: 12px;
+  --radius-card: 14px;
+  --shadow-card: var(--dy-shadow);
+  --shadow-float: var(--dy-shadow-lg);
 }
 
 :root {
@@ -49,6 +51,13 @@
   --dy-crit-bg: #fbe9e7;
   --dy-good: #13965f;
   --dy-good-bg: #e4f5ec;
+  /* The app sidebar stays navy in both themes. */
+  --dy-sidebar-from: #0b2350;
+  --dy-sidebar-to: #071834;
+  --dy-sidebar-ink: #c9d6ea;
+  --dy-sidebar-muted: #8197b8;
+  --dy-shadow: 0 1px 2px rgb(11 35 80 / 0.04), 0 4px 12px -2px rgb(11 35 80 / 0.06);
+  --dy-shadow-lg: 0 10px 30px -8px rgb(11 35 80 / 0.18);
   color-scheme: light;
 }
 
@@ -74,6 +83,12 @@
     --dy-crit-bg: #3a1714;
     --dy-good: #3cc98a;
     --dy-good-bg: #0f2e22;
+    --dy-sidebar-from: #08142a;
+    --dy-sidebar-to: #050d1c;
+    --dy-sidebar-ink: #b9c7dc;
+    --dy-sidebar-muted: #6f84a5;
+    --dy-shadow: 0 1px 2px rgb(0 0 0 / 0.3);
+    --dy-shadow-lg: 0 12px 32px -8px rgb(0 0 0 / 0.55);
     color-scheme: dark;
   }
 }
@@ -99,6 +114,12 @@
   --dy-crit-bg: #3a1714;
   --dy-good: #3cc98a;
   --dy-good-bg: #0f2e22;
+  --dy-sidebar-from: #08142a;
+  --dy-sidebar-to: #050d1c;
+  --dy-sidebar-ink: #b9c7dc;
+  --dy-sidebar-muted: #6f84a5;
+  --dy-shadow: 0 1px 2px rgb(0 0 0 / 0.3);
+  --dy-shadow-lg: 0 12px 32px -8px rgb(0 0 0 / 0.55);
   color-scheme: dark;
 }
 
@@ -125,6 +146,31 @@
 html {
   background: var(--dy-bg);
   color: var(--dy-ink);
+}
+
+/* App sidebar: navy with a soft light from the top corner. */
+.dy-sidebar {
+  background:
+    radial-gradient(120% 60% at 0% 0%, rgb(30 127 216 / 0.22), transparent 60%),
+    radial-gradient(90% 50% at 100% 100%, rgb(44 201 192 / 0.1), transparent 60%),
+    linear-gradient(180deg, var(--dy-sidebar-from), var(--dy-sidebar-to));
+}
+
+/* Slim scrollbars for the sidebar and the page area, which scroll separately. */
+.dy-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, currentColor 22%, transparent) transparent;
+}
+.dy-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.dy-scroll::-webkit-scrollbar-thumb {
+  border-radius: 8px;
+  background: color-mix(in srgb, currentColor 20%, transparent);
+}
+.dy-scroll::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 :focus-visible {

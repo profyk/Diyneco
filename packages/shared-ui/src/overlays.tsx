@@ -13,7 +13,8 @@ import {
   useState,
 } from "react";
 
-import { Button, cn, Field, Input, PasswordInput } from "./primitives";
+import { PasswordInput } from "./password-input";
+import { Button, cn, Field, Input } from "./primitives";
 
 /** Modal dialog on the native <dialog> element: focus trap, Escape and backdrop for free. */
 export function Dialog({

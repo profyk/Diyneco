@@ -1,7 +1,7 @@
 "use client";
 
 import { ok } from "@diyneco/api-client";
-import { cn } from "@diyneco/shared-ui";
+import { cn, Icon } from "@diyneco/shared-ui";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useDeferredValue, useEffect, useRef, useState } from "react";
@@ -90,19 +90,19 @@ export function Search({ pages }: { pages: { href: string; label: string }[] }) 
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-line bg-surface px-3 py-1.5 text-left text-sm text-muted hover:bg-surface-2 sm:max-w-sm"
+        className="flex w-full min-w-0 items-center gap-2.5 rounded-xl border border-line bg-surface-2 px-3.5 py-2 text-left text-sm text-muted transition hover:border-blue/40 hover:bg-surface sm:max-w-md"
       >
-        <span aria-hidden>⌕</span>
+        <Icon name="search" className="size-4 shrink-0" />
         <span className="truncate">Search rooms, guests, screens</span>
-        <kbd className="ml-auto hidden rounded border border-line px-1.5 text-xs sm:inline">Ctrl K</kbd>
+        <kbd className="ml-auto hidden rounded-md border border-line bg-surface px-1.5 py-0.5 font-sans text-[11px] text-muted sm:inline">Ctrl K</kbd>
       </button>
       {open ? (
-        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 p-4 pt-[12vh]" onClick={() => setOpen(false)}>
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-[#020817]/50 p-4 pt-[12vh] backdrop-blur-sm" onClick={() => setOpen(false)}>
           <div
             role="dialog"
             aria-modal="true"
             aria-label="Search"
-            className="w-full max-w-xl overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface shadow-2xl"
+            className="w-full max-w-xl overflow-hidden rounded-2xl border border-line bg-surface shadow-float"
             onClick={(e) => e.stopPropagation()}
           >
             <input
@@ -110,7 +110,7 @@ export function Search({ pages }: { pages: { href: string; label: string }[] }) 
               type="search"
               aria-label="Search"
               placeholder="Room number, guest name or a screen"
-              className="w-full border-b border-line bg-transparent px-4 py-3 text-base text-ink outline-none"
+              className="w-full border-b border-line bg-transparent px-5 py-4 text-base text-ink outline-none"
               value={q}
               onChange={(e) => {
                 setQ(e.target.value);
