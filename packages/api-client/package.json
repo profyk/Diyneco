@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@diyneco/shared-types": "workspace:*",
-    "openapi-fetch": "^0.14.0"
+    "openapi-fetch": "^0.17.0"
   },
   "devDependencies": {
     "@diyneco/config": "workspace:*",
